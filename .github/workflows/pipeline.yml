@@ -25,9 +25,7 @@ jobs:
       - name: Upload binary for release
         uses: actions/upload-artifact@v2
         with:
-          name: NMSMV
+          name: Nibble-Debug
           path: |
-            Build/Debug/net5.0/win-x64/Plugins
-            Build/Debug/net5.0/win-x64/Shaders
-            Build/Debug/net5.0/win-x64/*.*
+            Build/Debug/net5.0/win-x64/publish/*.*
   # TODO: Add release stuff. Will do this later when we are closer to wanting to release! ;)
