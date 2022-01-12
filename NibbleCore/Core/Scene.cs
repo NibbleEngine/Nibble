@@ -32,6 +32,29 @@ namespace NbCore
             return Nodes.Contains(n);
         }
 
+        public void RemoveNode(SceneGraphNode n)
+        {
+            if (!HasNode(n))
+            {
+                Callbacks.Log(string.Format("Node {0} does not belongs to scene {1}", n.Name, ID),
+                    LogVerbosityLevel.WARNING);
+                return;
+            }
+
+            //Handle orphans
+            if (n.Parent != null)
+                n.Parent.RemoveChild(n);
+            
+            if (n.HasComponent<MeshComponent>())
+                MeshNodes.Remove(n);
+
+            if (n.HasComponent<LightComponent>())
+                LightNodes.Remove(n);
+
+            //Set scene Reference
+            n.SceneRef = null;
+        }
+
         public void AddNode(SceneGraphNode n)
         {
             //I should not chekck for registration status of n here
@@ -57,6 +80,9 @@ namespace NbCore
             
             if (n.HasComponent<LightComponent>())
                 LightNodes.Add(n);
+
+            //Set scene Reference
+            n.SceneRef = this;
         }
 
         public void CacheUninitializedNodes()

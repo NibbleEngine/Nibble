@@ -69,13 +69,17 @@ struct CustomPerMaterialUniforms  //locations:73
         sampler2D gNormalMap;
     #endif
 
-    vec4 gMaterialColourVec4;
-    vec4 gMaterialParamsVec4;
-    vec4 gMaterialSFXVec4;
-    vec4 gMaterialSFXColVec4;
-    vec4 gUVScrollStepVec4;
-    vec4 gDissolveDataVec4;
-    vec4 gCustomParams01Vec4;
+    vec4 uniforms[10];
+    
+    //Uniform Index Convention
+    //0: MaterialColour
+    //1: MaterialParameters
+    //2: MaterialSFX
+    //3: MaterailSFXColours
+    //4: UVScrollStep
+    //5: DissolveData
+    //6: CustomParameters
+
 };
 
 struct CommonPerSceneUniforms

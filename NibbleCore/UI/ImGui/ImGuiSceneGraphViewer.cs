@@ -110,6 +110,7 @@ namespace NbCore.UI.ImGui
                     {
                         //Create and register locator node
                         new_node = _manager.EngineRef.CreateLightNode("Light#1");
+
                         Callbacks.Log("Creating Light node", LogVerbosityLevel.INFO);
                         EntityAdded = true;
                     }
@@ -121,12 +122,14 @@ namespace NbCore.UI.ImGui
                         
                         //Add locator the activeScene
                         Scene activeScene = _manager.EngineRef.GetActiveScene();
-                        activeScene.AddNode(new_node);
-                        _manager.EngineRef.transformSys.RequestEntityUpdate(new_node);
-                        
+
                         //Set parent
                         new_node.SetParent(n);
 
+                        activeScene.AddNode(new_node);
+                        
+                        _manager.EngineRef.transformSys.RequestEntityUpdate(new_node);
+                        
                         n.IsOpen = true; //Make sure to open the node so that the new node is visible
 
                         //Set Reference to the new node
@@ -143,6 +146,8 @@ namespace NbCore.UI.ImGui
                 if (ImGuiCore.MenuItem("Delete"))
                 {
                     Console.WriteLine("Delete Node permanently");
+                    _manager.EngineRef.DisposeSceneGraphNode(_clicked);
+                    Console.WriteLine("Node deleted");
                 }
 
                 ImGuiCore.EndPopup();
@@ -150,15 +155,19 @@ namespace NbCore.UI.ImGui
 
             if (n.IsOpen)
             {
-                if (n.Children.Count > 0)
-                {
-                    foreach (SceneGraphNode nc in n.Children)
-                    {
-                        DrawNode(nc);
-                    }
 
-                    ImGuiCore.TreePop();
+                int index = 0;
+                bool node_drawn = false;
+                while(index < n.Children.Count)
+                {
+                    node_drawn = true;
+                    SceneGraphNode nc = n.Children[index];
+                    DrawNode(nc);
+                    index++;
                 }
+
+                if (node_drawn)
+                    ImGuiCore.TreePop();
             }
 
         }

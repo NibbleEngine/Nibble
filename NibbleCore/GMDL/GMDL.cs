@@ -114,11 +114,107 @@ namespace NbCore
 
         }
 
+        public NbMeshData GetCollisionMeshData(NbMeshMetaData mmd)
+        {
+            //Collision Mesh isn't used anywhere else.
+            //No need to check for hashes and shit
+
+            float[] vx_buffer_float = new float[(mmd.BoundHullEnd - mmd.BoundHullStart) * 3];
+
+            for (int i = 0; i < mmd.BoundHullEnd - mmd.BoundHullStart; i++)
+            {
+                NbVector3 v = bhullverts[i + mmd.BoundHullStart];
+                vx_buffer_float[3 * i + 0] = v.X;
+                vx_buffer_float[3 * i + 1] = v.Y;
+                vx_buffer_float[3 * i + 2] = v.Z;
+            }
+
+            //Generate intermediate geom
+            GeomObject temp_geom = new();
+
+            //Set main Geometry Info
+            temp_geom.vertCount = vx_buffer_float.Length / 3;
+            temp_geom.indicesCount = mmd.BatchCount;
+            temp_geom.indicesType = indicesType;
+
+            //Set Strides
+            temp_geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
+
+            //Set Buffer Offsets
+            temp_geom.mesh_descr = "v";
+            bufInfo buf = new bufInfo()
+            {
+                count = 3,
+                normalize = false,
+                offset = 0,
+                sem_text = "vPosition",
+                semantic = 0,
+                stride = temp_geom.vx_size,
+                type = NbPrimitiveDataType.Float
+            };
+            temp_geom.bufInfo.Add(buf);
+
+            int indicesLength = 0x4;
+            if (indicesType == NbPrimitiveDataType.UnsignedShort)
+                indicesLength = 0x2;
+            //Set Buffers
+            temp_geom.ibuffer = new byte[indicesLength * mmd.BatchCount];
+            temp_geom.vbuffer = new byte[sizeof(float) * vx_buffer_float.Length];
+            
+            System.Buffer.BlockCopy(ibuffer, mmd.BatchStartGraphics * indicesLength, temp_geom.ibuffer, 0, temp_geom.ibuffer.Length);
+            System.Buffer.BlockCopy(vx_buffer_float, 0, temp_geom.vbuffer, 0, temp_geom.vbuffer.Length);
+
+
+            NbMeshData temp_geom_data = temp_geom.GetData();
+            temp_geom.Dispose();
+            return temp_geom_data;
+        }
+
         public NbMeshData GetMeshData(ulong hash)
         {
             if (meshDataDict.ContainsKey(hash))
                 return meshDataDict[hash];
             return NbMeshData.Create();
+        }
+
+        public NbMeshMetaData GetMetaData()
+        {
+            //Warning: For now this method assumes int indices
+            int indicesLength = 0x4;
+            if (indicesType == NbPrimitiveDataType.UnsignedShort)
+                indicesLength = 0x2;
+
+            return new NbMeshMetaData()
+            {
+                BatchCount = ibuffer.Length / indicesLength,
+                FirstSkinMat = 0,
+                LastSkinMat = 0,
+                VertrEndGraphics = vbuffer.Length / (0x3 * sizeof(float)) - 1,
+                VertrEndPhysics = vbuffer.Length / (0x3 * sizeof(float))
+            };
+        }
+
+        public NbMeshData GetData()
+        {
+            NbMeshData data = new();
+            data.IndexBuffer = new byte[ibuffer.Length];
+            data.VertexBuffer = new byte[vbuffer.Length];
+            data.VertexBufferStride = vx_size;
+            data.buffers = bufInfo.ToArray();
+            data.IndicesLength = indicesType;
+
+            //Calculate vertex count on stream
+            uint vx_count = (uint) vbuffer.Length / vx_size;
+
+            data.IndicesLength = NbPrimitiveDataType.UnsignedShort;
+            if (vx_count > 0xFFFF)
+                data.IndicesLength = NbPrimitiveDataType.UnsignedInt;
+
+            //Copy buffer data
+            System.Buffer.BlockCopy(vbuffer, 0, data.VertexBuffer, 0, vbuffer.Length);
+            System.Buffer.BlockCopy(ibuffer, 0, data.IndexBuffer, 0, ibuffer.Length);
+
+            return data;
         }
 
         public static NbVector3 get_vec3_half(BinaryReader br)

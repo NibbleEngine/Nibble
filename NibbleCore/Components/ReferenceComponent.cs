@@ -5,9 +5,9 @@ using NbCore;
 
 namespace NbCore
 {
-    class ReferenceComponent : Component
+    public class ReferenceComponent : Component
     {
-        public SceneGraphNode RefNode;
+        public string Reference;
         
         public ReferenceComponent()
         {

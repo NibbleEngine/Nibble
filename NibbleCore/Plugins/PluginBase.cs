@@ -38,7 +38,7 @@ namespace NbCore.Plugins
 
         public virtual void Log(string message, LogVerbosityLevel level)
         {
-            string msg = string.Format("{0} : {1}", Name, message);
+            string msg = string.Format("* {0} : {1}", Name.ToUpper(), message);
             Callbacks.Log(msg, level);
         }
 

@@ -108,12 +108,10 @@ namespace NbCore.Systems
             renderBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.Rgba16f, false); //color 1 - blur 1
             renderBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.Rgba16f, false); //composite
             renderBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.DepthComponent, true); //depth
-            
-            //Add attachments
 
 
-
-
+            //Rebind the default framebuffer
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             Log("FBOs Initialized", LogVerbosityLevel.INFO);
         }
 
@@ -354,8 +352,8 @@ namespace NbCore.Systems
             NbMesh mesh = new()
             {
                 Hash = (ulong) "default_quad".GetHashCode(),
-                Data = q.GetData(),
-                MetaData = q.GetMetaData()
+                Data = q.geom.GetData(),
+                MetaData = q.geom.GetMetaData()
             };
             
             Renderer.AddMesh(mesh);
@@ -369,8 +367,8 @@ namespace NbCore.Systems
             mesh = new()
             {
                 Hash = (ulong)"default_renderquad".GetHashCode(),
-                Data = q.GetData(),
-                MetaData = q.GetMetaData(),
+                Data = q.geom.GetData(),
+                MetaData = q.geom.GetMetaData(),
             };
             Renderer.AddMesh(mesh);
             EngineRef.RegisterEntity(mesh);
@@ -384,8 +382,8 @@ namespace NbCore.Systems
             {
                 Type = NbMeshType.Locator, //Explicitly set as locator mesh
                 Hash = (ulong)"default_cross".GetHashCode(),
-                Data = c.GetData(),
-                MetaData = c.GetMetaData()
+                Data = c.geom.GetData(),
+                MetaData = c.geom.GetMetaData()
             };
             Renderer.AddMesh(mesh);
             EngineRef.RegisterEntity(mesh);
@@ -399,8 +397,8 @@ namespace NbCore.Systems
             mesh = new()
             {
                 Hash = (ulong)"default_box".GetHashCode(),
-                Data = bx.GetData(),
-                MetaData = bx.GetMetaData()
+                Data = bx.geom.GetData(),
+                MetaData = bx.geom.GetMetaData()
             };
             Renderer.AddMesh(mesh);
             EngineRef.RegisterEntity(mesh);
@@ -413,8 +411,8 @@ namespace NbCore.Systems
             mesh = new()
             {
                 Hash = (ulong)"default_sphere".GetHashCode(),
-                Data = sph.GetData(),
-                MetaData = sph.GetMetaData()
+                Data = sph.geom.GetData(),
+                MetaData = sph.geom.GetMetaData()
             };
 
             Renderer.AddMesh(mesh);
@@ -428,8 +426,8 @@ namespace NbCore.Systems
             mesh = new()
             {
                 Hash = (ulong)"default_light_sphere".GetHashCode(),
-                Data = lsph.GetData(),
-                MetaData = lsph.GetMetaData()
+                Data = lsph.geom.GetData(),
+                MetaData = lsph.geom.GetMetaData()
             };
 
             Renderer.AddMesh(mesh);
@@ -452,7 +450,8 @@ namespace NbCore.Systems
             mat.add_flag(MaterialFlagEnum._F21_VERTEXCOLOUR);
             Uniform uf = new()
             {
-                Name = "mpCustomPerMaterial.gMaterialColourVec4",
+                ID = 0,
+                Name = "gMaterialColourVec4",
                 Values = new(1.0f, 1.0f, 1.0f, 1.0f)
             };
             mat.Uniforms.Add(uf);
@@ -475,9 +474,13 @@ namespace NbCore.Systems
             };
             mat.add_flag(MaterialFlagEnum._F07_UNLIT);
 
-            uf = new Uniform();
-            uf.Name = "mpCustomPerMaterial.gMaterialColourVec4";
-            uf.Values = new(1.0f, 0.0f, 0.0f, 1.0f);
+            uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(1.0f, 0.0f, 0.0f, 1.0f)
+            };
+            
             mat.Uniforms.Add(uf);
             shader = EngineRef.renderSys.Renderer.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
             EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
@@ -493,9 +496,13 @@ namespace NbCore.Systems
             };
             mat.add_flag(MaterialFlagEnum._F07_UNLIT);
 
-            uf = new();
-            uf.Name = "mpCustomPerMaterial.gMaterialColourVec4";
-            uf.Values = new(1.0f, 1.0f, 0.0f, 1.0f);
+            uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(1.0f, 1.0f, 0.0f, 1.0f)
+            };
+
             mat.Uniforms.Add(uf);
             shader = EngineRef.renderSys.Renderer.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
             EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
@@ -511,9 +518,14 @@ namespace NbCore.Systems
             };
             mat.add_flag(MaterialFlagEnum._F07_UNLIT);
 
-            uf = new();
-            uf.Name = "mpCustomPerMaterial.gMaterialColourVec4";
-            uf.Values = new(0.7f, 0.7f, 0.7f, 1.0f);
+
+            uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(0.7f, 0.7f, 0.7f, 1.0f)
+            };
+
             mat.Uniforms.Add(uf);
             shader = EngineRef.renderSys.Renderer.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
             EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
@@ -527,9 +539,13 @@ namespace NbCore.Systems
             mat.Name = "collisionMat";
             mat.add_flag(MaterialFlagEnum._F07_UNLIT);
 
-            uf = new();
-            uf.Name = "mpCustomPerMaterial.gMaterialColourVec4";
-            uf.Values = new(0.8f, 0.8f, 0.2f, 1.0f);
+            uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(0.8f, 0.8f, 0.2f, 1.0f)
+            };
+
             mat.Uniforms.Add(uf);
             shader = EngineRef.renderSys.Renderer.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
             EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
@@ -588,8 +604,8 @@ namespace NbCore.Systems
                 NbMesh mesh = new()
                 {
                     Hash = (ulong) name.GetHashCode(),
-                    Data = arr.GetData(),
-                    MetaData = arr.GetMetaData()
+                    Data = arr.geom.GetData(),
+                    MetaData = arr.geom.GetMetaData()
                 };
                 
                 
@@ -1322,7 +1338,7 @@ namespace NbCore.Systems
         }
         */
 
-        private void pass_tex(int to_fbo, DrawBufferMode to_channel, int InTex, int[] to_buf_size)
+        private void pass_tex(int to_fbo, DrawBufferMode to_channel, int InTex)
         {
             //passthrough a texture to the specified to_channel of the to_fbo
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, to_fbo);
@@ -1445,21 +1461,31 @@ namespace NbCore.Systems
 
         //}
 
-        //private void tone_mapping()
-        //{
-        //    //Load Programs
-        //    GLSLShaderConfig tone_mapping_program = ShaderMgr.GetGenericShader(SHADER_TYPE.TONE_MAPPING);
+        private void tone_mapping()
+        {
+            //Load Programs
+            GLSLShaderConfig shader = ShaderMgr.GetGenericShader(SHADER_TYPE.TONE_MAPPING);
 
-        //    //Copy Color to first channel
-        //    pass_tex(pbuf.fbo, DrawBufferMode.ColorAttachment1, pbuf.color, pbuf.size); //LOOKS OK!
+            //Copy Color to first channel
+            pass_tex(renderBuffer.fbo, 
+                DrawBufferMode.ColorAttachment1, 
+                renderBuffer.GetChannel(0)); //LOOKS OK!
 
-        //    //Apply Tone Mapping
-        //    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, pbuf.fbo);
-        //    GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+            //Apply Tone Mapping
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
+            GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
 
-        //    render_quad(Array.Empty<string>(), Array.Empty<float>(), new string[] { "inTex" }, new TextureTarget[] { TextureTarget.Texture2D }, new int[] { pbuf.blur1 }, tone_mapping_program);
+            //render_quad(new string[] {"sizeX", "sizeY" }, new float[] { to_buf_size[0], to_buf_size[1]}, new string[] { "InTex" }, new int[] { InTex }, shader);
+            shader.ClearCurrentState();
+            shader.CurrentState.AddSampler("inTex", new GLSLSamplerState()
+            {
+                Target = NbTextureTarget.Texture2D,
+                TextureID = renderBuffer.GetChannel(1)
+            });
 
-        //}
+            Renderer.RenderQuad(GeometryMgr.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode()),
+                        shader, shader.CurrentState);
+        }
 
         //private void inv_tone_mapping()
         //{
@@ -1485,7 +1511,7 @@ namespace NbCore.Systems
             //    if (RenderState.settings.renderSettings.UseBLOOM)
             //        bloom(); //BLOOM
 
-            //tone_mapping(); //FINAL TONE MAPPING, INCLUDES GAMMA CORRECTION
+            tone_mapping(); //FINAL TONE MAPPING, INCLUDES GAMMA CORRECTION
 
             //if (RenderState.settings.renderSettings.UseFXAA)
             //    fxaa(); //FXAA (INCLUDING TONE/UNTONE)

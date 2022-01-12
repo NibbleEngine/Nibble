@@ -223,13 +223,17 @@ namespace NbCore
             catch (Exception ex)
             {
                 Log($"Error during loading of plugin {filepath}", LogVerbosityLevel.INFO);
-                Log("Exception type " + ex.Data, LogVerbosityLevel.INFO);
+                Log($"Exception type {ex.Data}", LogVerbosityLevel.INFO);
+                Log($"Exception message {ex.Message} ", LogVerbosityLevel.INFO);
             }
         }
 
 
         private void LoadPlugins()
         {
+            if (!Directory.Exists("Plugins"))
+                return;
+            
             foreach (string filename in Directory.GetFiles("Plugins"))
             {
                 if (!filename.EndsWith(("dll")))
@@ -311,7 +315,6 @@ namespace NbCore
                 //Register to rendering System
                 if (e.HasComponent<MeshComponent>())
                 {
-
                     //Register mesh, material and the corresponding shader if necessary
                     MeshComponent mc = e.GetComponent<MeshComponent>() as MeshComponent;
                     
@@ -321,7 +324,7 @@ namespace NbCore
                     
                     renderSys.RegisterEntity(e); //Register Mesh
                 }
-                    
+
                 //TODO Register to the rest systems if necessary
             }
         }
@@ -711,7 +714,7 @@ namespace NbCore
                         VertrStartGraphics = 0,
                         VertrEndGraphics = (bands + 1) * (bands + 1) - 1
                     },
-                    Data = (new Sphere(new NbVector3(), 2.0f, 40)).GetData()
+                    Data = (new Sphere(new NbVector3(), 2.0f, 40)).geom.GetData()
                 }
                 
             };
@@ -1102,8 +1105,8 @@ namespace NbCore
             {
                 Mesh = new()
                 {
-                    Data = seg.GetData(),
-                    MetaData = seg.GetMetaData()
+                    Data = seg.geom.GetData(),
+                    MetaData = seg.geom.GetMetaData()
                 },
                 Material = Common.RenderState.engineRef.GetMaterialByName("jointMat")
             };
@@ -1139,8 +1142,8 @@ namespace NbCore
                 {
                     Hash = (ulong)(name.GetHashCode() ^ DateTime.Now.GetHashCode()),
                     Type = NbMeshType.Light,
-                    MetaData = ls.GetMetaData(),
-                    Data = ls.GetData()
+                    MetaData = ls.geom.GetMetaData(),
+                    Data = ls.geom.GetData()
                 },
                 Material = GetMaterialByName("lightMat")
             };
@@ -1197,20 +1200,24 @@ namespace NbCore
 
         public void DisposeSceneGraphNode(SceneGraphNode node)
         {
+            node.SceneRef?.RemoveNode(node); //Remove from its scene
+            
             RemoveEntity(node);
             
             //Mesh Node Disposal
             if (node.HasComponent<MeshComponent>())
             {
                 MeshComponent mc = node.GetComponent<MeshComponent>() as MeshComponent;
-                renderSys.Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
+                if (mc.InstanceID > 0)
+                    renderSys.Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
             }
 
             //Mesh Node Disposal
             if (node.HasComponent<LightComponent>())
             {
                 LightComponent lc = node.GetComponent<LightComponent>() as LightComponent;
-                renderSys.Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
+                if (lc.InstanceID > 0)
+                    renderSys.Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
             }
 
             node.Dispose();

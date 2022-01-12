@@ -41,7 +41,9 @@ namespace NbCore.Platform.Graphics
         public void RemoveLightRenderInstance(ref NbMesh mesh, LightComponent mc);
         public void SetLightInstanceData(LightComponent lc);
         public void SetInstanceWorldMat(NbMesh mesh, int instanceID, NbMatrix4 mat);
+        public void SetInstanceUniform4(NbMesh mesh, int instanceID, int uniformID, NbVector4 uf);
         public void SetInstanceWorldMatInv(NbMesh mesh, int instanceId, NbMatrix4 mat);
+        public NbVector4 GetInstanceUniform4(NbMesh mesh, int instanceID, int uniformID);
 
         //Rendering Methods
         public void RenderQuad(NbMesh quadMesh, GLSLShaderConfig shaderConf, GLSLShaderState state);
@@ -58,8 +60,13 @@ namespace NbCore.Platform.Graphics
         public void BindDrawFrameBuffer(FBO framebuffer, int[] drawBuffers);
         public FBO CreateFrameBuffer(int width, int height);
 
+
+        //Viewport
+        public void Viewport(int x, int y);
+
         //Misc
-        public void SyncGPUCommands(); 
+        public void SyncGPUCommands();
+        public void ClearColor(NbVector4 col);
     }
 
 

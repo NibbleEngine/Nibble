@@ -13,6 +13,7 @@ namespace NbCore
         SceneNodeMesh,
         SceneNodeLocator,
         SceneNodeModel,
+        SceneNodeReference,
         SceneNodeCollision,
         MeshComponent,
         AnimationComponent,
@@ -57,7 +58,6 @@ namespace NbCore
             GUIDComponent gc = GetComponent<GUIDComponent>() as GUIDComponent;
             return gc.ID;
         }
-        
         
         public bool HasComponent<T>()
         {

@@ -45,23 +45,8 @@ namespace NbCore.UI.ImGui
                     _model = null;
                     return;
                 }
-                    
-                switch (_model.Type)
-                {
-                    case SceneNodeType.MODEL:
-                    case SceneNodeType.LOCATOR:
-                        DrawLocator();
-                        break;
-                    case SceneNodeType.MESH:
-                        DrawMesh();
-                        break;
-                    case SceneNodeType.LIGHT:
-                        DrawLight();
-                        break;
-                    default:
-                        ImGuiNET.ImGui.Text("Not Supported yet");
-                        break;
-                }
+
+                DrawModel();
             }
                 
             //ImGui.End();
@@ -165,9 +150,52 @@ namespace NbCore.UI.ImGui
                         if (ImGuiCore.Button("+"))
                             Console.WriteLine("Add Material not implemented yet");
                     }
+
+                    if (mc.InstanceID != -1)
+                    {
+                        ImGuiCore.NextColumn();
+                        ImGuiCore.Text("Mesh Uniforms");
+                        ImGuiCore.NewLine();
+                        ImGuiCore.NextColumn();
+                        ImGuiCore.NextColumn();
+
+                        for (int i = 0; i < 4; i++)
+                        {
+                            ImGuiCore.Text("Uniform" + i);
+                            ImGuiCore.NextColumn();
+                            Math.NbVector4 uf = _manager.EngineRef.renderSys.Renderer.GetInstanceUniform4(mc.Mesh, mc.InstanceID, i);
+                            var val = new System.Numerics.Vector4();
+                            val.X = uf.X;
+                            val.Y = uf.Y;
+                            val.Z = uf.Z;
+                            val.W = uf.W;
+
+                            if (ImGuiCore.InputFloat4($"##uf{i}", ref val))
+                            {
+                                _manager.EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, i,
+                                    new Math.NbVector4(val));
+                            }
+
+                            if (i != 3)
+                                ImGuiCore.NextColumn();
+                        }
+
+
+
+
+                    }
+
                     
+
+
+
+
+
                     ImGuiCore.Columns(1);
                     
+                    
+
+
                     if (ImGuiCore.TreeNode("Mesh"))
                     {
                         NbMesh mesh = mc.Mesh;
@@ -193,6 +221,9 @@ namespace NbCore.UI.ImGui
                         ImGuiCore.Columns(1);
                         ImGuiCore.TreePop();
                     }
+                    
+                    
+                
                 }
             }
 
@@ -201,7 +232,6 @@ namespace NbCore.UI.ImGui
             {
                 LightComponent lc = _model.GetComponent<LightComponent>() as LightComponent;
 
-                
                 if (ImGuiCore.CollapsingHeader("Light Component", ImGuiTreeNodeFlags.DefaultOpen))
                 {
                     bool light_updated = false;
@@ -242,6 +272,34 @@ namespace NbCore.UI.ImGui
 
             }
         
+            if (_model.HasComponent<CollisionComponent>())
+            {
+                CollisionComponent cc = _model.GetComponent<CollisionComponent>() as CollisionComponent;
+
+                if (ImGuiCore.CollapsingHeader("Collision Component", ImGuiTreeNodeFlags.DefaultOpen))
+                {
+                    ImGuiCore.Columns(2);
+                    ImGuiCore.Text("CollisionType");
+                    ImGuiCore.NextColumn();
+                    ImGuiCore.Text(cc.CollisionType.ToString());
+                    ImGuiCore.Columns(1);
+                }
+            }
+
+            if (_model.HasComponent<ReferenceComponent>())
+            {
+                ReferenceComponent rc = _model.GetComponent<ReferenceComponent>() as ReferenceComponent;
+
+                if (ImGuiCore.CollapsingHeader("Reference Component", ImGuiTreeNodeFlags.DefaultOpen))
+                {
+                    ImGuiCore.Columns(2);
+                    ImGuiCore.Text("Reference");
+                    ImGuiCore.NextColumn();
+                    ImGuiCore.Text(rc.Reference.ToString());
+                    ImGuiCore.Columns(1);
+                }
+            }
+
         }
 
         private void DrawLocator()

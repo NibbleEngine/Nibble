@@ -6,7 +6,7 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace NbCore
 {
-    public class CollisionComponent : MeshComponent
+    public class CollisionComponent : Component
     {
         public COLLISIONTYPES CollisionType;
 
@@ -28,7 +28,6 @@ namespace NbCore
                 return;
 
             CollisionComponent mc = c as CollisionComponent;
-            base.CopyFrom(mc);
         }
     }
 }
