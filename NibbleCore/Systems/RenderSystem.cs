@@ -169,20 +169,20 @@ namespace NbCore.Systems
 
 #if (DEBUG)
             //Query GL Extensions
-            Console.WriteLine("OPENGL AVAILABLE EXTENSIONS:");
+            Log("OPENGL AVAILABLE EXTENSIONS:", LogVerbosityLevel.INFO);
             string[] ext = GL.GetString(StringNameIndexed.Extensions, 0).Split(' ');
             foreach (string s in ext)
             {
                 if (s.Contains("explicit"))
-                    Console.WriteLine(s);
+                    Log(s, LogVerbosityLevel.INFO);
                 if (s.Contains("texture"))
-                    Console.WriteLine(s);
+                    Log(s, LogVerbosityLevel.INFO);
                 if (s.Contains("16"))
-                    Console.WriteLine(s);
+                    Log(s, LogVerbosityLevel.INFO);
             }
 
             //Query maximum buffer sizes
-            Console.WriteLine("MaxUniformBlock Size {0}", GL.GetInteger(GetPName.MaxUniformBlockSize));
+            Log($"MaxUniformBlock Size {GL.GetInteger(GetPName.MaxUniformBlockSize)}", LogVerbosityLevel.INFO);
 #endif
 
             GLSLShaderConfig shader_conf;
@@ -1217,7 +1217,7 @@ namespace NbCore.Systems
         {
             gfTime += dt; //Update render time
 
-            //Console.WriteLine("Rendering Frame");
+            //Log("Rendering Frame");
             GL.ClearColor(new OpenTK.Mathematics.Color4(0.0f, 0, 0, 1.0f));
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
@@ -1390,7 +1390,7 @@ namespace NbCore.Systems
 
         //    //return;
 
-        //    //Console.WriteLine(GL.GetError()); 
+        //    //Log(GL.GetError()); 
 
         //    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, blur_fbo.fbo);
         //    GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, blur_fbo.fbo);

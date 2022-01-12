@@ -2,13 +2,14 @@
 
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<BaseOutputPath>..\Build\Plugins</BaseOutputPath>
 		<PlatformTarget>AnyCPU</PlatformTarget>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Nibble\Nibble.csproj" />
+      <ProjectReference Include="..\NibbleDLL\NibbleDLL.csproj" />
     </ItemGroup>
 
     <ItemGroup>

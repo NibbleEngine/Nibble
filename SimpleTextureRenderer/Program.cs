@@ -12,7 +12,6 @@ using OpenTK.Windowing.Common;
 using ImGuiNET;
 
 
-
 namespace SimpleTextureRenderer
 {
     public class TextureRenderer : OpenTK.Windowing.Desktop.GameWindow

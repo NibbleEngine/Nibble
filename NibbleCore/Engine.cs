@@ -166,9 +166,26 @@ namespace NbCore
             return a;
         }
 
+        private System.Version GetAssemblyRequiredNibbleVersion(Assembly test)
+        {
+            //Load Referenced Assemblies
+            AssemblyName[] l = test.GetReferencedAssemblies();
+            
+            foreach (AssemblyName a2 in l)
+            {
+                //Check version compatibility with the Nibble library
+                if (a2.Name == "Nibble")
+                {
+                    return a2.Version;
+                }
+            }
+            return null;
+        }
+
         private void LoadAssembly(string name)
         {
             AssemblyName aName = GetAssemblyName(name);
+
             if (aName == null)
                 return;
             
@@ -177,9 +194,9 @@ namespace NbCore
                 return;
 
             //FetchAssembly
-            Log($"Loaded Assembly {test.GetName()}", LogVerbosityLevel.WARNING);
             AppDomain.CurrentDomain.Load(test.GetName());
-            
+            Log($"Loaded Assembly {test.GetName()}", LogVerbosityLevel.WARNING);
+
             //Load Referenced Assemblies
             AssemblyName[] l = test.GetReferencedAssemblies();
             var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -198,9 +215,13 @@ namespace NbCore
 
         public void LoadPlugin(string filepath)
         {
+            
             //Load Assembly
             try
             {
+                //Get Nibble Info
+                AssemblyName NibbleName = GetAssemblyName("Nibble.dll");
+
                 Assembly a = Assembly.LoadFile(Path.GetFullPath(filepath));
                 
                 //Try to find the type the derived plugin class
@@ -208,8 +229,25 @@ namespace NbCore
                 {
                     if (t.IsSubclassOf(typeof(PluginBase)))
                     {
-                        Log($"Plugin class detected! {t.Name}", LogVerbosityLevel.INFO);
+                        Log($"Nibble Plugin detected! {a.GetName().Name}", LogVerbosityLevel.INFO);
                         
+                        System.Version testNibbleVersion = GetAssemblyRequiredNibbleVersion(a);
+                        
+                        if (testNibbleVersion == null)
+                        {
+                            Callbacks.Log("Unable to fetch required Nibble.dll version. Plugin not loaded",
+                                LogVerbosityLevel.WARNING);
+                            continue;
+                        }
+
+                        if (testNibbleVersion.Major != NibbleName.Version.Major)
+                        {
+                            Callbacks.Log($"Plugin incompatible with Nibble.dll Version {NibbleName.Version}. Plugin was build against : {testNibbleVersion}.",
+                                LogVerbosityLevel.WARNING);
+                            continue;
+                        }
+
+                        //Load Assembly to AppDomain and Initialize
                         LoadAssembly(filepath);
 
                         object c = Activator.CreateInstance(t, new object[] { this });
@@ -382,7 +420,7 @@ namespace NbCore
                         //Convert filepath to single 
                         string filepath = Utils.FileUtils.FixPath(file.FullName);
                         //Add source file
-                        Console.WriteLine("Working On {0}", filepath);
+                        Log($"Working On {filepath}", LogVerbosityLevel.INFO);
                         if (GetShaderSourceByFilePath(filepath) == null)
                         {
                             //Construction includes registration
@@ -766,7 +804,7 @@ namespace NbCore
                     rt_SpecularTestScene();
                     break;
                 default:
-                    Console.WriteLine("Non Implemented Test Scene");
+                    Log("Non Implemented Test Scene", LogVerbosityLevel.WARNING);
                     break;
             }
 
@@ -967,7 +1005,7 @@ namespace NbCore
             targetCameraPos.PosImpulse.Y = y;
             targetCameraPos.PosImpulse.Z = z;
 
-            //Console.WriteLine("{0} {1} {2}", x, y, z);
+            //Log("{0} {1} {2}", x, y, z);
         }
 
         //Mouse Methods
@@ -980,7 +1018,7 @@ namespace NbCore
                 OpenTK.Mathematics.Vector2 deltaVec = new(ActiveMsState.PositionDelta.X,
                     ActiveMsState.PositionDelta.Y);
                 
-                //Console.WriteLine("Mouse Delta {0} {1}", deltax, deltay);
+                //Log("Mouse Delta {0} {1}", deltax, deltay);
                 targetCameraPos.Rotation.X = deltaVec.X;
                 targetCameraPos.Rotation.Y = deltaVec.Y;
             }

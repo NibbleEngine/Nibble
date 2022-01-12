@@ -6,6 +6,10 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "NibbleCore", "NibbleCore\NibbleCore.shproj", "{53C00CB6-A20B-47AE-93DB-82A187F0D3CD}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NibbleEditor", "NibbleEditor\NibbleEditor.csproj", "{1B7CCCC6-CCA6-4E87-B3C8-2B07DC6863B6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{15C6FC13-8166-4B74-AED0-5F654BEB26F6} = {15C6FC13-8166-4B74-AED0-5F654BEB26F6}
+		{33FBA2C8-948E-423F-B1AE-F54321DDCA1D} = {33FBA2C8-948E-423F-B1AE-F54321DDCA1D}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleTextureRenderer", "SimpleTextureRenderer\SimpleTextureRenderer.csproj", "{D01A052E-DDAF-4895-8D16-545863C2C781}"
 EndProject
@@ -15,14 +19,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NibbleNMSPlugin", "NMSPlugi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NibbleAssimpPlugin", "NibbleAssimpPlugin\NibbleAssimpPlugin.csproj", "{D0D5D3D7-F2BE-4286-8D96-BBF69E2C76FA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Nibble", "Nibble\Nibble.csproj", "{8EC54636-F7D7-4213-80BD-46ECB25210EC}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NibbleOBJPlugin", "NibbleOBJPlugin\NibbleOBJPlugin.csproj", "{33FBA2C8-948E-423F-B1AE-F54321DDCA1D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NibbleDLL", "NibbleDLL\NibbleDLL.csproj", "{3E7B07A5-B4BD-47BC-8FE0-645D3708627D}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		NibbleCore\NibbleCore.projitems*{3e7b07a5-b4bd-47bc-8fe0-645d3708627d}*SharedItemsImports = 5
 		NibbleCore\NibbleCore.projitems*{53c00cb6-a20b-47ae-93db-82a187f0d3cd}*SharedItemsImports = 13
-		NibbleCore\NibbleCore.projitems*{8ec54636-f7d7-4213-80bd-46ecb25210ec}*SharedItemsImports = 5
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,14 +53,14 @@ Global
 		{D0D5D3D7-F2BE-4286-8D96-BBF69E2C76FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D0D5D3D7-F2BE-4286-8D96-BBF69E2C76FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D0D5D3D7-F2BE-4286-8D96-BBF69E2C76FA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8EC54636-F7D7-4213-80BD-46ECB25210EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8EC54636-F7D7-4213-80BD-46ECB25210EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8EC54636-F7D7-4213-80BD-46ECB25210EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8EC54636-F7D7-4213-80BD-46ECB25210EC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{33FBA2C8-948E-423F-B1AE-F54321DDCA1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{33FBA2C8-948E-423F-B1AE-F54321DDCA1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{33FBA2C8-948E-423F-B1AE-F54321DDCA1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{33FBA2C8-948E-423F-B1AE-F54321DDCA1D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3E7B07A5-B4BD-47BC-8FE0-645D3708627D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E7B07A5-B4BD-47BC-8FE0-645D3708627D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E7B07A5-B4BD-47BC-8FE0-645D3708627D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E7B07A5-B4BD-47BC-8FE0-645D3708627D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
