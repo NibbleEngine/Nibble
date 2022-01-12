@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    name: Build Nibble/NMSMV on Windows
+    name: Debug Build Nibble/NMSMV on Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2
@@ -21,7 +21,7 @@ jobs:
         with:
           dotnet-version: '5.0.100'
       - name: Build Windows .net 5 binary
-        run: dotnet publish -c Debug -f net5.0 -r win-x64
+        run: dotnet publish -maxcpucount:1 -c Debug -f net5.0 -r win-x64
       - name: Upload binary for release
         uses: actions/upload-artifact@v2
         with:
