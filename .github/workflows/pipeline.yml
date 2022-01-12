@@ -28,4 +28,6 @@ jobs:
           name: Nibble-Debug
           path: |
             Build/Debug/net5.0/win-x64/publish/*.*
+            Build/Debug/net5.0/win-x64/publish/Plugins
+            Build/Debug/net5.0/win-x64/publish/Shaders
   # TODO: Add release stuff. Will do this later when we are closer to wanting to release! ;)
