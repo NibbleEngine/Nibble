@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+	<OutputType>Exe</OutputType>
+	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <TargetFramework>net5.0</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
 	<LangVersion>9.0</LangVersion>
@@ -19,12 +20,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Nibble\Nibble.csproj"/>
+    <EmbeddedResource Include="$(SolutionDir)Resources\default.dds" />
+    <EmbeddedResource Include="$(SolutionDir)Resources\default_mask.dds" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="$(SolutionDir)Resources\default.dds" />
-    <EmbeddedResource Include="$(SolutionDir)Resources\default_mask.dds" />
+    <ProjectReference Include="..\NibbleDLL\NibbleDLL.csproj" />
   </ItemGroup>
   
   

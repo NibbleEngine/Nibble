@@ -26,6 +26,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\TwosComplement.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiOpenFileDialog.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Version.cs" />
     <Compile Include="..\NibbleCore\GMDL\NbMeshData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GMDL\MeshMaterial.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GMDL\MeshMetaData.cs" />
