@@ -12,10 +12,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Costura.Fody" Version="5.7.0">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
       <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
       <PackageReference Include="OpenTK" Version="4.6.7" />
@@ -27,6 +23,15 @@
         <HintPath>..\lib\ImGui.NET.dll</HintPath>
       </Reference>
     </ItemGroup>
+
+	<ItemGroup>
+		<Content Include="..\lib\cimgui\linux-x64\cimgui.so" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' ">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="..\lib\cimgui\win-x64\cimgui.dll" Condition=" '$(OS)' == 'Windows_NT' ">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
 
     <Import Project="..\NibbleCore\NibbleCore.projitems" Label="Shared" />
 
