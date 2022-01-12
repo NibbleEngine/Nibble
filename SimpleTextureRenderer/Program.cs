@@ -4,12 +4,14 @@ using System.Linq;
 using System.Reflection;
 using NbCore;
 using OpenTK;
-using GLSLHelper;
+using NbCore.UI.ImGui;
 using NbCore.Common;
+using NbCore.Platform.Graphics.OpenGL;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Windowing.Common;
 using ImGuiNET;
-using ImGuiHelper;
+
+
 
 namespace SimpleTextureRenderer
 {
@@ -20,10 +22,13 @@ namespace SimpleTextureRenderer
         private DDSImage _ddsImage;
         private int mipmap_id = 0;
         private int depth_id = 0;
-        private GLSLShaderConfig shader_conf;
+        private GLSLShaderConfig shader;
         private int quad_vao_id;
         AppImGuiManager _ImGuiManager;
-        private float scroll_delta_y = 0f;
+        
+        //Mouse States
+        private NbMouseState currentMouseState = new();
+        private NbMouseState prevMouseState = new();
 
         //Imgui stuff
         private bool IsOpenFileDialogOpen = false;
@@ -33,17 +38,56 @@ namespace SimpleTextureRenderer
         {
             Title = "DDS Texture Viewer v1.0";
             VSync = VSyncMode.On;
-            RenderFrequency = 60;
+            RenderFrequency = 30;
             
         }
-        
-        public void compileShader(GLSLShaderConfig config)
-        {
-            if (config.ProgramID != -1)
-                GL.DeleteProgram(config.ProgramID);
 
-            GLShaderHelper.CreateShaders(config);
+        protected override void OnMouseDown(MouseButtonEventArgs e)
+        {
+            switch (e.Button)
+            {
+                case OpenTK.Windowing.GraphicsLibraryFramework.MouseButton.Left:
+                    currentMouseState.SetButtonStatus(NbMouseButton.LEFT, true);
+                    break;
+                case OpenTK.Windowing.GraphicsLibraryFramework.MouseButton.Right:
+                    currentMouseState.SetButtonStatus(NbMouseButton.RIGHT, true);
+                    break;
+                case OpenTK.Windowing.GraphicsLibraryFramework.MouseButton.Middle:
+                    currentMouseState.SetButtonStatus(NbMouseButton.MIDDLE, true);
+                    break;
+            }
         }
+
+        protected override void OnMouseUp(MouseButtonEventArgs e)
+        {
+            switch (e.Button)
+            {
+                case OpenTK.Windowing.GraphicsLibraryFramework.MouseButton.Left:
+                    currentMouseState.SetButtonStatus(NbMouseButton.LEFT, false);
+                    break;
+                case OpenTK.Windowing.GraphicsLibraryFramework.MouseButton.Right:
+                    currentMouseState.SetButtonStatus(NbMouseButton.RIGHT, false);
+                    break;
+                case OpenTK.Windowing.GraphicsLibraryFramework.MouseButton.Middle:
+                    currentMouseState.SetButtonStatus(NbMouseButton.MIDDLE, false);
+                    break;
+            }
+        }
+
+        protected override void OnMouseMove(MouseMoveEventArgs e)
+        {
+            currentMouseState.Position.X = e.X;
+            currentMouseState.Position.Y = e.Y;
+            currentMouseState.PositionDelta.X = e.X - prevMouseState.Position.X;
+            currentMouseState.PositionDelta.Y = e.Y - prevMouseState.Position.Y;
+        }
+
+        protected override void OnMouseWheel(MouseWheelEventArgs e)
+        {
+            currentMouseState.Scroll.X += e.OffsetX;
+            currentMouseState.Scroll.Y += e.OffsetY;
+        }
+
 
         protected override void OnResize(ResizeEventArgs e)
         {
@@ -71,7 +115,6 @@ namespace SimpleTextureRenderer
             _engine.init(ClientSize.X, ClientSize.Y);
             _ImGuiManager = new(this, _engine);
 
-            GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f);
             //GL.Enable(EnableCap.DepthTest);
 
             //Setup Texture
@@ -82,33 +125,30 @@ namespace SimpleTextureRenderer
             //string texturepath = "D:\\Downloads\\TILEMAP.HSV.DDS";
             //string texturepath = "D:\\Downloads\\TILEMAP.NORMAL.DDS";
 
-            _texture = new Texture(Callbacks.getResource("default.dds"), 
-                                   true, "default");
+            //_texture = new Texture(Callbacks.getResource("default.dds"), 
+            //                       true, "default");
             
+            _texture = null;
+
             //Compile Necessary Shaders
 
             string vs_path = "Shaders/Gbuffer_VS.glsl";
             vs_path = Path.GetFullPath(vs_path);
             vs_path = Path.GetRelativePath(AppDomain.CurrentDomain.BaseDirectory, vs_path);
 
+
             string fs_path = "Shaders/texture_shader_fs.glsl";
             fs_path = Path.GetFullPath(fs_path);
             fs_path = Path.GetRelativePath(AppDomain.CurrentDomain.BaseDirectory, fs_path);
 
-            GLSLShaderSource vs = new GLSLShaderSource(vs_path, true);
-            GLSLShaderSource fs = new GLSLShaderSource(fs_path, true);
+
+            GLSLShaderSource vs = _engine.GetShaderSourceByFilePath(vs_path);
+            GLSLShaderSource fs = _engine.GetShaderSourceByFilePath(fs_path);
 
             //Pass Shader
-            shader_conf = GLShaderHelper.compileShader(vs, fs, null, null, null,
-                new(), new(), SHADER_TYPE.MATERIAL_SHADER, SHADER_MODE.DEFAULT);
-
-            compileShader(shader_conf);
-
-            //Generate Geometry
-
-            //Default render quad
-            NbCore.Primitives.Quad q = new NbCore.Primitives.Quad();
-            quad_vao_id = q.getVAO().vao_id;
+            shader = GLShaderHelper.compileShader(vs, fs, null, null, null,
+                new(), SHADER_TYPE.MATERIAL_SHADER, SHADER_MODE.DEFAULT);
+        
         }
 
         protected override void OnUpdateFrame(FrameEventArgs e)
@@ -116,56 +156,57 @@ namespace SimpleTextureRenderer
             base.OnUpdateFrame(e);
         }
 
-        protected override void OnMouseWheel(MouseWheelEventArgs e)
-        {
-            scroll_delta_y += e.OffsetY;
-        }
-
         protected override void OnRenderFrame(FrameEventArgs e)
         {
-            
-            base.OnRenderFrame(e);
             //Update Imgui
-            _ImGuiManager.Update(e.Time, scroll_delta_y); 
-            scroll_delta_y = 0.0f; //Reset Scroll delta from frame to frame
+
+            //Send Input
+            _ImGuiManager.SetMouseState(currentMouseState);
+            _engine.SetMouseState(currentMouseState);
             
-            GL.Viewport(0, 0, ClientSize.X, ClientSize.Y);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            //GL.ClearColor(0.1f, 0.2f, 0.5f, 0.0f);
-            GL.ClearColor(1.0f, 1.0f, 0.0f, 0.0f);
-            
-            GL.UseProgram(shader_conf.ProgramID);
-            //Console.WriteLine("1" + GL.GetError());
+            prevMouseState = currentMouseState;
+            currentMouseState.PositionDelta.X = 0.0f;
+            currentMouseState.PositionDelta.Y = 0.0f;
+            currentMouseState.Scroll.X = 0.0f;
+            currentMouseState.Scroll.Y = 0.0f;
 
-            GL.BindVertexArray(quad_vao_id);
-            //Console.WriteLine("2" + GL.GetError());
+            _ImGuiManager.Update(e.Time);
 
-            //Upload texture
-            GL.Uniform1(shader_conf.uniformLocations["InTex"], 0);
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2DArray, _texture.texID);
+            NbCore.Platform.Graphics.IGraphicsApi renderer = _engine.renderSys.Renderer;
 
-            //Upload Uniforms
-            GL.Uniform1(shader_conf.uniformLocations["texture_depth"], (float)depth_id);
-            GL.Uniform1(shader_conf.uniformLocations["mipmap"], (float) mipmap_id);
 
-            //Console.WriteLine("3" + GL.GetError());
+            renderer.Viewport(ClientSize.X, ClientSize.Y);
+            renderer.ClearColor(new NbCore.Math.NbVector4(1.0f, 1.0f, 0.0f, 0.0f));
+            renderer.ClearDrawBuffer(NbCore.Platform.Graphics.NbBufferMask.Color |
+                                    NbCore.Platform.Graphics.NbBufferMask.Depth);
 
-            //Render quad
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            GL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (IntPtr)0);
-            GL.BindVertexArray(0);
+            if (_texture != null)
+            {
+                //Set Shader State
+                shader.ClearCurrentState();
 
+                shader.CurrentState.AddSampler("InTex", new()
+                {
+                    Target = _texture.target,
+                    TextureID = _texture.texID
+                });
+
+                shader.CurrentState.AddUniform("texture_depth", (float)depth_id);
+                shader.CurrentState.AddUniform("mipmap", (float)mipmap_id);
+
+                renderer.EnableShaderProgram(shader);
+
+                NbMesh nm = _engine.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode());
+                renderer.RenderQuad(nm, shader, shader.CurrentState);
+            }
 
             //Draw UI
-            //_ImGuiManager.Render();
             DrawUI();
             //ImGui.ShowDemoWindow();
             _ImGuiManager.Render();
 
-            //Console.WriteLine("4" + GL.GetError());
-
             SwapBuffers();
+            base.OnRenderFrame(e);
         }
 
         private void DrawUI()
@@ -215,16 +256,16 @@ namespace SimpleTextureRenderer
                     //Make format output a bit friendlier
                     switch (_texture.pif)
                     {
-                        case InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext:
+                        case NbTextureInternalFormat.DXT5:
                             ImGui.Text("DXT5");
                             break;
-                        case InternalFormat.CompressedSrgbAlphaS3tcDxt1Ext:
+                        case NbTextureInternalFormat.DXT1:
                             ImGui.Text("DXT1");
                             break;
-                        case InternalFormat.CompressedRgRgtc2:
+                        case NbTextureInternalFormat.RGTC2:
                             ImGui.Text("ATI2A2XY");
                             break;
-                        case InternalFormat.CompressedSrgbAlphaBptcUnorm:
+                        case NbTextureInternalFormat.BC7:
                             ImGui.Text("BC7 (DX10 Header)");
                             break;
                         default:

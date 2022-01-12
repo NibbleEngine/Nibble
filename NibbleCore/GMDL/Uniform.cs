@@ -7,6 +7,7 @@ namespace NbCore
         public string Name;
         public Vector4 Values;
         public int ShaderLocation = -1;
+        public int ID = -1;
         
         public Uniform()
         {

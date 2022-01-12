@@ -10,7 +10,15 @@ namespace NbCore.Math
         {
             _Value = vec;
         }
-        
+
+        public NbVector4(System.Numerics.Vector4 vec)
+        {
+            _Value.X = vec.X;
+            _Value.Y = vec.Y;
+            _Value.Z = vec.Z;
+            _Value.W = vec.W;
+        }
+
         public NbVector4(NbVector3 vec, float w)
         {
             _Value = new Vector4(vec._Value, w);

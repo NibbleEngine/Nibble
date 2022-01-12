@@ -64,6 +64,9 @@ namespace NbCore
                 case SceneNodeType.COLLISION:
                     base.Type = EntityType.SceneNodeCollision;
                     break;
+                case SceneNodeType.REFERENCE:
+                    base.Type = EntityType.SceneNodeReference;
+                    break;
                 default:
                     throw new Exception("make sure to property initialize base type");
             }

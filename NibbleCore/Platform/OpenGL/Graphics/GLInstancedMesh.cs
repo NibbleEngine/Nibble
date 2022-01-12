@@ -67,71 +67,7 @@ namespace NbCore
 
         
 
-        //TODO: Generate a Data object back to the geometry object with the bound hull vertices
-        //and then use the normal generateVao method
-        //
-        //public GLVao getCollisionMeshVao(MeshMetaData metaData)
-        //{
-        //    //Collision Mesh isn't used anywhere else.
-        //    //No need to check for hashes and shit
-
-        //    float[] vx_buffer_float = new float[(metaData.BoundHullEnd - metaData.BoundHullStart) * 3];
-
-        //    for (int i = 0; i < metaData.BoundHullEnd - metaData.BoundHullStart; i++)
-        //    {
-        //        NbVector3 v = bhullverts[i + metaData.BoundHullStart];
-        //        vx_buffer_float[3 * i + 0] = v.X;
-        //        vx_buffer_float[3 * i + 1] = v.Y;
-        //        vx_buffer_float[3 * i + 2] = v.Z;
-        //    }
-
-        //    //Generate intermediate geom
-        //    GeomObject temp_geom = new();
-
-        //    //Set main Geometry Info
-        //    temp_geom.vertCount = vx_buffer_float.Length / 3;
-        //    temp_geom.indicesCount = metaData.BatchCount;
-        //    temp_geom.indicesType = indicesType;
-
-        //    //Set Strides
-        //    temp_geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
-
-        //    //Set Buffer Offsets
-        //    temp_geom.mesh_descr = "vn";
-        //    bufInfo buf = new bufInfo()
-        //    {
-        //        count = 3,
-        //        normalize = false,
-        //        offset = 0,
-        //        sem_text = "vPosition",
-        //        semantic = 0,
-        //        stride = 0,
-        //        type = NbPrimitiveDataType.Float
-        //    };
-        //    temp_geom.bufInfo.Add(buf);
-
-        //    buf = new bufInfo()
-        //    {
-        //        count = 3,
-        //        normalize = false,
-        //        offset = 0,
-        //        sem_text = "nPosition",
-        //        semantic = 2,
-        //        stride = 0,
-        //        type = NbPrimitiveDataType.Float
-        //    };
-        //    temp_geom.bufInfo.Add(buf);
-
-        //    //Set Buffers
-        //    temp_geom.ibuffer = new byte[temp_geom.indicesLength * metaData.BatchCount];
-        //    temp_geom.vbuffer = new byte[sizeof(float) * vx_buffer_float.Length];
-
-        //    System.Buffer.BlockCopy(ibuffer, metaData.BatchStartPhysics * temp_geom.indicesLength, temp_geom.ibuffer, 0, temp_geom.ibuffer.Length);
-        //    System.Buffer.BlockCopy(vx_buffer_float, 0, temp_geom.vbuffer, 0, temp_geom.vbuffer.Length);
-
-
-        //    return temp_geom.generateVAO();
-        //}
+        
 
     }
 

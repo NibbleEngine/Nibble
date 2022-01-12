@@ -73,11 +73,19 @@ namespace NbCore.Platform.Graphics.OpenGL
         private readonly List<int> multiBufferSSBOs = new(4);
         private readonly List<IntPtr> multiBufferSyncStatuses = new(4);
 
-        private static readonly Dictionary<NbTextureTarget, TextureTarget> TextureTargetMap = new()
+        public static readonly Dictionary<NbTextureTarget, TextureTarget> TextureTargetMap = new()
         {
             {NbTextureTarget.Texture1D , TextureTarget.Texture1D},
             {NbTextureTarget.Texture2D , TextureTarget.Texture2D},
             {NbTextureTarget.Texture2DArray , TextureTarget.Texture2DArray }
+        };
+
+        public static readonly Dictionary<NbTextureInternalFormat, InternalFormat> InternalFormatMap = new()
+        {
+            { NbTextureInternalFormat.DXT1, InternalFormat.CompressedSrgbAlphaS3tcDxt1Ext },
+            { NbTextureInternalFormat.DXT5, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext },
+            { NbTextureInternalFormat.RGTC2, InternalFormat.CompressedRgRgtc2 },
+            { NbTextureInternalFormat.BC7, InternalFormat.CompressedSrgbAlphaBptcUnorm },
         };
 
         //UBO structs
@@ -374,6 +382,16 @@ namespace NbCore.Platform.Graphics.OpenGL
             
         }
 
+        public void Viewport(int x, int y)
+        {
+            GL.Viewport(0, 0, x, y);
+        }
+
+        public void ClearColor(NbVector4 vec)
+        {
+            GL.ClearColor(vec.X, vec.Y, vec.Z, vec.W);
+        }
+
         public void AddMesh(NbMesh mesh)
         {
 
@@ -462,7 +480,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             //Render quad
             GL.Disable(EnableCap.DepthTest);
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            GL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, (IntPtr)0);
+            GL.DrawElements(PrimitiveType.Triangles, glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, (IntPtr)0);
             GL.BindVertexArray(0);
             GL.Enable(EnableCap.DepthTest);
             
@@ -509,7 +527,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize,
                 out size);
 
-            Common.Callbacks.Assert(size == mesh.Data.VertexBufferStride * (mesh.MetaData.VertrEndGraphics + 1),
+            Common.Callbacks.Assert(size == mesh.Data.VertexBufferStride * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics + 1),
                 "Mesh metadata does not match the vertex buffer size from the geometry file");
 
             //Assign VertexAttribPointers
@@ -621,6 +639,15 @@ namespace NbCore.Platform.Graphics.OpenGL
         public void RenderCollision(NbMesh mesh, MeshMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.Hash];
+
+            if (glmesh.UBO_aligned_size == 0) return;
+
+            //Bind Mesh Buffer
+            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+                (IntPtr)(glmesh.UBO_offset), glmesh.UBO_aligned_size);
+
+            SetShaderAndUniforms(glmesh, mat);
+
             //Step 2: Render Elements
             GL.PointSize(8.0f);
             GL.BindVertexArray(glmesh.vao.vao_id);
@@ -628,9 +655,9 @@ namespace NbCore.Platform.Graphics.OpenGL
             //TODO: make sure that primitive collisions have the vertrstartphysics set to 0
     
             GL.DrawElementsInstancedBaseVertex(PrimitiveType.Points, glmesh.Mesh.MetaData.BatchCount,
-                glmesh.IndicesLength, IntPtr.Zero, glmesh.Mesh.InstanceCount, -glmesh.Mesh.MetaData.VertrStartPhysics);
+                DrawElementsType.UnsignedShort, IntPtr.Zero, glmesh.Mesh.InstanceCount, -glmesh.Mesh.MetaData.VertrStartGraphics);
             GL.DrawElementsInstancedBaseVertex(PrimitiveType.Triangles, glmesh.Mesh.MetaData.BatchCount,
-                glmesh.IndicesLength, IntPtr.Zero, glmesh.Mesh.InstanceCount, -glmesh.Mesh.MetaData.VertrStartPhysics);
+                DrawElementsType.UnsignedShort, IntPtr.Zero, glmesh.Mesh.InstanceCount, -glmesh.Mesh.MetaData.VertrStartGraphics);
             
             GL.BindVertexArray(0);
         }
@@ -808,7 +835,7 @@ namespace NbCore.Platform.Graphics.OpenGL
                 {
                     GL.Uniform1(shader.uniformLocations[s.Name], s.SamplerID);
                     GL.ActiveTexture(s.texUnit);
-                    GL.BindTexture(s.Tex.target, s.Tex.texID);
+                    GL.BindTexture(TextureTargetMap[s.Tex.target], s.Tex.texID);
                 }
             }
             
@@ -880,13 +907,13 @@ namespace NbCore.Platform.Graphics.OpenGL
             //Load Active Uniforms to Material
             foreach (Uniform un in mat.Uniforms)
             {
-                if (shader.uniformLocations.ContainsKey(un.Name))
+                if (shader.uniformLocations.ContainsKey($"mpCustomPerMaterial.uniforms[{un.ID}]"))
                 {
-                    un.ShaderLocation = shader.uniformLocations[un.Name];
+                    un.ShaderLocation = shader.uniformLocations[$"mpCustomPerMaterial.uniforms[{un.ID}]"];
                     mat.ActiveUniforms.Add(un);
                 }
             }
-
+            
             foreach (Sampler s in mat.Samplers)
             {
                 if (shader.uniformLocations.ContainsKey(s.Name))
@@ -963,6 +990,16 @@ namespace NbCore.Platform.Graphics.OpenGL
         public void SetInstanceWorldMat(NbMesh mesh, int instanceID, NbMatrix4 mat)
         {
             GLMeshBufferManager.SetInstanceWorldMat(mesh, instanceID, mat);
+        }
+
+        public void SetInstanceUniform4(NbMesh mesh, int instanceID, int uniformID, NbVector4 uf)
+        {
+            GLMeshBufferManager.SetInstanceUniform4(mesh, instanceID, uniformID, uf);
+        }
+
+        public NbVector4 GetInstanceUniform4(NbMesh mesh, int instanceID, int uniformID)
+        {
+            return GLMeshBufferManager.GetInstanceUniform4(mesh, instanceID, uniformID);
         }
 
         public void SetInstanceWorldMatInv(NbMesh mesh, int instanceID, NbMatrix4 mat)

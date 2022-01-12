@@ -1,5 +1,6 @@
 ﻿using System;
 using NbCore.Math;
+using NbCore.Platform.Graphics.OpenGL;
 using OpenTK.Graphics.OpenGL4;
 using System.IO;
 using NbCore.Common;
@@ -14,18 +15,28 @@ namespace NbCore
         Texture2D,
         Texture2DArray
     }
-    
+
+    public enum NbTextureInternalFormat
+    {
+        DXT1,
+        DXT3,
+        DXT5,
+        RGTC2,
+        BC7,
+        DX10,
+    }
+
     public class Texture : Entity
     {
         public int texID = -1;
         private bool disposed = false;
-        public TextureTarget target;
+        public NbTextureTarget target;
         public string Name;
         public int Width;
         public int Height;
         public int Depth;
         public int MipMapCount;
-        public InternalFormat pif;
+        public NbTextureInternalFormat pif;
         public PaletteOpt palOpt;
         public NbVector4 procColor;
         public NbVector3 avgColor;
@@ -72,7 +83,7 @@ namespace NbCore
             fs.Read(image_data, 0, data_length);
 
             
-            textureInit(image_data, path);
+            textureInit(image_data, Path.GetExtension(path).ToUpper());
         }
 
         private void textureInitPNG(byte[] imageData)
@@ -99,15 +110,17 @@ namespace NbCore
             
             //Upload to GPU
             texID = GL.GenTexture();
-            target = TextureTarget.Texture2D;
+            target = NbTextureTarget.Texture2D;
+
+            TextureTarget gl_target = TextureTarget.Texture2D;
 
             //Copy the image data into the texture
-            GL.BindTexture(target, texID);
-            GL.TexImage2D(target, 0, PixelInternalFormat.Rgba, bmpTexture.Width, bmpTexture.Height, 0, 
+            GL.BindTexture(gl_target, texID);
+            GL.TexImage2D(gl_target, 0, PixelInternalFormat.Rgba, bmpTexture.Width, bmpTexture.Height, 0, 
                 OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, oTextureData.Scan0);
             
-            GL.TexParameter(target, TextureParameterName.TextureMinFilter, (float) TextureMinFilter.Linear);
-            GL.TexParameter(target, TextureParameterName.TextureMagFilter, (float) TextureMagFilter.Linear);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (float) TextureMinFilter.Linear);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (float) TextureMagFilter.Linear);
 
             
             bmpTexture.UnlockBits(oTextureData);
@@ -141,16 +154,16 @@ namespace NbCore
             {
                 //DXT1
                 case (0x31545844):
-                    pif = InternalFormat.CompressedSrgbAlphaS3tcDxt1Ext;
+                    pif = NbTextureInternalFormat.DXT1;
                     blocksize = 8;
                     break;
                 //DXT5
                 case (0x35545844):
-                    pif = InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext;
+                    pif = NbTextureInternalFormat.DXT5;
                     break;
                 //ATI2A2XY
                 case (0x32495441):
-                    pif = InternalFormat.CompressedRgRgtc2; //Normal maps are probably never srgb
+                    pif = NbTextureInternalFormat.RGTC2; //Normal maps are probably never srgb
                     break;
                 //DXT10 HEADER
                 case (0x30315844):
@@ -158,7 +171,7 @@ namespace NbCore
                         switch (ddsImage.header10.dxgiFormat)
                         {
                             case (DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM):
-                                pif = InternalFormat.CompressedSrgbAlphaBptcUnorm;
+                                pif = NbTextureInternalFormat.BC7;
                                 break;
                             default:
                                 throw new ApplicationException("Unimplemented DX10 Texture Pixel format");
@@ -185,14 +198,18 @@ namespace NbCore
 
             //Upload to GPU
             texID = GL.GenTexture();
+            
             if (depth_count > 1)
-                target = TextureTarget.Texture2DArray;
+                target = NbTextureTarget.Texture2DArray;
             else
-                target = TextureTarget.Texture2D;
+                target = NbTextureTarget.Texture2D;
+            
+            TextureTarget gl_target = GraphicsAPI.TextureTargetMap[target];
+            InternalFormat gl_pif = GraphicsAPI.InternalFormatMap[pif];
 
-            GL.BindTexture(target, texID);
+            GL.BindTexture(gl_target, texID);
             //When manually loading mipmaps, levels should be loaded first
-            GL.TexParameter(target, TextureParameterName.TextureBaseLevel, 0);
+            GL.TexParameter(gl_target, TextureParameterName.TextureBaseLevel, 0);
             //GL.TexParameter(target, TextureParameterName.TextureMaxLevel, mm_count - 1);
 
             int offset = 0;
@@ -201,9 +218,9 @@ namespace NbCore
                 byte[] temp_data = new byte[temp_size * depth_count];
                 System.Buffer.BlockCopy(ddsImage.Data, offset, temp_data, 0, temp_size * depth_count);
                 if (depth_count > 1)
-                    GL.CompressedTexImage3D(target, i, pif, w, h, depth_count, 0, temp_size * depth_count, temp_data);
+                    GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, depth_count, 0, temp_size * depth_count, temp_data);
                 else
-                    GL.CompressedTexImage2D(target, i, pif, w, h, 0, temp_size * depth_count, temp_data);
+                    GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_size * depth_count, temp_data);
                 offset += temp_size * depth_count;
 
                 w = System.Math.Max(w >> 1, 1);
@@ -215,18 +232,18 @@ namespace NbCore
             }
 
             //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
-            GL.TexParameter(target, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(target, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            GL.TexParameter(target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
+            GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
             //Console.WriteLine(GL.GetError());
 
             //Use anisotropic filtering
             float af_amount = GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy);
             af_amount = (float)System.Math.Max(af_amount, 4.0f);
             //GL.TexParameter(TextureTarget.Texture2D,  (TextureParameterName) 0x84FE, af_amount);
-            GL.GetTexParameter(target, GetTextureParameter.TextureMaxLevel, out int max_level);
-            GL.GetTexParameter(target, GetTextureParameter.TextureBaseLevel, out int base_level);
+            GL.GetTexParameter(gl_target, GetTextureParameter.TextureMaxLevel, out int max_level);
+            GL.GetTexParameter(gl_target, GetTextureParameter.TextureBaseLevel, out int base_level);
 
             int maxsize = System.Math.Max(Height, Width);
             int p = (int)System.Math.Floor(System.Math.Log(maxsize, 2)) + base_level;
@@ -342,8 +359,8 @@ namespace NbCore
         public static void dump_texture(Texture tex, string name)
         {
             var pixels = new byte[4 * tex.Width * tex.Height];
-            GL.BindTexture(tex.target, tex.texID);
-            GL.GetTexImage(tex.target, 0, OpenTK.Graphics.OpenGL4.PixelFormat.Rgba, PixelType.Byte, pixels);
+            GL.BindTexture(GraphicsAPI.TextureTargetMap[tex.target], tex.texID);
+            GL.GetTexImage(GraphicsAPI.TextureTargetMap[tex.target], 0, OpenTK.Graphics.OpenGL4.PixelFormat.Rgba, PixelType.Byte, pixels);
             var bmp = new Bitmap(tex.Width, tex.Height);
             for (int i = 0; i < tex.Height; i++)
             for (int j = 0; j < tex.Width; j++)

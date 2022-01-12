@@ -120,7 +120,7 @@ namespace NbCore.UI.ImGui
             for (int i = 0; i < _ActiveMaterial.Samplers.Count; i++)
             {
                 Sampler current_sampler = _ActiveMaterial.Samplers[i];
-                if (current_sampler.Tex.target != OpenTK.Graphics.OpenGL4.TextureTarget.Texture2DArray)
+                if (current_sampler.Tex.target != NbTextureTarget.Texture2DArray)
                     ImGuiNET.ImGui.Image((IntPtr)current_sampler.Tex.texID, new Vector2(64, 64));
                 else
                     ImGuiNET.ImGui.Text("Null");
@@ -128,7 +128,7 @@ namespace NbCore.UI.ImGui
                 if (ImGuiNET.ImGui.IsItemHovered())
                 {
                     ImGuiNET.ImGui.BeginTooltip();
-                    if (current_sampler.Tex.target != OpenTK.Graphics.OpenGL4.TextureTarget.Texture2DArray)
+                    if (current_sampler.Tex.target != NbTextureTarget.Texture2DArray)
                         ImGuiNET.ImGui.Image((IntPtr)current_sampler.Tex.texID, new Vector2(512, 512));
                     ImGuiNET.ImGui.Text(current_sampler.Name);
                     ImGuiNET.ImGui.Text(current_sampler.Map);
@@ -159,7 +159,7 @@ namespace NbCore.UI.ImGui
                 val.Y = un.Values.Y;
                 val.Z = un.Values.Z;
                 val.W = un.Values.W;
-                if (ImGuiNET.ImGui.InputFloat4("", ref val))
+                if (ImGuiNET.ImGui.InputFloat4("##" + un.Name, ref val))
                 {
                     un.Values.X = val.X;
                     un.Values.Y = val.Y;

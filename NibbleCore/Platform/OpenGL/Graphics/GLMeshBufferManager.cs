@@ -153,8 +153,7 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         public static void SetInstanceSelectedStatus(NbMesh mesh, int instance_id, bool status)
         {
-            MeshInstance mi = mesh.InstanceDataBuffer[instance_id];
-            mi.isSelected = status ? 1.0f : 0.0f;
+            mesh.InstanceDataBuffer[instance_id].isSelected = status ? 1.0f : 0.0f;
         }
 
         public static bool GetInstanceSelectedStatus(NbMesh mesh, int instance_id)
@@ -188,11 +187,10 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         public static void SetInstanceUniform4(NbMesh mesh, int instance_id, int uniform_id, NbVector4 un)
         {
-            MeshInstance mi = mesh.InstanceDataBuffer[instance_id];
-            mi.uniforms[uniform_id] = un;
+            mesh.InstanceDataBuffer[instance_id].uniforms[uniform_id] = un;
         }
 
-        public static NbVector4 GetInstanceUniform(NbMesh mesh, int instance_id, int uniform_id)
+        public static NbVector4 GetInstanceUniform4(NbMesh mesh, int instance_id, int uniform_id)
         {
             MeshInstance mi = mesh.InstanceDataBuffer[instance_id];
             return mi.uniforms[uniform_id];
@@ -210,8 +208,7 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         public static void SetInstanceNormalMat(NbMesh mesh, int instance_id, NbMatrix4 mat)
         {
-            MeshInstance mi = mesh.InstanceDataBuffer[instance_id];
-            mi.normalMat = mat;
+            mesh.InstanceDataBuffer[instance_id].normalMat = mat;
         }
 
 

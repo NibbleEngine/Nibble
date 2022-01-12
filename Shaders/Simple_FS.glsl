@@ -162,7 +162,8 @@ void pbr_lighting(){
 	#endif
 
 	#ifdef _F55_MULTITEXTURE
-    	float lfMultiTextureIndex = instanceData[instanceId].gUserDataVec4.w;
+    	//float lfMultiTextureIndex = instanceData[instanceId].gUserDataVec4.w;
+		float lfMultiTextureIndex = instanceData[instanceId].uniforms[0].w; //Use the first uniform to upload the gUserDataVec4
 	#endif
 
     #ifdef D_TEXCOORDS
@@ -233,7 +234,7 @@ void pbr_lighting(){
 				lColourVec4.a = 1.0;
 			#endif
 		#else
-			lColourVec4 = mpCustomPerMaterial.gMaterialColourVec4;
+			lColourVec4 = mpCustomPerMaterial.uniforms[0];
 		#endif
 
 		#ifdef D_MASKS
@@ -262,7 +263,7 @@ void pbr_lighting(){
 		//Mask Checks
 		#ifdef _F22_TRANSPARENT_SCALAR
 			// Transparency scalar comes from float in Material
-	        lColourVec4.a *= mpCustomPerMaterial.gMaterialColourVec4.a;
+	        lColourVec4.a *= mpCustomPerMaterial.uniforms[0].a;
 	    #endif
 
 		// Discard fully transparent pixels
@@ -294,7 +295,7 @@ void pbr_lighting(){
 
 		#ifdef _F03_NORMALMAP
 			#ifdef _F43_NORMAL_TILING
-	        	lTexCoordsVec4.xy *= mpCustomPerMaterial.gCustomParams01Vec4.z;
+	        	lTexCoordsVec4.xy *= mpCustomPerMaterial.uniforms[6].z;
 	        #endif
 	        
 	        #if defined( _F44_IMPOSTER )
@@ -370,7 +371,7 @@ void pbr_lighting(){
 	        }
 	        #endif
 
-			lfRoughness *= mpCustomPerMaterial.gMaterialParamsVec4.x;
+			lfRoughness *= mpCustomPerMaterial.uniforms[1].x;
 
 	        #ifdef _F39_METALLIC_MASK
 	        {
@@ -385,7 +386,7 @@ void pbr_lighting(){
 	            #endif        
 	        }
 	        #else 
-	        	lfMetallic = mpCustomPerMaterial.gMaterialParamsVec4.z;
+	        	lfMetallic = mpCustomPerMaterial.uniforms[1].z;
         	#endif
 
 	        #ifdef _F40_SUBSURFACE_MASK
@@ -404,9 +405,9 @@ void pbr_lighting(){
 	#ifdef _F34_GLOW
     {
         #if defined(_F35_GLOW_MASK) && !defined(_F09_TRANSPARENT)
-			lfGlow = mpCustomPerMaterial.gCustomParams01Vec4.y * lLowAlpha;
+			lfGlow = mpCustomPerMaterial.uniforms[6].y * lLowAlpha;
 		#else
-			lfGlow = mpCustomPerMaterial.gCustomParams01Vec4.y;
+			lfGlow = mpCustomPerMaterial.uniforms[6].y;
 		#endif
     }
     #endif
