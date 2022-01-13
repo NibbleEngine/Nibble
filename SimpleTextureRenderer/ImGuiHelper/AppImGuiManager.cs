@@ -33,7 +33,7 @@ namespace SimpleTextureRenderer
 
             var winsize = new System.Numerics.Vector2(500, 250);
             ImGui.SetNextWindowSize(winsize);
-            if (ImGui.BeginPopupModal("open-file", ref isDialogOpen, ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize))
+            if (ImGui.BeginPopupModal("open-file", ref isDialogOpen, ImGuiWindowFlags.NoTitleBar))
             {
                 var picker = FilePicker.GetFilePicker(win, current_file_path, ".dds");
                 if (picker.Draw(new System.Numerics.Vector2(winsize.X - 15, winsize.Y - 60)))

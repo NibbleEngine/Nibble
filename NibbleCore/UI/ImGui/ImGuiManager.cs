@@ -51,12 +51,12 @@ namespace NbCore.UI.ImGui
             _controller.Update(WindowRef, (float) dt);
         }
 
-        public virtual void SetMouseState(Common.NbMouseState state)
+        public virtual void SetMouseState(NbMouseState state)
         {
             _controller.SetMouseState(state);
         }
 
-        public virtual void SetKeyboardState(Common.NbKeyboardState state)
+        public virtual void SetKeyboardState(NbKeyboardState state)
         {
             _controller.SetKeyboardState(state);
         }

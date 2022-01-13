@@ -448,6 +448,9 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.UseProgram(shaderConf.ProgramID);
             GL.BindVertexArray(glmesh.vao.vao_id);
 
+            //Filter State
+            shaderConf.FilterState(ref state);
+
             //Upload samplers
             int i = 0;
             foreach (KeyValuePair<string, GLSLSamplerState> sstate in state.Samplers)
@@ -461,6 +464,13 @@ namespace NbCore.Platform.Graphics.OpenGL
             foreach (KeyValuePair<string, float> pair in state.Floats)
             {
                 GL.Uniform1(shaderConf.uniformLocations[pair.Key], pair.Value);
+            }
+
+            //Vec2s
+            foreach (KeyValuePair<string, NbVector2> pair in state.Vec2s)
+            {
+                GL.Uniform2(shaderConf.uniformLocations[pair.Key],
+                    pair.Value.X, pair.Value.Y);
             }
 
             //Vec3s

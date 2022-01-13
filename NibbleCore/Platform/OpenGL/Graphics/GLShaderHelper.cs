@@ -73,6 +73,8 @@ namespace NbCore.Platform.Graphics.OpenGL {
 
     public struct GLSLShaderState
     {
+        //splitting per 2s,3s,4s is so fucking stupid. TODO: FIX it
+        public Dictionary<string, NbVector2> Vec2s;
         public Dictionary<string, NbVector3> Vec3s;
         public Dictionary<string, NbVector4> Vec4s;
         public Dictionary<string, float> Floats;
@@ -81,12 +83,18 @@ namespace NbCore.Platform.Graphics.OpenGL {
         public static GLSLShaderState Create()
         {
             GLSLShaderState state;
+            state.Vec2s = new();
             state.Vec3s = new();
             state.Vec4s = new();
             state.Floats = new();
             state.Samplers = new();
 
             return state;
+        }
+
+        public void AddUniform(string name, NbVector2 vec)
+        {
+            Vec2s[name] = vec;
         }
 
         public void AddUniform(string name, NbVector3 vec)
@@ -180,6 +188,42 @@ namespace NbCore.Platform.Graphics.OpenGL {
         public void ClearCurrentState()
         {
             CurrentState.Clear();
+        }
+
+        public void FilterState(ref GLSLShaderState state)
+        {
+            //Floats;
+            var arr = state.Floats.ToArray();
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (!uniformLocations.ContainsKey(arr[i].Key))
+                    state.Floats.Remove(arr[i].Key);
+            }
+
+            //Vec2s
+            var arr1 = state.Vec2s.ToArray();
+            for (int i = 0; i < arr1.Length; i++)
+            {
+                if (!uniformLocations.ContainsKey(arr1[i].Key))
+                    state.Vec2s.Remove(arr1[i].Key);
+            }
+
+            //Vec3s
+            var arr3 = state.Vec3s.ToArray();
+            for (int i = 0; i < arr3.Length; i++)
+            {
+                if (!uniformLocations.ContainsKey(arr3[i].Key))
+                    state.Vec3s.Remove(arr3[i].Key);
+            }
+
+            //Vec4s
+            var arr4 = state.Vec4s.ToArray();
+            for (int i = 0; i < arr4.Length; i++)
+            {
+                if (!uniformLocations.ContainsKey(arr4[i].Key))
+                    state.Vec4s.Remove(arr4[i].Key);
+            }
+
         }
     }
 
