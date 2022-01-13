@@ -19,9 +19,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)Components\SceneComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\TransformData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\DDSImage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\ApplicationLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\Scene.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Events\EventData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GMDL\GLVao.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\KeyboardInput.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\MouseInput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLSLShaderSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\TwosComplement.cs" />
@@ -62,7 +65,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\NbVector4.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Plugins\PluginBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Plugins\PluginSettings.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\RequestHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Events\RequestHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\OpenGLAPI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\RenderAPI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Systems\ActionSystem.cs" />
@@ -105,7 +108,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Systems\RenderSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Renderers\ShadowRenderer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Common\ThreadRequest.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\WorkThreadDispacher.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utils\WorkThreadDispacher.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Common\" />

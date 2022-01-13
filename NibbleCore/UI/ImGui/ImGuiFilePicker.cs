@@ -80,12 +80,6 @@ namespace NbCore.UI.ImGui
 					bool isSelected = SelectedFile == fse;
 					if (ImGuiCore.Selectable(name, isSelected, ImGuiSelectableFlags.DontClosePopups))
 						SelectedFile = fse;
-
-					if (ImGuiCore.IsMouseDoubleClicked(0))
-					{
-						result = true;
-						ImGuiCore.CloseCurrentPopup();
-					}
 				}
 			}
 
@@ -157,24 +151,13 @@ namespace NbCore.UI.ImGui
 				ImGuiCore.CloseCurrentPopup();
 			}
 
-			if (OnlyAllowFolders)
+			ImGuiCore.SameLine();
+			if (ImGuiCore.Button("Open"))
 			{
-				ImGuiCore.SameLine();
-				if (ImGuiCore.Button("Open"))
-				{
-					result = true;
+				result = true;
+				if (OnlyAllowFolders)
 					SelectedFile = CurrentFolder;
-					ImGuiCore.CloseCurrentPopup();
-				}
-			}
-			else if (SelectedFile != null)
-			{
-				ImGuiCore.SameLine();
-				if (ImGuiCore.Button("Open"))
-				{
-					result = true;
-					ImGuiCore.CloseCurrentPopup();
-				}
+				ImGuiCore.CloseCurrentPopup();
 			}
 
 			return result;

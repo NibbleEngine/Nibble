@@ -27,5 +27,21 @@ namespace NbCore.Math
         {
             _Value = new Vector2(a,b);
         }
+
+        public static NbVector2 operator *(NbVector2 a, float b)
+        {
+            return new NbVector2()
+            {
+                _Value = a._Value * b
+            };
+        }
+
+        public static NbVector2 operator +(NbVector2 a, NbVector2 b)
+        {
+            return new NbVector2()
+            {
+                _Value = a._Value + b._Value
+            };
+        }
     }
 }
