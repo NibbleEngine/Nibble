@@ -16,12 +16,13 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
     float r = (roughness + 1.0);
-    float k = (r*r) / 8.0;
+    //float k = (r*r) / 8.0;
+    float k = r * 0.5;
 
-    float num   = NdotV;
+    float num   = NdotV; //ok!
     float denom = NdotV * (1.0 - k) + k;
     
-    return num / denom;
+    return num / max(denom, 0.0001);
 }
 
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
@@ -139,20 +140,20 @@ vec3 calcLighting(Light light, vec4 fragPos, vec3 fragNormal, vec3 cameraPos, ve
     // cook-torrance brdf
     float NDF = DistributionGGX(N, H, lfRoughness);        
     float G   = GeometrySmith(N, V, L, lfRoughness);      
-    vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);       
+    vec3 F    = fresnelSchlick(max(dot(V, H), 0.0), F0);       
     
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
     kD *= 1.0 - lfMetallic;   
     
     vec3 numerator    = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-    vec3 specular     = numerator / max(denominator, 0.001);
+    float denominator = 4.0 * max(dot(V, N), 0.0) * max(dot(L, N), 0.0);
+    vec3 specular     = numerator / max(denominator, 0.000001);
     //specular = vec3(0.0);
 
     // add to outgoing radiance finalColor
-    float NdotL = max(dot(N, L), 0.0);
-    vec3 finalColor = (kD * albedoColor / PI + specular) * radiance * NdotL; 
+    float LdotN = max(dot(L, N), 0.0);
+    vec3 finalColor = (kD * albedoColor / PI + specular) * radiance * LdotN; 
 
     return finalColor;
 }

@@ -8,20 +8,24 @@ namespace SimpleTextureRenderer
 {
     public delegate void CloseWindowEventHandler(object sender, string data);
     
+
     public class UILayer : ApplicationLayer
     {
         public event CloseWindowEventHandler CloseWindowEvent;
+        public event EventHandler<RenderTextureData> RenderTextureDataChanged;
         public event EventHandler<string> OpenFileEvent;
+        public event EventHandler<bool> ConsumeInputEvent;
+        
         private AppImGuiManager _ImGuiManager;
         private TextureRenderer _winRef;
         public Texture _texture; //Also keep texture Reference here
+        private bool ConsumesInput = false;
         private int depth_id = 0;
         private int mipmap_id = 0;
 
         //Imgui stuff
         private bool IsOpenFileDialogOpen = false;
-
-
+        
         public UILayer(TextureRenderer win, Engine engine) : base(engine)
         {
             _winRef = win;
@@ -50,7 +54,7 @@ namespace SimpleTextureRenderer
             mipmap_id = id;
         }
 
-        public override void OnRenderUpdate(ref Queue<object> data, double dt)
+        public override void OnRenderFrameUpdate(ref Queue<object> data, double dt)
         {
             //First argument should be the input state
             NbMouseState mouseState = (NbMouseState)data.Dequeue();
@@ -151,6 +155,10 @@ namespace SimpleTextureRenderer
                     ImGui.Combo("##1", ref mipmap_id, opts, _texture.MipMapCount, 12);
 
                     ImGui.Columns(1);
+
+                    var io = ImGui.GetIO();
+                    ConsumeInputEvent?.Invoke(this, io.WantCaptureMouse);
+                    RenderTextureDataChanged?.Invoke(this, new() { depth_id = depth_id, mipmap_id = mipmap_id });
                     ImGui.End();
                 }
 
@@ -175,7 +183,7 @@ namespace SimpleTextureRenderer
             {
                 //StatusBar Texts
                 string statusText = "Ready";
-                string copyrightText = "Created by gregkwaste©";
+                string copyrightText = "Created by gregkwaste©  ";
                 ImGui.Columns(2, "#statusbar", false);
                 ImGui.SetCursorPosY(2.0f);
                 ImGui.Text(statusText);
@@ -183,7 +191,7 @@ namespace SimpleTextureRenderer
 
                 ImGui.SetColumnOffset(ImGui.GetColumnIndex(), vp.Size.X - ImGui.CalcTextSize(copyrightText).X);
                 ImGui.SetCursorPosY(2.0f);
-                ImGui.Text("Made by gregkwaste");
+                ImGui.Text(copyrightText);
                 ImGui.Columns(1);
                 ImGui.End();
             }

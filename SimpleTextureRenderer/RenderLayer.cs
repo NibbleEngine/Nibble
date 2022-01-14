@@ -7,6 +7,12 @@ using OpenTK.Windowing.Common;
 
 namespace SimpleTextureRenderer
 {
+    public struct RenderTextureData
+    {
+        public int depth_id;
+        public int mipmap_id;
+    }
+
     public class RenderLayer : ApplicationLayer
     {
         private Texture _texture;
@@ -17,6 +23,7 @@ namespace SimpleTextureRenderer
         private int mipmap_id = 0;
         private GLSLShaderConfig _shaderArray;
         private GLSLShaderConfig _shaderSingle;
+        private bool _captureInput = true;
 
         public RenderLayer(Engine engine) : base(engine)
         {
@@ -33,13 +40,37 @@ namespace SimpleTextureRenderer
             GLSLShaderSource vs = EngineRef.GetShaderSourceByFilePath(vs_path);
             GLSLShaderSource fs = EngineRef.GetShaderSourceByFilePath(fs_path);
 
-            //Pass Shader
-            _shaderArray = GLShaderHelper.compileShader(vs, fs, null, null, null,
-                new() { "_F55_MULTITEXTURE" }, SHADER_TYPE.MATERIAL_SHADER, SHADER_MODE.DEFAULT);
 
-            //Pass Shader
-            _shaderSingle = GLShaderHelper.compileShader(vs, fs, null, null, null,
-                new(), SHADER_TYPE.MATERIAL_SHADER, SHADER_MODE.DEFAULT);
+            GLSLShaderConfig _shaderArray = new()
+            {
+                ShaderMode = SHADER_MODE.DEFAULT,
+                shader_type = SHADER_TYPE.MATERIAL_SHADER,
+                directives = new() { "_F55_MULTITEXTURE" },
+            };
+
+            _shaderArray.AddSource(NbShaderType.VertexShader, vs);
+            _shaderArray.AddSource(NbShaderType.FragmentShader, fs);
+
+            EngineRef.renderSys.Renderer.CompileShader(_shaderArray);
+
+
+            GLSLShaderConfig _shaderSingle = new()
+            {
+                ShaderMode = SHADER_MODE.DEFAULT,
+                shader_type = SHADER_TYPE.MATERIAL_SHADER,
+            };
+
+            _shaderSingle.AddSource(NbShaderType.VertexShader, vs);
+            _shaderSingle.AddSource(NbShaderType.FragmentShader, fs);
+
+            EngineRef.renderSys.Renderer.CompileShader(_shaderSingle);
+
+        }
+
+        public void OnRenderTextureDataChanged(object sender, RenderTextureData data)
+        {
+            depth_id = data.depth_id;
+            mipmap_id = data.mipmap_id;
         }
 
         protected override void Dispose(bool disposing)
@@ -56,6 +87,11 @@ namespace SimpleTextureRenderer
             base.Dispose(disposing);
         }
 
+        public void CaptureInput(object sender, bool state)
+        {
+            _captureInput = !state;
+            //Console.WriteLine($"CAPTURE INPUT IN RENDER LAYER: {_captureInput}");
+        }
 
         public void SetTexture(Texture tex)
         {
@@ -84,12 +120,12 @@ namespace SimpleTextureRenderer
             mipmap_id = id;
         }
 
-        public override void OnFrameUpdate(ref Queue<object> data)
+        public override void OnFrameUpdate(ref Queue<object> data, double dt)
         {
             
         }
 
-        public override void OnRenderUpdate(ref Queue<object> data, double dt)
+        public override void OnRenderFrameUpdate(ref Queue<object> data, double dt)
         {
             //First argument should be the input state
             NbMouseState mouseState = (NbMouseState) data.Dequeue();
@@ -99,17 +135,14 @@ namespace SimpleTextureRenderer
             while (EngineRef.renderSys.ShaderMgr.CompilationQueue.Count > 0)
             {
                 GLSLShaderConfig shader = EngineRef.renderSys.ShaderMgr.CompilationQueue.Dequeue();
-                GLShaderHelper.compileShader(shader);
+                EngineRef.renderSys.Renderer.CompileShader(shader);
             }
-
 
             renderer.Viewport(_size.X, _size.Y);
             renderer.ClearColor(new NbCore.Math.NbVector4(0.0f, 0.0f, 0.0f, 0.0f));
             renderer.ClearDrawBuffer(NbCore.Platform.Graphics.NbBufferMask.Color |
                                     NbCore.Platform.Graphics.NbBufferMask.Depth);
 
-
-            
 
             if (_texture != null)
             {
@@ -119,16 +152,20 @@ namespace SimpleTextureRenderer
                 else
                     _shader = _shaderArray;
 
-                //Process Input:
-                if (mouseState.IsButtonDown(NbMouseButton.LEFT))
+
+                if (_captureInput)
                 {
-                    offset.X += mouseState.PositionDelta.X / (_size.X * ((float)_texture.Width / _texture.Height));
-                    offset.Y += mouseState.PositionDelta.Y / _size.Y;
+                    //Process Input:
+                    if (mouseState.IsButtonDown(NbMouseButton.LEFT))
+                    {
+                        offset.X += mouseState.PositionDelta.X / (_size.X * ((float)_texture.Width / _texture.Height));
+                        offset.Y += mouseState.PositionDelta.Y / _size.Y;
+                    }
+
+                    _scale = Math.Max(0.05f, _scale + mouseState.Scroll.Y * 0.08f);
+
+                    //Console.WriteLine($"{offset.X}, {offset.Y}, {_scale}");
                 }
-
-                _scale = Math.Max(0.05f, _scale + mouseState.Scroll.Y * 0.08f);
-
-                //Console.WriteLine($"{offset.X}, {offset.Y}, {_scale}");
 
                 //Set Shader State
                 _shader.ClearCurrentState();

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NbCore.Common;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -17,15 +18,15 @@ namespace NbCore
         {
             for (int i = 0; i < Layers.Count; i++)
             {
-                Layers[i].OnRenderUpdate(ref data, dt);
+                Layers[i].OnRenderFrameUpdate(ref data, dt);
             }
         }
 
-        public void OnFrameUpdate(Queue<object> data)
+        public void OnFrameUpdate(Queue<object> data, double dt)
         {
             for (int i = 0; i < Layers.Count; i++)
             {
-                Layers[i].OnFrameUpdate(ref data);
+                Layers[i].OnFrameUpdate(ref data, dt);
             }
         }
 
@@ -38,10 +39,14 @@ namespace NbCore
             
             Layers.Clear();
         }
+
+        
     }
 
     public abstract class ApplicationLayer :IDisposable
     {
+        //Layer Properties
+        public string Name;
         public ApplicationLayer Next;
         protected Engine EngineRef;
         private bool disposedValue;
@@ -51,12 +56,12 @@ namespace NbCore
             EngineRef = engine;
         }
         
-        public virtual void OnRenderUpdate(ref Queue<object> data, double dt)
+        public virtual void OnRenderFrameUpdate(ref Queue<object> data, double dt)
         {
 
         }
 
-        public virtual void OnFrameUpdate(ref Queue<object> data)
+        public virtual void OnFrameUpdate(ref Queue<object> data, double dt)
         {
 
         }
@@ -75,6 +80,13 @@ namespace NbCore
                 // TODO: set large fields to null
                 disposedValue = true;
             }
+        }
+
+        public void Log(string msg, LogVerbosityLevel lvl)
+        {
+            string outmsg = string.Format("* {0} : {1} - {2}",
+                Name.ToUpper(), lvl.ToString(), msg);
+            Callbacks.Log(outmsg, lvl);
         }
 
         public void Dispose()

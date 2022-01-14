@@ -137,7 +137,7 @@ namespace NbCore.UI.ImGui
             SceneGraphViewer.Clear();
         }
 
-        public virtual void ProcessModals(GameWindow win, ref string current_file_path, ref bool closed)
+        public virtual void ProcessModals(object ob, ref string current_file_path, ref bool closed)
         {
             //Override to provide modal processing
             throw new Exception("Not Implented!");

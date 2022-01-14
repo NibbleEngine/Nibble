@@ -85,7 +85,7 @@ namespace NbCore.Systems
                     if (td.IsOccluded && !td.WasOccluded)
                     {
                         //Remove Instance
-                        Console.WriteLine("Removing Instance {0}", n.Name);
+                        Log($"Removing Instance {n.Name}", Common.LogVerbosityLevel.DEBUG);
                         //TODO: Maybe it is  a good idea to keep queues for 
                         //instances that will be removed and instance that will be added
                         //which will be passed per frame update to the rendering system
@@ -94,7 +94,7 @@ namespace NbCore.Systems
                     }
                     else if (!td.IsOccluded && td.WasOccluded)
                     {
-                        Console.WriteLine("Adding Instance {0}", n.Name);
+                        Log($"Adding Instance {n.Name}", Common.LogVerbosityLevel.DEBUG);
                         EngineRef.renderSys.Renderer.AddRenderInstance(ref mc, td);
                     }
                     else if (!td.IsOccluded)
@@ -116,7 +116,7 @@ namespace NbCore.Systems
                 if (!lc.Data.IsRenderable && lc.InstanceID != -1)
                 {
                     //Remove Instance
-                    Console.WriteLine("Removing Instance {0}", n.Name);
+                    Log($"Removing Instance {n.Name}", Common.LogVerbosityLevel.DEBUG);
                     //TODO: Maybe it is  a good idea to keep queues for 
                     //instances that will be removed and instance that will be added
                     //which will be passed per frame update to the rendering system
@@ -125,7 +125,7 @@ namespace NbCore.Systems
                 }
                 else if (lc.Data.IsRenderable && lc.InstanceID == -1)
                 {
-                    Console.WriteLine("Adding Instance {0}", n.Name);
+                    Log($"Adding Instance {n.Name}", Common.LogVerbosityLevel.DEBUG);
                     EngineRef.renderSys.Renderer.AddLightRenderInstance(ref lc, td);
                 }
                 else if (lc.Data.IsRenderable)

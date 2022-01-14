@@ -44,11 +44,86 @@ namespace NbCore.Math
             return nq;
         }
 
-        public static NbQuaternion FromEulerAngles(float x, float y, float z)
+        public static NbQuaternion FromEulerAngles(float x, float y, float z, string order)
         {
+            //Assume that inputs are in radians already
+
+            var c1 = (float) System.Math.Cos(x / 2);
+            var c2 = (float) System.Math.Cos(y / 2);
+            var c3 = (float) System.Math.Cos(z / 2);
+
+            var s1 = (float) System.Math.Sin(x / 2);
+            var s2 = (float) System.Math.Sin(y / 2);
+            var s3 = (float) System.Math.Sin(z / 2);
+
             NbQuaternion n = new();
-            n._Value = Quaternion.FromEulerAngles(x, y, z);
+
+            switch (order)
+            {
+                case "XYZ":
+                    n.X = s1 * c2 * c3 + c1 * s2 * s3;
+                    n.Y = c1 * s2 * c3 - s1 * c2 * s3;
+                    n.Z = c1 * c2 * s3 + s1 * s2 * c3;
+                    n.W = c1 * c2 * c3 - s1 * s2 * s3;
+                    break;
+                
+                case "YXZ":
+                    n.X = s1 * c2 * c3 + c1 * s2 * s3;
+                    n.Y = c1 * s2 * c3 - s1 * c2 * s3;
+                    n.Z = c1 * c2 * s3 - s1 * s2 * c3;
+                    n.W = c1 * c2 * c3 + s1 * s2 * s3;
+                    break;
+                
+                case "ZXY":
+                    n.X = s1 * c2 * c3 - c1 * s2 * s3;
+                    n.Y = c1 * s2 * c3 + s1 * c2 * s3;
+                    n.Z = c1 * c2 * s3 + s1 * s2 * c3;
+                    n.W = c1 * c2 * c3 - s1 * s2 * s3;
+                    break;
+
+                case "ZYX":
+                    n.X = s1 * c2 * c3 - c1 * s2 * s3;
+                    n.Y = c1 * s2 * c3 + s1 * c2 * s3;
+                    n.Z = c1 * c2 * s3 - s1 * s2 * c3;
+                    n.W = c1 * c2 * c3 + s1 * s2 * s3;
+                    break;
+
+                case "YZX":
+                    n.X = s1 * c2 * c3 + c1 * s2 * s3;
+                    n.Y = c1 * s2 * c3 + s1 * c2 * s3;
+                    n.Z = c1 * c2 * s3 - s1 * s2 * c3;
+                    n.W = c1 * c2 * c3 - s1 * s2 * s3;
+                    break;
+
+                case "XZY":
+                    n.X = s1 * c2 * c3 - c1 * s2 * s3;
+                    n.Y = c1 * s2 * c3 - s1 * c2 * s3;
+                    n.Z = c1 * c2 * s3 + s1 * s2 * c3;
+                    n.W = c1 * c2 * c3 + s1 * s2 * s3;
+                    break;
+                default:
+                    throw new System.Exception("Not Supported Euler Order");
+            }
+            
             return n;
+        }
+
+        public static NbVector3 ToEulerAngles(NbQuaternion q)
+        {
+            Vector3 v = q._Value.ToEulerAngles();
+            return new(){X = v.X, Y = v.Y, Z = v.Z};
+        }
+
+        public static NbQuaternion FromMatrix(NbMatrix4 mat)
+        {
+            Quaternion q = mat._Value.ExtractRotation();
+            return new()
+            {
+                X = q.X,
+                Y = q.Y,
+                Z = q.Z,
+                W = q.W
+            };
         }
         
         public static void ToEulerAngles(NbQuaternion q, out NbVector3 v)

@@ -51,15 +51,6 @@ namespace NbCore
         //Rendering 
         public EngineRenderingState rt_State;
 
-        //Input
-        public BaseGamepadHandler gpHandler;
-
-        private NbKeyboardState ActiveKbState;
-        private NbMouseState ActiveMsState;
-        
-        //Camera Stuff
-        public CameraPos targetCameraPos;
-        
         //Event Handlers
         public event EventHandler<AddSceneEventData> AddSceneEventHandler;
     
@@ -443,13 +434,6 @@ namespace NbCore
                 i++;
             }
             
-            //Step 2: Resolve Shaders
-            i = 0;
-            while (i < sourceList.Count)
-            {
-                ((GLSLShaderSource) sourceList[i]).Resolve();
-                i++;
-            }
         }
 
         #endregion
@@ -567,7 +551,7 @@ namespace NbCore
 
             //Set Camera Initial State
             TransformController tcontroller = transformSys.GetEntityTransformController(cam);
-            tcontroller.AddFutureState(new NbVector3(), NbQuaternion.FromEulerAngles(0.0f, -3.14f/2.0f, 0.0f), new NbVector3(1.0f));
+            tcontroller.AddFutureState(new NbVector3(), NbQuaternion.FromEulerAngles(0.0f, -3.14f/2.0f, 0.0f, "XYZ"), new NbVector3(1.0f));
 
             //Initialize the render manager
             renderSys.init(width, height);
@@ -577,93 +561,6 @@ namespace NbCore
         }
         
         
-
-        public void handleRequests()
-        {
-            //Log(string.Format(" {0} Open Requests ", reqHandler.getOpenRequestNum()), LogVerbosityLevel.HIDEBUG);
-            if (reqHandler.HasOpenRequests())
-            {
-                ThreadRequest req = reqHandler.Fetch();
-                THREAD_REQUEST_STATUS req_status = THREAD_REQUEST_STATUS.FINISHED;
-                Log("Handling Request " + req.Type, LogVerbosityLevel.HIDEBUG);
-
-                lock (req)
-                {
-                    switch (req.Type)
-                    {
-                        case THREAD_REQUEST_TYPE.ENGINE_QUERY_GLCONTROL_STATUS:
-                            if (rt_State == EngineRenderingState.UNINITIALIZED)
-                                req_status = THREAD_REQUEST_STATUS.ACTIVE;
-                            else
-                                req_status = THREAD_REQUEST_STATUS.FINISHED;
-                                //At this point the renderer is up and running
-                            break;
-#if DEBUG               
-                        
-#endif
-                        case THREAD_REQUEST_TYPE.ENGINE_CHANGE_MODEL_PARENT:
-                            throw new Exception("Not Implemented");
-                            /*
-                            Model source = (Model) req.arguments[0];
-                            Model target = (Model) req.arguments[1];
-
-                            System.Windows.Application.Current.Dispatcher.Invoke((System.Action)(() =>
-                            {
-                                if (source.parent != null)
-                                    source.parent.Children.Remove(source);
-
-                                //Add to target node
-                                source.parent = target;
-                                target.Children.Add(source);
-                            }));
-                            req_status = THREAD_REQUEST_STATUS.FINISHED;
-                        case THREAD_REQUEST_TYPE.ENGINE_UPDATE_SCENE:
-                            throw new Exception("Not Implemented Yet!");
-                        case THREAD_REQUEST_TYPE.ENGINE_MOUSEPOSITION_INFO:
-                            Vector4[] t = (Vector4[])req.arguments[2];
-                            renderSys.getMousePosInfo((int)req.arguments[0], (int)req.arguments[1],
-                                ref t);
-                            req_status = THREAD_REQUEST_STATUS.FINISHED;
-                            break;
-                        case THREAD_REQUEST_TYPE.ENGINE_RESIZE_VIEWPORT:
-                            rt_ResizeViewport((int)req.arguments[0], (int)req.arguments[1]);
-                            req_status = THREAD_REQUEST_STATUS.FINISHED;
-                            break;
-                        case THREAD_REQUEST_TYPE.ENGINE_MODIFY_SHADER:
-                            GLShaderHelper.modifyShader((GLSLShaderConfig)req.arguments[0],
-                                         (GLSLShaderSource) req.arguments[1]);
-                            req_status = THREAD_REQUEST_STATUS.FINISHED;
-                            break;
-                        */
-
-                        case THREAD_REQUEST_TYPE.ENGINE_GIZMO_PICKING:
-                            throw new Exception("not yet implemented");
-                        case THREAD_REQUEST_TYPE.ENGINE_TERMINATE_RENDER:
-                            rt_State = EngineRenderingState.EXIT;
-                            CleanUp(); //Free Resources
-                            req_status = THREAD_REQUEST_STATUS.FINISHED;
-                            break;
-                        case THREAD_REQUEST_TYPE.ENGINE_PAUSE_RENDER:
-                            rt_State = EngineRenderingState.PAUSED;
-                            req_status = THREAD_REQUEST_STATUS.FINISHED;
-                            break;
-                        case THREAD_REQUEST_TYPE.ENGINE_RESUME_RENDER:
-                            rt_State = EngineRenderingState.ACTIVE;
-                            req_status = THREAD_REQUEST_STATUS.FINISHED;
-                            break;
-                        case THREAD_REQUEST_TYPE.NULL: //Is this ever used?
-                            req_status = THREAD_REQUEST_STATUS.FINISHED;
-                            break;
-                        default:
-                            Log(string.Format("Not supported Request {0}", req.Type), LogVerbosityLevel.HIDEBUG);
-                            break;
-                    }
-                }
-
-                req.Status = req_status;
-                Log("Request Handled", LogVerbosityLevel.HIDEBUG);
-            }
-        }
 
         //Main Rendering Routines
 
@@ -774,7 +671,7 @@ namespace NbCore
             //x: roughness
             //z: metallic
             mat.Uniforms.Add(uf);
-            shader = renderSys.Renderer.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
+            shader = CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
             renderSys.Renderer.AttachShaderToMaterial(mat, shader);
 
             RegisterEntity(mat);
@@ -851,177 +748,10 @@ namespace NbCore
             RenderState.settings.renderSettings.ToggleAnimations = animToggleStatus;
         }
         
+
         public void SendRequest(ref ThreadRequest r)
         {
             reqHandler.AddRequest(ref r);
-        }
-
-        public override void OnFrameUpdate(double dt)
-        {
-            //Update input
-            UpdateInput();
-            
-            handleRequests(); //Handle engine requests
-
-            //Update systems
-            transformSys.OnFrameUpdate(dt);
-            sceneMgmtSys.OnFrameUpdate(dt);
-            
-            //Reset Stats
-            RenderStats.occludedNum = 0;
-
-            
-            //Enable Action System
-            if (RenderState.settings.viewSettings.EmulateActions)
-                actionSys.OnFrameUpdate(dt); 
-            //Enable Animation System
-            if (RenderState.settings.renderSettings.ToggleAnimations)
-                animationSys.OnFrameUpdate(dt);
-            
-
-            //Camera & Light Positions
-            //Update common transforms
-
-            
-            //Apply extra viewport rotation
-            NbMatrix4 Rotx = NbMatrix4.CreateRotationX(MathUtils.radians(RenderState.rotAngles.X));
-            NbMatrix4 Roty = NbMatrix4.CreateRotationY(MathUtils.radians(RenderState.rotAngles.Y));
-            NbMatrix4 Rotz = NbMatrix4.CreateRotationZ(MathUtils.radians(RenderState.rotAngles.Z));
-            RenderState.rotMat = Rotz * Rotx * Roty;
-            //RenderState.rotMat = Matrix4.Identity;
-        }
-
-        public override void OnRenderUpdate(double dt)
-        {
-            //Per Frame System Updates
-            transformSys.OnRenderUpdate(dt);
-            sceneMgmtSys.OnRenderUpdate(dt);
-            renderSys.OnRenderUpdate(dt);
-
-            //Render Shit
-            if (rt_State == EngineRenderingState.ACTIVE)
-            {
-                //Callbacks.Log("* CONTROL : STARTING FRAME UPDATE", LogVerbosityLevel.DEBUG);
-                //Callbacks.Log("* CONTROL : FRAME UPDATED", LogVerbosityLevel.DEBUG);
-                //Callbacks.Log("* CONTROL : STARTING FRAME RENDER", LogVerbosityLevel.DEBUG);
-                renderSys.OnRenderUpdate(dt);
-                
-                //Callbacks.Log("* CONTROL : FRAME RENDERED", LogVerbosityLevel.DEBUG);
-            }
-        }
-
-        #region INPUT_HANDLERS
-
-        //Gamepad handler
-        private void gamepadController()
-        {
-            if (gpHandler == null) return;
-            if (!gpHandler.isConnected()) return;
-
-            //Camera Movement
-            float cameraSensitivity = 2.0f;
-            float x, y, z, rotx, roty;
-
-            x = gpHandler.getAction(ControllerActions.MOVE_X);
-            y = gpHandler.getAction(ControllerActions.ACCELERATE) - gpHandler.getAction(ControllerActions.DECELERATE);
-            z = gpHandler.getAction(ControllerActions.MOVE_Y_NEG) - gpHandler.getAction(ControllerActions.MOVE_Y_POS);
-            rotx = -cameraSensitivity * gpHandler.getAction(ControllerActions.CAMERA_MOVE_H);
-            roty = cameraSensitivity * gpHandler.getAction(ControllerActions.CAMERA_MOVE_V);
-
-            targetCameraPos.PosImpulse.X = x;
-            targetCameraPos.PosImpulse.Y = y;
-            targetCameraPos.PosImpulse.Z = z;
-            targetCameraPos.Rotation.X = rotx;
-            targetCameraPos.Rotation.Y = roty;
-        }
-
-        //Keyboard handler
-        private int keyDownStateToInt(NbKey k)
-        {
-            bool state = ActiveKbState.IsKeyDown(k);
-            return state ? 1 : 0;
-        }
-
-        public void UpdateInput()
-        {
-            bool kbStateUpdated = false;
-            bool msStateUpdated = false;
-
-            //Reset Mouse Inputs
-            targetCameraPos.Reset();
-            
-            if (ActiveKbState.UpdateScene)
-            {
-                kbStateUpdated = true;
-                keyboardController();
-            }
-
-            if (ActiveMsState.UpdateScene)
-            {
-                msStateUpdated = true;
-                mouseController();
-            }
-
-            //TODO: Re-add controller support
-
-            if (kbStateUpdated || msStateUpdated)
-                Camera.CalculateNextCameraState(RenderState.activeCam, targetCameraPos);
-            
-            //gpController();
-            
-        }
-        
-        //Public Input Handlers
-        public void SetKeyboardState(NbKeyboardState state)
-        {
-            ActiveKbState = state;
-        }
-
-        public void SetMouseState(NbMouseState state)
-        {
-            ActiveMsState = state;
-        }
-
-        private void keyboardController()
-        {
-            //Camera Movement
-            float step = 0.002f;
-            float x, y, z;
-
-            x = keyDownStateToInt(NbKey.D) - keyDownStateToInt(NbKey.A);
-            y = keyDownStateToInt(NbKey.W) - keyDownStateToInt(NbKey.S);
-            z = keyDownStateToInt(NbKey.R) - keyDownStateToInt(NbKey.F);
-
-            //Camera rotation is done exclusively using the mouse
-            
-            //rotx = 50 * step * (kbHandler.getKeyStatus(OpenTK.Input.Key.E) - kbHandler.getKeyStatus(OpenTK.Input.Key.Q));
-            //float roty = (kbHandler.getKeyStatus(Key.C) - kbHandler.getKeyStatus(Key.Z));
-
-            RenderState.rotAngles.Y += 100 * step * (keyDownStateToInt(NbKey.E) - keyDownStateToInt(NbKey.Q));
-            RenderState.rotAngles.Y %= 360;
-            
-            //Move Camera
-            targetCameraPos.PosImpulse.X = x;
-            targetCameraPos.PosImpulse.Y = y;
-            targetCameraPos.PosImpulse.Z = z;
-
-            //Log("{0} {1} {2}", x, y, z);
-        }
-
-        //Mouse Methods
-
-        public void mouseController()
-        {
-            //targetCameraPos.Rotation.Xy += new Vector2(0.55f, 0);
-            if (ActiveMsState.IsButtonDown(NbMouseButton.LEFT))
-            {
-                OpenTK.Mathematics.Vector2 deltaVec = new(ActiveMsState.PositionDelta.X,
-                    ActiveMsState.PositionDelta.Y);
-                
-                //Log("Mouse Delta {0} {1}", deltax, deltay);
-                targetCameraPos.Rotation.X = deltaVec.X;
-                targetCameraPos.Rotation.Y = deltaVec.Y;
-            }
         }
 
         public override void CleanUp()
@@ -1037,9 +767,6 @@ namespace NbCore
         }
 
 
-        #endregion
-        
-        
         //API
         //The following static methods should be used to expose
         //functionality to the user abstracted from engine systems and other
@@ -1231,6 +958,72 @@ namespace NbCore
             return tex;
         }
 
+        public void CompileShader(GLSLShaderConfig shader)
+        {
+            renderSys.Renderer.CompileShader(shader);
+        }
+
+        public GLSLShaderConfig CreateShader(GLSLShaderSource vs, GLSLShaderSource fs,
+                                                GLSLShaderSource gs, GLSLShaderSource tcs,
+                                                GLSLShaderSource tes, List<string> directives,
+            SHADER_TYPE type, SHADER_MODE mode)
+        {
+            List<string> finaldirectives = renderSys.Renderer.CombineShaderDirectives(directives, mode);
+            GLSLShaderConfig shader_conf = new GLSLShaderConfig(type, vs, fs, gs, tcs, tes, finaldirectives, mode);
+            renderSys.Renderer.CompileShader(shader_conf);
+            return shader_conf;
+        }
+
+        public GLSLShaderConfig CompileMaterialShader(MeshMaterial mat, SHADER_MODE mode)
+        {
+
+            List<string> matdirectives = renderSys.Renderer.GetMaterialShaderDirectives(mat);
+            List<string> hashdirectives = new();
+            hashdirectives = renderSys.Renderer.CombineShaderDirectives(hashdirectives, mode);
+            hashdirectives.AddRange(matdirectives);
+
+            string vs_path = "Shaders/Simple_VS.glsl";
+            vs_path = FileUtils.FixPath(vs_path);
+            hashdirectives.Add(vs_path);
+
+            string fs_path = "Shaders/Simple_FS.glsl";
+            fs_path = FileUtils.FixPath(fs_path);
+            hashdirectives.Add(fs_path);
+
+            int hash = renderSys.Renderer.CalculateShaderHash(hashdirectives);
+
+            //Check if a config exists
+            GLSLShaderConfig conf = GetShaderByHash(hash);
+
+            //Create New Shader if it doesn't exist
+            if (conf == null)
+            {
+                GLSLShaderSource vs = GetShaderSourceByFilePath(vs_path);
+                GLSLShaderSource fs = GetShaderSourceByFilePath(fs_path);
+
+                conf = new()
+                {
+                    directives = matdirectives.ToList(),
+                    ShaderMode = mode
+                };
+
+                //Add Sources
+                conf.AddSource(NbShaderType.VertexShader, vs);
+                conf.AddSource(NbShaderType.FragmentShader, fs);
+
+                renderSys.Renderer.CompileShader(conf);
+
+                //Attach UBO binding Points
+                renderSys.Renderer.AttachUBOToShaderBindingPoint(conf, "_COMMON_PER_FRAME", 0);
+                renderSys.Renderer.AttachSSBOToShaderBindingPoint(conf, "_COMMON_PER_MESH", 1);
+
+                Callbacks.Assert(conf.Hash == hash, "Inconsistent Shader Hash Calculation");
+
+            }
+
+            return conf;
+        }
+
         #endregion
 
 
@@ -1246,7 +1039,7 @@ namespace NbCore
             if (node.HasComponent<MeshComponent>())
             {
                 MeshComponent mc = node.GetComponent<MeshComponent>() as MeshComponent;
-                if (mc.InstanceID > 0)
+                if (mc.InstanceID >= 0)
                     renderSys.Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
             }
 
@@ -1254,7 +1047,7 @@ namespace NbCore
             if (node.HasComponent<LightComponent>())
             {
                 LightComponent lc = node.GetComponent<LightComponent>() as LightComponent;
-                if (lc.InstanceID > 0)
+                if (lc.InstanceID >= 0)
                     renderSys.Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
             }
 
@@ -1278,10 +1071,20 @@ namespace NbCore
         {
             return sceneMgmtSys.ActiveScene;
         }
-        
+
+        public override void OnRenderUpdate(double dt)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void OnFrameUpdate(double dt)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
-        
-        
-        
+
+
+
     }
 }

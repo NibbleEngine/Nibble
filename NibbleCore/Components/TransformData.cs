@@ -40,7 +40,7 @@ namespace NbCore
             {
                 return NbQuaternion.FromEulerAngles(MathUtils.radians(RotX),
                                                   MathUtils.radians(RotY),
-                                                  MathUtils.radians(RotZ));
+                                                  MathUtils.radians(RotZ), "XYZ");
             }
 
             set
