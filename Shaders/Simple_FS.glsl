@@ -171,6 +171,12 @@ void pbr_lighting(){
     	vec4 lTexCoordsVec4;
         lTexCoordsVec4 = uv;
 
+		#ifdef _F14_UVSCROLL
+        	vec4 lFlippedScrollingUVVec4 = mpCustomPerMaterial.uniforms[4];
+        	//TODO: Convert uvs to vec4 for diffuse2maps
+        	lTexCoordsVec4.xy += lFlippedScrollingUVVec4.xy * mpCommonPerFrame.gfTime;
+    	#endif
+
         //Decal stuff
 		#if defined(_F51_DECAL_DIFFUSE) || defined(_F52_DECAL_NORMAL)
         {

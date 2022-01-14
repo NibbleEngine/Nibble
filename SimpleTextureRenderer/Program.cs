@@ -128,6 +128,8 @@ namespace SimpleTextureRenderer
             //Subscribe to layer events
             _UILayer.CloseWindowEvent += OnCloseWindowEvent;
             _UILayer.OpenFileEvent += OpenFile;
+            _UILayer.ConsumeInputEvent += _renderLayer.CaptureInput;
+            _UILayer.RenderTextureDataChanged += _renderLayer.OnRenderTextureDataChanged;
             Resize += _UILayer.OnResize;
             Resize += _renderLayer.OnResize;
             
@@ -153,12 +155,6 @@ namespace SimpleTextureRenderer
 
         protected override void OnRenderFrame(FrameEventArgs e)
         {
-            //Set Engine MouseState
-            _engine.SetMouseState(currentMouseState);
-
-            //Update Imgui
-
-
             //Prepare Engine Layer Data Queue
             Queue<object> data = new();
             data.Enqueue(currentMouseState);

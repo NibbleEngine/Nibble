@@ -985,7 +985,8 @@ namespace NbCore.Primitives
             verts[22] = -height / 2.0f;
             verts[23] = -depth / 2.0f;
 
-            indices = new int[]{0, 1, 2,
+            indices = new int[]{
+                0, 3, 1,
                 1, 3, 2,
                 4, 5, 6,
                 4, 6, 7,

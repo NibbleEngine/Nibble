@@ -17,6 +17,7 @@ namespace NbCore.Platform.Graphics.OpenGL {
     {
         DEFAULT,
         DEFFERED,
+        LIT,
         FORWARD,
         DECAL
     }
@@ -53,10 +54,21 @@ namespace NbCore.Platform.Graphics.OpenGL {
         BWOIT_COMPOSITE_SHADER
     }
 
-    public enum ShaderSourceType
+    public enum NbShaderSourceType
     {
         Static,
         Dynamic
+    }
+
+    public enum NbShaderType
+    {
+        FragmentShader,
+        VertexShader,
+        GeometryShader,
+        TessEvaluationShader,
+        TessControlShader,
+        ComputeShader,
+        None
     }
 
     public struct GLSLSamplerState
@@ -128,106 +140,6 @@ namespace NbCore.Platform.Graphics.OpenGL {
     }
 
 
-    public class GLSLShaderConfig : Entity
-    {
-        public string Name = "";
-
-        //Store the raw shader text objects temporarily
-        public GLSLShaderSource VSText;
-        public GLSLShaderSource FSText;
-        public GLSLShaderSource GSText;
-        public GLSLShaderSource TCSText;
-        public GLSLShaderSource TESText;
-
-        public List<string> directives = new();
-
-        //Store the raw shader text temporarily
-        public SHADER_TYPE shader_type = SHADER_TYPE.NULL_SHADER;
-
-        public SHADER_MODE ShaderMode = SHADER_MODE.DEFAULT;
-        //Publically hold the filepaths of the shaders
-        //For now I am keeping the paths in the filewatcher
-        
-        //Program ID
-        public int ProgramID = -1;
-        public int Hash = -1; //Should contain the hashcode of all the material related preprocessor flags (is set externally)
-        //Shader Compilation log
-        public string CompilationLog = "";
-
-        public GLSLShaderState CurrentState = GLSLShaderState.Create(); //Empty state
-
-        //Keep active uniforms
-        public Dictionary<string, int> uniformLocations = new Dictionary<string, int>();
-
-        public GLSLShaderConfig(SHADER_TYPE type, GLSLShaderSource vvs, 
-            GLSLShaderSource ffs, GLSLShaderSource ggs, GLSLShaderSource ttcs, GLSLShaderSource ttes, 
-            List<string> directives, SHADER_MODE mode) : base(EntityType.Shader)
-        {
-            shader_type = type; //Set my custom shader type for recognition
-            ShaderMode = mode;
-
-            //Store objects
-            VSText = vvs;
-            FSText = ffs;
-            GSText = ggs;
-            TESText = ttes;
-            TCSText = ttcs;
-
-            //Add shader reference to source files
-            vvs.ReferencedByShaders.Add(this);
-            ffs.ReferencedByShaders.Add(this);
-            ggs?.ReferencedByShaders.Add(this);
-            ttes?.ReferencedByShaders.Add(this);
-            ttcs?.ReferencedByShaders.Add(this);
-
-            foreach (string d in directives)
-                this.directives.Add(d);
-            
-        }
-
-        public void ClearCurrentState()
-        {
-            CurrentState.Clear();
-        }
-
-        public void FilterState(ref GLSLShaderState state)
-        {
-            //Floats;
-            var arr = state.Floats.ToArray();
-            for (int i = 0; i < arr.Length; i++)
-            {
-                if (!uniformLocations.ContainsKey(arr[i].Key))
-                    state.Floats.Remove(arr[i].Key);
-            }
-
-            //Vec2s
-            var arr1 = state.Vec2s.ToArray();
-            for (int i = 0; i < arr1.Length; i++)
-            {
-                if (!uniformLocations.ContainsKey(arr1[i].Key))
-                    state.Vec2s.Remove(arr1[i].Key);
-            }
-
-            //Vec3s
-            var arr3 = state.Vec3s.ToArray();
-            for (int i = 0; i < arr3.Length; i++)
-            {
-                if (!uniformLocations.ContainsKey(arr3[i].Key))
-                    state.Vec3s.Remove(arr3[i].Key);
-            }
-
-            //Vec4s
-            var arr4 = state.Vec4s.ToArray();
-            for (int i = 0; i < arr4.Length; i++)
-            {
-                if (!uniformLocations.ContainsKey(arr4[i].Key))
-                    state.Vec4s.Remove(arr4[i].Key);
-            }
-
-        }
-    }
-
-
     public static class GLShaderHelper
     {
         static public string NumberLines(string s)
@@ -245,60 +157,6 @@ namespace NbCore.Platform.Graphics.OpenGL {
         }
 
         //Shader Compilation
-
-        //GLPreparation
-        public static int calculateShaderHash(List<string> includes)
-        {
-            string hash = "";
-            
-            for (int i = 0; i < includes.Count; i++)
-                hash += includes[i].ToString();
-            
-            if (hash == "")
-                hash = "DEFAULT";
-
-            return hash.GetHashCode();
-        }
-
-        public static List<string> CombineShaderDirectives(List<string> directives, SHADER_MODE mode)
-        {
-            List<string> includes = directives.ToList();
-            
-            //General Directives are provided here
-            if ((mode & SHADER_MODE.DEFFERED) == SHADER_MODE.DEFFERED)
-                includes.Add("_D_DEFERRED_RENDERING");
-
-            return includes;
-        }
-
-        public static GLSLShaderConfig compileShader(GLSLShaderSource vs, GLSLShaderSource fs, 
-                                                     GLSLShaderSource gs, GLSLShaderSource tcs,
-                                                     GLSLShaderSource tes, List<string> directives,
-            SHADER_TYPE type, SHADER_MODE mode)
-        {
-            List<string> finaldirectives = CombineShaderDirectives(directives, mode);
-            GLSLShaderConfig shader_conf = new GLSLShaderConfig(type, vs, fs, gs, tcs, tes, finaldirectives, mode);
-            compileShader(shader_conf);
-            shader_conf.Hash = calculateShaderHash(finaldirectives);
-            
-            return shader_conf;
-        }
-
-        //This method attaches UBOs to shader binding points
-        public static void attachUBOToShaderBindingPoint(GLSLShaderConfig shader_conf, string var_name, int binding_point)
-        {
-            int shdr_program_id = shader_conf.ProgramID;
-            int ubo_index = GL.GetUniformBlockIndex(shdr_program_id, var_name);
-            GL.UniformBlockBinding(shdr_program_id, ubo_index, binding_point);
-        }
-
-        public static void attachSSBOToShaderBindingPoint(GLSLShaderConfig shader_conf, string var_name, int binding_point)
-        {
-            //Binding Position 0 - Matrices UBO
-            int shdr_program_id = shader_conf.ProgramID;
-            int ssbo_index = GL.GetProgramResourceIndex(shdr_program_id, ProgramInterface.ShaderStorageBlock, var_name);
-            GL.ShaderStorageBlockBinding(shader_conf.ProgramID, ssbo_index, binding_point);
-        }
 
         public static void reportUBOs(GLSLShaderConfig shader_conf)
         {
@@ -354,184 +212,6 @@ namespace NbCore.Platform.Graphics.OpenGL {
                 Console.WriteLine("}}");
             }
 
-        }
-
-        public static void compileShader(GLSLShaderConfig config)
-        {
-            if (config.ProgramID != -1)
-                GL.DeleteProgram(config.ProgramID);
-            CreateShaders(config);
-        }
-
-
-        //Shader Creation
-        static public void CreateShaders(GLSLShaderConfig config)
-        {
-            bool gsflag = false;
-            bool tsflag = false;
-
-            if (config.GSText != null)
-                gsflag = true;
-                
-            if (!((config.TCSText == null) & (config.TESText == null))) tsflag = true;
-
-            //Convert directives array to string
-            string directivestring = "";
-            foreach (string dir in config.directives)
-                directivestring += "#define " + dir + '\n';
-            
-            //Compile vertex shader
-            
-            if (config.VSText != null)
-            {
-                config.VSText.Compile(ShaderType.VertexShader, directivestring);
-            }
-
-            if (config.FSText != null)
-            {
-                config.FSText.Compile(ShaderType.FragmentShader, directivestring);
-            }
-
-            if (config.GSText != null)
-            {
-                config.GSText.Compile(ShaderType.GeometryShader);
-            }
-
-            if (config.TESText != null)
-            {
-                config.TESText.Compile(ShaderType.TessEvaluationShader);
-            }
-
-            if (config.TCSText != null)
-            {
-                config.TCSText.Compile(ShaderType.TessControlShader);
-            }
-            
-            //Create new program
-            config.ProgramID = GL.CreateProgram();
-
-            //Attach shaders to program
-            GL.AttachShader(config.ProgramID, config.VSText.shader_object_id);
-            GL.AttachShader(config.ProgramID, config.FSText.shader_object_id);
-
-            if (gsflag)
-                GL.AttachShader(config.ProgramID, config.GSText.shader_object_id);
-            
-            if (tsflag)
-            {
-                GL.AttachShader(config.ProgramID, config.TCSText.shader_object_id);
-                GL.AttachShader(config.ProgramID, config.TCSText.shader_object_id);
-            }
-
-            GL.LinkProgram(config.ProgramID);
-
-            //Check Linking
-            GL.GetProgramInfoLog(config.ProgramID, out string info);
-            config.CompilationLog += info + "\n";
-            
-                
-            GL.GetProgram(config.ProgramID, GetProgramParameterName.LinkStatus, out int status_code);
-            if (status_code != 1)
-                throwCompilationError(config.CompilationLog);
-
-            ShaderCompilationLog(config);
-            loadActiveUniforms(config);
-        }
-
-
-        static private void loadActiveUniforms(GLSLShaderConfig shader_conf)
-        {
-            
-            GL.GetProgram(shader_conf.ProgramID, GetProgramParameterName.ActiveUniforms, out int active_uniforms_count);
-
-            shader_conf.uniformLocations.Clear(); //Reset locataions
-            shader_conf.CompilationLog += "Active Uniforms: " + active_uniforms_count.ToString() + "\n";
-            for (int i = 0; i < active_uniforms_count; i++)
-            {
-                int bufSize = 64;
-                int loc;
-
-                GL.GetActiveUniform(shader_conf.ProgramID, i, bufSize, out int size, out int length, out ActiveUniformType type, out string name);
-                string basename = name.Split("[0]")[0];
-                for (int j = 0; j < length; j++)
-                {
-                    if (j > 0)
-                        name = basename + "[" + j + "]";
-                    loc = GL.GetUniformLocation(shader_conf.ProgramID, name);
-                    shader_conf.uniformLocations[name] = loc; //Store location
-
-                    if (RenderState.enableShaderCompilationLog)
-                    {
-                        string info_string = $"Uniform # {i} Location: {loc} Type: {type.ToString()} Name: {name}";
-                        shader_conf.CompilationLog += info_string + "\n";
-                    }
-                }
-
-                
-            }
-        }
-        
-        static public void modifyShader(GLSLShaderConfig shader_conf, GLSLShaderSource shaderText)
-        {
-            throw new Exception("TODO");
-            /*
-            Console.WriteLine("Actually Modifying Shader");
-
-            int[] attached_shaders = new int[20];
-            GL.GetAttachedShaders(shader_conf.ProgramID, 20, out int count, attached_shaders);
-
-            for (int i = 0; i < count; i++)
-            {
-                int[] shader_params = new int[10];
-                GL.GetShader(attached_shaders[i], OpenTK.Graphics.OpenGL4.ShaderParameter.ShaderType, shader_params);
-
-                if (shader_params[0] == (int) shaderText.Type)
-                {
-                    Console.WriteLine("Found modified shader");
-
-                    //Trying to compile shader
-                    shaderText.Compile();
-
-                    //Attach new shader back to program
-                    GL.DetachShader(shader_conf.ProgramID, attached_shaders[i]);
-                    GL.AttachShader(shader_conf.ProgramID, shaderText.shader_object_id);
-                    GL.LinkProgram(shader_conf.ProgramID);
-
-                    GL.GetProgram(shader_conf.ProgramID, GetProgramParameterName.LinkStatus, out int status_code);
-                    if (status_code != 1)
-                    {
-                        Console.WriteLine("Unable to link the new shader. Reverting to the old shader");
-                        return;
-                    }
-
-                    //Delete old shader and reload uniforms
-                    loadActiveUniforms(shader_conf); //Re-load active uniforms
-                    Console.WriteLine("Shader was modified successfully");
-                    break;
-                }
-            }
-            Console.WriteLine("Shader was not found...");
-            */
-        }
-
-
-        public static void ShaderCompilationLog(GLSLShaderConfig conf)
-        {
-            string log_file = "shader_compilation_log.out";
-
-            if (!File.Exists(log_file))
-                File.Create(log_file).Close();
-            
-            while (!FileUtils.IsFileReady(log_file))
-            {
-                Console.WriteLine("Log File not ready yet");
-            };
-            
-            StreamWriter sr = new StreamWriter(log_file, true);
-            sr.WriteLine("### COMPILING " + conf.shader_type + "###");
-            sr.Write(conf.CompilationLog);
-            sr.Close();
-            //Console.WriteLine(conf.log);
         }
 
         public static void throwCompilationError(string log)

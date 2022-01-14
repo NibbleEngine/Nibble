@@ -21,7 +21,7 @@ namespace SimpleTextureRenderer
             show_open_file_dialog = true;
         }
 
-        public override void ProcessModals(GameWindow win, ref string current_file_path, ref bool isDialogOpen)
+        public override void ProcessModals(object ob, ref string current_file_path, ref bool isDialogOpen)
         {
             //Functionality
 
@@ -35,12 +35,12 @@ namespace SimpleTextureRenderer
             ImGui.SetNextWindowSize(winsize);
             if (ImGui.BeginPopupModal("open-file", ref isDialogOpen, ImGuiWindowFlags.NoTitleBar))
             {
-                var picker = FilePicker.GetFilePicker(win, current_file_path, ".dds");
+                var picker = FilePicker.GetFilePicker(ob, current_file_path, ".dds");
                 if (picker.Draw(new System.Numerics.Vector2(winsize.X - 15, winsize.Y - 60)))
                 {
                     Console.WriteLine(picker.SelectedFile);
                     current_file_path = picker.SelectedFile;
-                    FilePicker.RemoveFilePicker(win);
+                    FilePicker.RemoveFilePicker(ob);
                     isDialogOpen = false;
                 } 
                 ImGui.EndPopup();

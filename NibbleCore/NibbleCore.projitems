@@ -25,6 +25,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)GMDL\GLVao.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\KeyboardInput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\MouseInput.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLSLShaderConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLSLShaderSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\TwosComplement.cs" />

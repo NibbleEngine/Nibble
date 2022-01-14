@@ -14,9 +14,20 @@ namespace NbCore.UI.ImGui
         private SceneGraphNode _root = null;
         private SceneGraphNode _selected = null;
         private SceneGraphNode _clicked = null;
-        private bool showctxmenu = false;
         private ImGuiManager _manager = null;
 
+        //Private imgui state
+        private SceneGraphNode new_node = null;
+        private bool open_add_sphere_popup = false;
+        private bool entity_added = false;
+
+        //primitive_add_props
+        private int divs = 10;
+        private float radius = 0.0f;
+        private float height = 0.0f;
+        private float width = 0.0f;
+
+        
         //Inline AddChild Function
         private static void AddChild(SceneGraphNode m, SceneGraphNode n) => m.Children.Add(n);
 
@@ -47,9 +58,83 @@ namespace NbCore.UI.ImGui
             Traverse_Init(root);
         }
 
+        public void DrawModals()
+        {
+            if (open_add_sphere_popup)
+            {
+                ImGuiCore.OpenPopup("AddSpherePopup");
+                open_add_sphere_popup = false;
+            }
+
+            //Process Modals
+            //Modals
+            bool isOpen = true;
+            if (ImGuiCore.BeginPopupModal("AddSpherePopup", ref isOpen, ImGuiNET.ImGuiWindowFlags.NoResize))
+            {
+                ImGuiCore.Columns(2);
+                ImGuiCore.Text("Detail");
+                ImGuiCore.NextColumn();
+                ImGuiCore.DragInt("##sphereBands", ref divs, 1.0f, 10, 100);
+                ImGuiCore.Columns(1);
+                
+                if (ImGuiCore.Button("Add"))
+                {
+                    //Create Mesh
+                    Primitives.Sphere sph = new(new(0.0f), 1.0f, divs);
+
+                    NbMeshData md = sph.geom.GetData();
+                    NbMeshMetaData mmd = sph.geom.GetMetaData();
+                    sph.Dispose();
+
+                    NbMesh nm = new()
+                    {
+                        Hash = (ulong)mmd.GetHashCode(),
+                        MetaData = mmd,
+                        Data = md
+                    };
+
+                    MeshMaterial mat = _manager.EngineRef.GetMaterialByName("defaultMat");
+                    
+                    //Create and register locator node
+                    new_node = _manager.EngineRef.CreateMeshNode("Sphere#1", nm, mat);
+                    entity_added = true;
+                    Callbacks.Log("Creating Sphere Mesh Node", LogVerbosityLevel.INFO);
+                    ImGuiCore.CloseCurrentPopup();
+                }
+                ImGuiCore.EndPopup();
+            }
+
+            if (entity_added)
+            {
+                //Register new locator node to engine
+                _manager.EngineRef.RegisterEntity(new_node);
+
+                //Add locator the activeScene
+                Scene activeScene = _manager.EngineRef.GetActiveScene();
+
+                //Set parent
+                new_node.SetParent(_clicked);
+
+                activeScene.AddNode(new_node);
+
+                _manager.EngineRef.transformSys.RequestEntityUpdate(new_node);
+
+                _clicked.IsOpen = true; //Make sure to open the node so that the new node is visible
+
+                //Set Reference to the new node
+                _clicked = new_node;
+                _manager.SetObjectReference(new_node);
+                _manager.SetActiveMaterial(new_node);
+
+            }
+        }
+
+            
         public void Draw()
         {
+            entity_added = false;
             DrawNode(_root);
+            DrawModals();
         }
 
         private void DrawNode(SceneGraphNode n)
@@ -81,7 +166,7 @@ namespace NbCore.UI.ImGui
             }
 
             ImGuiCore.SetNextItemOpen(n.IsOpen);
-            bool node_open = ImGuiCore.TreeNodeEx(n.Name, base_flags);
+            bool node_open = ImGuiCore.TreeNodeEx(n.GetID().ToString(), base_flags, n.Name);
             
             n.IsOpen = node_open;
             Vector2 ctxPos = Vector2.Zero;
@@ -91,19 +176,23 @@ namespace NbCore.UI.ImGui
                 _manager.SetObjectReference(n);
                 _manager.SetActiveMaterial(n);
                 ImGuiCore.CloseCurrentPopup();
-            } 
+            }
+
             if (ImGuiCore.BeginPopupContextItem()) // <-- use last item id as popup id
             {
+                //Right click also counts as selection
+                _clicked = n;
+                _manager.SetObjectReference(n);
+                _manager.SetActiveMaterial(n);
+                
                 if (ImGuiCore.BeginMenu("Add Child Node##child-ctx"))
                 {
-                    bool EntityAdded = false;
-                    SceneGraphNode new_node = null;
                     if (ImGuiCore.MenuItem("Add Locator"))
                     {
                         //Create and register locator node
                         new_node = _manager.EngineRef.CreateLocatorNode("Locator#1");
                         Callbacks.Log("Creating Locator node", LogVerbosityLevel.INFO);
-                        EntityAdded = true;
+                        entity_added = true;
                     }
                     
                     if (ImGuiCore.MenuItem("Add Light"))
@@ -112,34 +201,41 @@ namespace NbCore.UI.ImGui
                         new_node = _manager.EngineRef.CreateLightNode("Light#1");
 
                         Callbacks.Log("Creating Light node", LogVerbosityLevel.INFO);
-                        EntityAdded = true;
+                        entity_added = true;
                     }
 
-                    if (EntityAdded)
+                    if (ImGuiCore.MenuItem("Add Sphere"))
                     {
-                        //Register new locator node to engine
-                        _manager.EngineRef.RegisterEntity(new_node);
-                        
-                        //Add locator the activeScene
-                        Scene activeScene = _manager.EngineRef.GetActiveScene();
-
-                        //Set parent
-                        new_node.SetParent(n);
-
-                        activeScene.AddNode(new_node);
-                        
-                        _manager.EngineRef.transformSys.RequestEntityUpdate(new_node);
-                        
-                        n.IsOpen = true; //Make sure to open the node so that the new node is visible
-
-                        //Set Reference to the new node
-                        _clicked = new_node;
-                        _manager.SetObjectReference(new_node);
-                        _manager.SetActiveMaterial(new_node);
-
+                        open_add_sphere_popup = true;
+                        radius = 10.0f; //Default value
                     }
 
+                    if (ImGuiCore.MenuItem("Add Box"))
+                    {
+                        //Box Requires No parameters create it immediately
 
+                        //Create Mesh
+                        Primitives.Box bx = new(1.0f,1.0f,1.0f, new Math.NbVector3(1.0f), true);
+
+                        NbMeshData md = bx.geom.GetData();
+                        NbMeshMetaData mmd = bx.geom.GetMetaData();
+                        bx.Dispose();
+
+                        NbMesh nm = new()
+                        {
+                            Hash = (ulong)mmd.GetHashCode(),
+                            MetaData = mmd,
+                            Data = md
+                        };
+
+                        MeshMaterial mat = _manager.EngineRef.GetMaterialByName("defaultMat");
+
+                        //Create and register locator node
+                        new_node = _manager.EngineRef.CreateMeshNode("Box#1", nm, mat);
+                        entity_added = true;
+                        Callbacks.Log("Creating Box Mesh Node", LogVerbosityLevel.INFO);
+
+                    }
                     ImGuiCore.EndMenu();
                 }
 
@@ -152,6 +248,7 @@ namespace NbCore.UI.ImGui
 
                 ImGuiCore.EndPopup();
             }
+
 
             if (n.IsOpen)
             {
@@ -169,6 +266,9 @@ namespace NbCore.UI.ImGui
                 if (node_drawn)
                     ImGuiCore.TreePop();
             }
+
+
+
 
         }
         

@@ -39,11 +39,11 @@ namespace NbCore.Managers
             return false;
         }
 
-        public bool AddGenericShader(GLSLShaderConfig shader, SHADER_TYPE stype)
+        public bool AddGenericShader(GLSLShaderConfig shader)
         {
             if (AddShader(shader))
             {
-                GenericShaders[stype] = shader;
+                GenericShaders[shader.shader_type] = shader;
                 return true;
             }
             return false;

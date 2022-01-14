@@ -51,10 +51,14 @@ flat out int instanceId;
 
 mat4 get_skin_matrix(int offset)
 {
-    return (mat4(texelFetch(mpCommonPerScene.skinMatsTex, offset),
-                 texelFetch(mpCommonPerScene.skinMatsTex, offset + 1),
-                 texelFetch(mpCommonPerScene.skinMatsTex, offset + 2),
-                 texelFetch(mpCommonPerScene.skinMatsTex, offset + 3)));
+    // return (mat4(texelFetch(mpCommonPerScene.skinMatsTex, offset),
+    //              texelFetch(mpCommonPerScene.skinMatsTex, offset + 1),
+    //              texelFetch(mpCommonPerScene.skinMatsTex, offset + 2),
+    //              texelFetch(mpCommonPerScene.skinMatsTex, offset + 3)));
+    return (mat4(1.0, 0.0, 0.0, 0.0,
+                 0.0, 1.0, 0.0, 0.0,
+                 0.0, 0.0, 1.0, 0.0,
+                 0.0, 0.0, 0.0, 1.0));
 }
 
 #endif
@@ -65,12 +69,6 @@ void main()
     uv = uvPosition0;
     vertColor = bPosition;
 
-    #ifdef _F14_UVSCROLL
-        vec4 lFlippedScrollingUVVec4 = mpCustomPerMaterial.gUVScrollStepVec4;
-        //TODO: Convert uvs to vec4 for diffuse2maps
-        uv.xy += lFlippedScrollingUVVec4.xy * mpCommonPerFrame.gfTime;
-    #endif
-    
     //Load Per Instance data
     instanceId = gl_InstanceID;
     instanceColor = instanceData[gl_InstanceID].color;

@@ -11,44 +11,33 @@ namespace NbCore.Platform.Graphics.OpenGL
     public class GLSLShaderSource : Entity
     {
         public string Name = "";
+        public NbShaderSourceType SourceType;
         private List<GLSLShaderSource> _dynamicTextParts = new();
         private List<string> _staticTextParts = new();
-        public string SourceFilePath = "";
-        public string SourceText = "";
-        private List<string> _Directives = new();
+        public string SourceFilePath = ""; //Path of the file where the source is fetched from
+        public string SourceText = ""; //Source Text as fetched from the source file
+        public string ResolvedText = ""; //Source Text after processing all dependencies
         private FileSystemWatcher _watcher;
         private HashSet<string> _watchFiles = new();
         private DateTime LastReadTime;
-        public string ResolvedText = ""; //Full shader text after resolving
-        public string ActualShaderSource = "";
-        public int shader_object_id = -1;
-        public bool Resolved = false;
         public bool Processed = false;
-        public ShaderSourceType SourceType;
-
-        public string CompilationLog = ""; //Keep track of the generated log during shader compilation
-
-        public List<GLSLShaderConfig> ReferencedByShaders = new(); //Keeps track of all the Shaders that the current source is used by
+        public bool Resolved = false;
+        
         public List<GLSLShaderSource> ReferencedSources = new(); //Keep source texts that the current text refers to
         public List<GLSLShaderSource> ReferencedBySources = new(); //Keep source texts that reference this source
-
+        public List<GLSLShaderConfig> ReferencedByShaders = new(); //Keeps track of all the Shaders that the current source is used by
+        
         //Static random generator used in temp file name generation
         private static readonly Random rand_gen = new(999991);
 
-        //Default shader versions
-        public const string version = "#version 450\n #extension GL_ARB_explicit_uniform_location : enable\n" +
-                                       "#extension GL_ARB_separate_shader_objects : enable\n" +
-                                       "#extension GL_ARB_texture_query_lod : enable\n" +
-                                       "#extension GL_ARB_gpu_shader5 : enable\n";
-
         public GLSLShaderSource() : base(EntityType.ShaderSource)
         {
-            SourceType = ShaderSourceType.Static;
+            SourceType = NbShaderSourceType.Static;
         }
 
         public GLSLShaderSource(string text) : base(EntityType.ShaderSource)
         {
-            SourceType = ShaderSourceType.Static;
+            SourceType = NbShaderSourceType.Static;
             SourceText = text;
             Name = "Shader_" + RenderState.engineRef.GetShaderSourceCount();
             //Automatically register to engine
@@ -57,7 +46,7 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         public GLSLShaderSource(string filepath, bool watchFile) : base(EntityType.ShaderSource)
         {
-            SourceType = ShaderSourceType.Dynamic;
+            SourceType = NbShaderSourceType.Dynamic;
 
             SourceFilePath = Utils.FileUtils.FixPath(filepath);
             SourceText = File.ReadAllText(SourceFilePath);
@@ -81,93 +70,14 @@ namespace NbCore.Platform.Graphics.OpenGL
             _watcher = fw;
         }
 
-        public void AddDirective(string s)
-        {
-            _Directives.Add(s);
-        }
-
-        public void Compile(ShaderType type, string append_text = "")
-        {
-            if (!Resolved)
-                Resolve();
-
-            CompilationLog = ""; //Reset compilation log
-
-            if (shader_object_id != -1)
-                GL.DeleteShader(shader_object_id);
-            
-            shader_object_id = GL.CreateShader(type);
-
-            //Compile Shader
-            GL.ShaderSource(shader_object_id, version + "\n" + append_text + "\n" + ResolvedText);
-
-            //Get resolved shader text
-            GL.GetShaderSource(shader_object_id, 32768, out int actual_shader_length, out ActualShaderSource);
-
-            GL.CompileShader(shader_object_id);
-            GL.GetShaderInfoLog(shader_object_id, out string info);
-
-            CompilationLog += GLShaderHelper.NumberLines(ActualShaderSource) + "\n";
-            CompilationLog += info + "\n";
-
-            GL.GetShader(shader_object_id, ShaderParameter.CompileStatus, out int status_code);
-            if (status_code != 1)
-            {
-                Console.WriteLine(GLShaderHelper.NumberLines(ActualShaderSource));
-
-                Callbacks.showError("Failed to compile shader for the model. Contact Dev",
-                    "Shader Compilation Error");
-                GLShaderHelper.throwCompilationError(CompilationLog +
-                    GLShaderHelper.NumberLines(ActualShaderSource) + "\n" + info);
-            }
-
-        }
-
-        public void Resolve()
-        {
-            if (!Processed)
-                Process();
-
-            if (Resolved)
-                return;
-
-            ResolvedText = "";
-
-            //Add Directives
-            foreach (string dir in _Directives)
-                ResolvedText += "#define " + dir + '\n';
-
-            if (SourceType == ShaderSourceType.Static)
-            {
-                ResolvedText += SourceText;
-            }
-            else
-            {
-                int dynamicPartId = 0;
-                for (int i = 0; i < _staticTextParts.Count; i++)
-                {
-                    if (_staticTextParts[i] == "[FETCH_DYNAMIC]")
-                    {
-                        if (!_dynamicTextParts[dynamicPartId].Resolved)
-                            _dynamicTextParts[dynamicPartId].Resolve();
-                        ResolvedText += _dynamicTextParts[dynamicPartId].ResolvedText;
-                        dynamicPartId++;
-                    }
-                    else
-                        ResolvedText += _staticTextParts[i];
-                }
-            }
-
-            Resolved = true;
-        }
-
+        
+        
         public void Process()
         {
             _dynamicTextParts.Clear();
             _staticTextParts.Clear();
-            Resolved = false;
-
-            if (SourceType == ShaderSourceType.Static)
+            
+            if (SourceType == NbShaderSourceType.Static)
             {
                 Processed = true;
                 return;
@@ -238,6 +148,38 @@ namespace NbCore.Platform.Graphics.OpenGL
             Processed = true;
         }
 
+        public void Resolve()
+        {
+            if (!Processed)
+                Process();
+
+            ResolvedText = "";
+
+            if (SourceType == NbShaderSourceType.Static)
+            {
+                ResolvedText += SourceText;
+            }
+            else
+            {
+                int dynamicPartId = 0;
+                for (int i = 0; i < _staticTextParts.Count; i++)
+                {
+                    if (_staticTextParts[i] == "[FETCH_DYNAMIC]")
+                    {
+                        if (!_dynamicTextParts[dynamicPartId].Resolved)
+                            _dynamicTextParts[dynamicPartId].Resolve();
+                        ResolvedText += _dynamicTextParts[dynamicPartId].ResolvedText;
+                        dynamicPartId++;
+                    }
+                    else
+                        ResolvedText += _staticTextParts[i];
+                }
+            }
+
+            Resolved = true;
+        }
+
+
         private void file_changed(object sender, FileSystemEventArgs e)
         {
             FileSystemWatcher fw = (FileSystemWatcher)sender;
@@ -270,24 +212,27 @@ namespace NbCore.Platform.Graphics.OpenGL
                     {
                         Console.WriteLine($"Reloading {path} Change: {e.ChangeType.ToString()}");
                         SourceText = NewSourceText;
+                        Console.WriteLine(NewSourceText);
                         Process();
-                        Resolve();
+                        Resolve(); //Recalculate ShaderText
 
-                        foreach (GLSLShaderSource rc in ReferencedBySources)
+                        //Re-resolve all parent sources
+                        foreach (GLSLShaderSource ps in ReferencedBySources)
                         {
-                            rc.Resolved = false;
-                            rc.Resolve();
+                            ps.Resolved = false;
+                            ps.Resolve();
 
-                            foreach (GLSLShaderConfig shader in rc.ReferencedByShaders)
+                            //Recompile shader referenced by the parent sources
+                            foreach (GLSLShaderConfig sc in ps.ReferencedByShaders)
                             {
-                                RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(shader);
+                                RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(sc);
                             }
-
                         };
 
-                        foreach (GLSLShaderConfig shader in ReferencedByShaders)
+                        //Recompile immediate referenced shaders
+                        foreach (GLSLShaderConfig sc in ReferencedByShaders)
                         {
-                            RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(shader);
+                            RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(sc);
                         }
 
                     }
