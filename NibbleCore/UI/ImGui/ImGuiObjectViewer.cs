@@ -17,7 +17,8 @@ namespace NbCore.UI.ImGui
         //Imgui variables to reference 
         private int current_material_sampler = 0;
         private int current_material_flag = 0;
-        
+        private int slider_test = 0;
+
         public ImGuiObjectViewer(ImGuiManager mgr)
         {
             _manager = mgr;
@@ -133,9 +134,11 @@ namespace NbCore.UI.ImGui
                 {
                     ImGuiCore.Columns(2);
                     ImGuiCore.Text("Instance ID");
+                    ImGuiCore.Text("Mesh Group ID");
                     ImGuiCore.Text("Material");
                     ImGuiCore.NextColumn();
                     ImGuiCore.Text(mc.InstanceID.ToString());
+                    ImGuiCore.Text(mc.Mesh.GroupID.ToString());
                     if (mm != null)
                     {
                         ImGuiCore.Text(mm.Name);
@@ -272,6 +275,7 @@ namespace NbCore.UI.ImGui
 
             }
         
+            //CollisionComponent
             if (_model.HasComponent<CollisionComponent>())
             {
                 CollisionComponent cc = _model.GetComponent<CollisionComponent>() as CollisionComponent;
@@ -286,6 +290,7 @@ namespace NbCore.UI.ImGui
                 }
             }
 
+            //ReferenceComponent
             if (_model.HasComponent<ReferenceComponent>())
             {
                 ReferenceComponent rc = _model.GetComponent<ReferenceComponent>() as ReferenceComponent;
@@ -300,6 +305,60 @@ namespace NbCore.UI.ImGui
                 }
             }
 
+            //JointCOmponent
+            if (_model.HasComponent<JointComponent>())
+            {
+                JointComponent jc = _model.GetComponent<JointComponent>() as JointComponent;
+
+                if (ImGuiCore.CollapsingHeader("Joint Component", ImGuiTreeNodeFlags.DefaultOpen))
+                {
+                    ImGuiCore.Columns(2);
+                    ImGuiCore.Text("JointIndex");
+                    ImGuiCore.NextColumn();
+                    ImGuiCore.InputInt("##JointIndex", ref jc.JointIndex);
+                    ImGuiCore.Columns(1);
+                }
+            }
+
+            //AnimationComponent
+            if (_model.HasComponent<AnimComponent>())
+            {
+                AnimComponent ac = _model.GetComponent<AnimComponent>() as AnimComponent;
+
+                float lineheight = ImGuiNET.ImGui.GetTextLineHeight();
+                if (ImGuiCore.CollapsingHeader("Animation Component", ImGuiTreeNodeFlags.DefaultOpen))
+                {
+                    if (ImGuiCore.TreeNode("Animations"))
+                    {
+                        if (ImGuiCore.BeginTable("##AnimationsTable", 3, ImGuiTableFlags.Resizable | ImGuiTableFlags.BordersOuter))
+                        {
+                            ImGuiCore.TableSetupColumn("Animation");
+                            ImGuiCore.TableSetupColumn("Actions");
+                            ImGuiCore.TableSetupColumn("Frame");
+                            ImGuiCore.TableHeadersRow();
+
+                            foreach (Animation anim in ac.Animations)
+                            {
+                                ImGuiCore.TableNextRow();
+                                ImGuiCore.TableSetColumnIndex(0);
+                                ImGuiCore.Selectable(anim.animData.MetaData.Name);
+                                ImGuiCore.TableSetColumnIndex(1);
+                                ImGuiCore.Button("Play##" + anim.animData.MetaData.Name);
+                                ImGuiCore.SameLine();
+                                ImGuiCore.Button("Stop##" + anim.animData.MetaData.Name);
+                                ImGuiCore.TableSetColumnIndex(2);
+
+                                ImGuiCore.SliderInt("##AnimFrame" + anim.animData.MetaData.Name, ref slider_test, 0, 100);
+                            }
+
+                            ImGuiCore.EndTable();
+                        }
+                        ImGuiCore.TreePop();
+                    }
+                    
+
+                }
+            }
         }
 
         private void DrawLocator()

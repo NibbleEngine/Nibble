@@ -10,7 +10,7 @@ namespace NbCore
         Loop
     }
     
-    public class Animation
+    public class Animation : Entity
     {
         public AnimationData animData; //Static Animation Data
         private int prevFrameIndex = 0;
@@ -25,11 +25,11 @@ namespace NbCore
         public bool Override = false; //Used to manually manipulate animation
         
         //Constructors
-        public Animation()
+        public Animation() : base(EntityType.Animation)
         {
             
         }
-        public Animation(Animation anim)
+        public Animation(Animation anim) : base(EntityType.Animation)
         {
             CopyFrom(anim);
         }
@@ -53,17 +53,11 @@ namespace NbCore
             return ad;
         }
 
-        public bool IsValid()
-        {
-            return animData.FileName != "";
-        }
-
         public void Update(float dt) //time in milliseconds
         {
             animationTime += dt;
             Progress();
         }
-
 
         public void Progress() 
         {
@@ -81,14 +75,14 @@ namespace NbCore
             }
             */
 
-            int activeFrameCount = (animData.FrameEnd == 0 ? animData.FrameCount : System.Math.Min(animData.FrameEnd, animData.FrameCount)) - (animData.FrameStart != 0 ? animData.FrameStart : 0);
+            int activeFrameCount = (animData.MetaData.FrameEnd == 0 ? animData.FrameCount : System.Math.Min(animData.MetaData.FrameEnd, animData.FrameCount)) - (animData.MetaData.FrameStart != 0 ? animData.MetaData.FrameStart : 0);
             //Assuming a fixed frequency of 60 fps for the animations
             float activeAnimDuration = activeFrameCount * 1000.0f / 60.0f; // In ms TOTAL
             float activeAnimInterval = activeAnimDuration / (activeFrameCount - 1); // Per frame time
 
             if (animationTime > activeAnimDuration)
             {
-                if ((animData.AnimType == AnimationType.OneShot) && animationTime > activeAnimDuration)
+                if ((animData.MetaData.AnimType == AnimationType.OneShot) && animationTime > activeAnimDuration)
                 {
                     animationTime = 0.0f;
                     prevFrameTime = 0.0f;

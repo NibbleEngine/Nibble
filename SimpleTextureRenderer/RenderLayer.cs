@@ -41,7 +41,7 @@ namespace SimpleTextureRenderer
             GLSLShaderSource fs = EngineRef.GetShaderSourceByFilePath(fs_path);
 
 
-            GLSLShaderConfig _shaderArray = new()
+            _shaderArray = new()
             {
                 ShaderMode = SHADER_MODE.DEFAULT,
                 shader_type = SHADER_TYPE.MATERIAL_SHADER,
@@ -54,7 +54,7 @@ namespace SimpleTextureRenderer
             EngineRef.renderSys.Renderer.CompileShader(_shaderArray);
 
 
-            GLSLShaderConfig _shaderSingle = new()
+            _shaderSingle = new()
             {
                 ShaderMode = SHADER_MODE.DEFAULT,
                 shader_type = SHADER_TYPE.MATERIAL_SHADER,
@@ -138,8 +138,9 @@ namespace SimpleTextureRenderer
                 EngineRef.renderSys.Renderer.CompileShader(shader);
             }
 
+            renderer.EnableBlend();
             renderer.Viewport(_size.X, _size.Y);
-            renderer.ClearColor(new NbCore.Math.NbVector4(0.0f, 0.0f, 0.0f, 0.0f));
+            renderer.ClearColor(new NbCore.Math.NbVector4(0.1f, 0.1f, 0.1f, 0.0f));
             renderer.ClearDrawBuffer(NbCore.Platform.Graphics.NbBufferMask.Color |
                                     NbCore.Platform.Graphics.NbBufferMask.Depth);
 

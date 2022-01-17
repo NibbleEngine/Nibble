@@ -235,12 +235,12 @@ namespace NbCore
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
             GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             //Console.WriteLine(GL.GetError());
 
             //Use anisotropic filtering
             float af_amount = GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy);
-            af_amount = (float)System.Math.Max(af_amount, 4.0f);
+            af_amount = (float) System.Math.Max(af_amount, 4.0f);
             //GL.TexParameter(TextureTarget.Texture2D,  (TextureParameterName) 0x84FE, af_amount);
             GL.GetTexParameter(gl_target, GetTextureParameter.TextureMaxLevel, out int max_level);
             GL.GetTexParameter(gl_target, GetTextureParameter.TextureBaseLevel, out int base_level);

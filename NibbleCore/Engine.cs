@@ -74,9 +74,7 @@ namespace NbCore
             //Set Start Status
             rt_State = EngineRenderingState.UNINITIALIZED;
 
-            LoadPlugins();
             LoadDefaultResources();
-            
         }
         
         ~Engine()
@@ -258,22 +256,6 @@ namespace NbCore
         }
 
 
-        private void LoadPlugins()
-        {
-            if (!Directory.Exists("Plugins"))
-                return;
-            
-            foreach (string filename in Directory.GetFiles("Plugins"))
-            {
-                if (!filename.EndsWith(("dll")))
-                    continue;
-
-                if (!Path.GetFileName(filename).StartsWith(("Nibble")))
-                    continue;
-
-                LoadPlugin(filename);
-            }
-        }
         private void LoadDefaultResources()
         {
             //Iterate in local folder and load existing resources
@@ -332,6 +314,15 @@ namespace NbCore
         }
 
         
+        public void ImportNode(SceneGraphNode node)
+        {
+            RegisterSceneGraphNode(node);
+            RequestEntityTransformUpdate(node);
+            
+            //Post Import procedures
+            renderSys.SubmitOpenMeshGroups();
+        }
+
         public void RegisterEntity(Entity e)
         {
             //Add Entity to main registry
@@ -354,6 +345,19 @@ namespace NbCore
                     renderSys.RegisterEntity(e); //Register Mesh
                 }
 
+                if (e.HasComponent<AnimComponent>())
+                {
+                    AnimComponent ac = e.GetComponent<AnimComponent>() as AnimComponent;
+
+                    //Iterate to all Animations
+                    foreach (Animation anim in ac.Animations)
+                    {
+                        RegisterEntity(anim);
+                        animationSys.RegisterEntity(anim);
+                    }
+
+                }
+
                 //TODO Register to the rest systems if necessary
             }
         }
@@ -372,7 +376,8 @@ namespace NbCore
             foreach (SceneGraphNode child in node.Children)
                 RequestEntityTransformUpdate(child);
         }
-        
+
+        #region SceneManagement
         public Scene CreateScene()
         {
             Scene scn = sceneMgmtSys.CreateScene();
@@ -382,6 +387,14 @@ namespace NbCore
             
             return scn;
         }
+
+        public void ClearScene()
+        {
+            Scene scn = sceneMgmtSys.ActiveScene;
+            sceneMgmtSys.ClearScene(scn);
+        }
+
+        #endregion
 
         #region ResourceManager
 

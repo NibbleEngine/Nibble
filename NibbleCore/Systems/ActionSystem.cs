@@ -158,7 +158,8 @@ namespace NbCore.Systems
         private void ExecutePlayAnimAction(SceneGraphNode m, PlayAnimAction action)
         {
             AnimationSystem.StopActiveLoopAnimations(m); //Not sure if this is correct
-            AnimationSystem.StartAnimation(m, action.Animation);
+            AnimComponent ac = m.GetComponent<AnimComponent>() as AnimComponent;
+            AnimationSystem.StartAnimation(ac, action.Animation);
             ActionsExecutedInState[m.GetID()].Add(action);
         }
 
