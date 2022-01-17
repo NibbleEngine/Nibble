@@ -387,6 +387,12 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.Viewport(0, 0, x, y);
         }
 
+        public void EnableBlend()
+        {
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+        }
+
         public void ClearColor(NbVector4 vec)
         {
             GL.ClearColor(vec.X, vec.Y, vec.Z, vec.W);

@@ -66,10 +66,12 @@ namespace NbCore.Platform.Graphics
 
         //Viewport
         public void Viewport(int x, int y);
+            
 
         //Misc
         public void SyncGPUCommands();
         public void ClearColor(NbVector4 col);
+        public void EnableBlend();
     }
 
 

@@ -7,7 +7,7 @@ using NbCore.Math;
 
 namespace NbCore
 {
-    public class AnimationData: Entity
+    public struct AnimationDataMetaData
     {
         public string Name;
         public string FileName;
@@ -23,15 +23,41 @@ namespace NbCore
         public bool Mirrored;
         public bool Active;
         
-        public List<string> Nodes;
+        public override int GetHashCode()
+        {
+            int hash = 0;
+            hash ^= Name.GetHashCode();
+            hash ^= FileName.GetHashCode();
+            hash ^= AnimType.GetHashCode();
+            hash ^= FrameStart.GetHashCode();
+            hash ^= FrameEnd.GetHashCode();
+            hash ^= StartNode.GetHashCode();
+            hash ^= Speed.GetHashCode();
+            hash ^= Priority.GetHashCode();
+            
+            return hash;
+        }
+    
+    }
+    
+    public class AnimationData: IDisposable
+    {
+        public AnimationDataMetaData MetaData;
         public int FrameCount;
-
+        public List<string> Nodes;
+        public Dictionary<string, int> NodeIndexMap = new();
+        
         //Fully unpacked scheme for now. Optimize later
         public Dictionary<string, List<NbVector3>> Translations;
         public Dictionary<string, List<NbQuaternion>> Rotations;
         public Dictionary<string, List<NbVector3>> Scales;
-        
-        public AnimationData() : base(EntityType.Animation)
+
+        public override int GetHashCode()
+        {
+            return MetaData.GetHashCode();
+        }
+
+        public AnimationData()
         {
             Nodes = new();
             Translations = new();
@@ -41,7 +67,7 @@ namespace NbCore
 
         public void Init(string name, int fc)
         {
-            Name = name;
+            MetaData.Name = name;
             FrameCount = fc;
         }
 
@@ -111,21 +137,13 @@ namespace NbCore
             return Translations[node][frameId];
         }
 
-        private bool disposedValue = false;
-        protected override void Dispose(bool disposing)
+        public void Dispose()
         {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    Translations = null;
-                    Rotations = null;
-                    Scales = null;
-                }
-
-                disposedValue = true;
-            }
-            base.Dispose(disposing);
+            Nodes.Clear();
+            Translations.Clear();
+            Rotations.Clear();
+            Scales.Clear();
         }
+
     }
 }

@@ -10,11 +10,11 @@
 #endif
 
 #if defined( _F01_DIFFUSEMAP ) || defined( _F03_NORMALMAP ) || defined( D_IMPOSTERMASKS ) || defined(_D_MASKS)
-    #define D_TEXCOORDS
+    #define _D_TEXCOORDS
 #endif
 
 #if defined( _F42_DETAIL_NORMAL ) || defined( _F41_DETAIL_DIFFUSE )
-    //#define D_DETAIL
+    //#define _D_DETAIL
 #endif
 
  
@@ -166,7 +166,7 @@ void pbr_lighting(){
 		float lfMultiTextureIndex = instanceData[instanceId].uniforms[0].w; //Use the first uniform to upload the gUserDataVec4
 	#endif
 
-    #ifdef D_TEXCOORDS
+    #ifdef _D_TEXCOORDS
     	
     	vec4 lTexCoordsVec4;
         lTexCoordsVec4 = uv;
@@ -198,7 +198,7 @@ void pbr_lighting(){
         }
         #endif
 
-	    #if defined( D_IMPOSTER_COLOUR ) && defined( _F12_BATCHED_BILLBOARD )
+	    #if defined( _D_IMPOSTER_COLOUR ) && defined( _F12_BATCHED_BILLBOARD )
 	        lTexCoordsVec4.y = 1.0 - lTexCoordsVec4.y;
 	    #endif
 
@@ -243,7 +243,7 @@ void pbr_lighting(){
 			lColourVec4 = mpCustomPerMaterial.uniforms[0];
 		#endif
 
-		#ifdef D_MASKS
+		#ifdef _D_MASKS
 	    	#ifdef _F55_MULTITEXTURE
 	            vec4 lMasks = texture(mpCustomPerMaterial.gMasksMap, vec3(lTexCoordsVec4.xy, lfMultiTextureIndex));
 	        #else
@@ -285,7 +285,7 @@ void pbr_lighting(){
 	    #endif
 
 	 	
-	 	#ifdef D_DETAIL
+	 	#ifdef _D_DETAIL
 	    	//TODO: ADD shit for detail maps
 	    #endif
 
@@ -318,7 +318,7 @@ void pbr_lighting(){
 	        #endif
 	            
 	         lNormalVec3 = lNormalTexVec3;
-		#elif defined( D_USES_VERTEX_NORMAL )
+		#elif defined( _D_USES_VERTEX_NORMAL )
 	    	lNormalVec3 = mTangentSpaceNormalVec3;
 		#endif
 
@@ -365,7 +365,7 @@ void pbr_lighting(){
 	        {
 	            lfRoughness = lMasks.g;
 
-	            #ifdef D_DETAIL
+	            #ifdef _D_DETAIL
 	            {
 	                //TODO: CHECK THAT SHIT OUT
 	                //lfRoughness  = mix( lfRoughness, lDetailNormalVec4.b,               lfIsBlendImage    * smoothstep( lfBlendHeightMin, lfBlendHeightMax, lMasks.b ) );
@@ -383,7 +383,7 @@ void pbr_lighting(){
 	        {
 	            lfMetallic = lHighAlpha;
 
-	            #ifdef D_DETAIL
+	            #ifdef _D_DETAIL
 	            {
 	                //TODO: CHECK THAT SHIT OUT
 	                //lfMetallic = mix( lfMetallic, lDetailNormalVec4.b,               lfIsBlendImage    * smoothstep( lfBlendHeightMin, lfBlendHeightMax, lMasks.b ) );

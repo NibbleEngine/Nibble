@@ -7,7 +7,7 @@ namespace NbCore.Managers
     public class GeometryManager :EntityManager<Entity>
     {
         public Dictionary<string, GeomObject> Geoms = new();
-        public Dictionary<ulong, NbMesh> PrimitiveMeshes = new();
+        public Dictionary<ulong, NbMesh> PrimitiveMeshes = new(); //TODO Move that from here
 
         public GeometryManager()
         {

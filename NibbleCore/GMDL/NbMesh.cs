@@ -43,6 +43,8 @@ namespace NbCore
         //public float[] InstanceDataBuffer = new float[256]; //Instance Data
         public MeshInstance[] InstanceDataBuffer = new MeshInstance[2];
         public int InstanceCount = 0;
+        public int GroupID = -1;
+        public long MaterialID = -1;
         
         //This is needed only for removing render instances, so that InstanceIDs for relocated meshes in the buffer are updated
         //I think I should find a way to get rid of this at some point. Till then I'll keep it

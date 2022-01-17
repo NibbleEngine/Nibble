@@ -20,7 +20,6 @@ out vec4 fragColour;
 
 void main()
 {
-	//fragColour = texelFetch(InTex, ivec3(gl_FragCoord.xy, texture_depth), mipmap);
     #ifdef _F55_MULTITEXTURE
         fragColour = textureLod(InTex, vec3(uv0, texture_depth), mipmap);
     #else

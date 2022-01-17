@@ -7,7 +7,7 @@ namespace NbCore.Managers
     {
         public int EntityCount = 0;
         public List<T> Entities = new();
-        public Dictionary<long, Entity> EntityMap = new();
+        public Dictionary<long, T> EntityMap = new();
 
         private Entity _CheckEntity(T item)
         {
@@ -16,10 +16,24 @@ namespace NbCore.Managers
             return e;
         }
 
-        public virtual bool Exists(Entity item)
+        //All objects added to the manager are Entities, I can disable sanity checks
+        public virtual bool Contains(long id)
         {
-            GUIDComponent gc = item.GetComponent<GUIDComponent>() as GUIDComponent;
-            return EntityMap.ContainsKey(gc.ID);
+            return EntityMap.ContainsKey(id);
+        }
+
+        private bool Contains(Entity e)
+        {
+            GUIDComponent gc = e.GetComponent<GUIDComponent>() as GUIDComponent;
+            return Contains(gc.ID);
+        }
+
+        public virtual bool Contains(T item)
+        {
+            Entity e = (Entity)(object)item;
+            if (e != null)
+                return Contains(e);
+            return false;
         }
 
         private bool _IsEntityRegistered(Entity e)
@@ -30,15 +44,19 @@ namespace NbCore.Managers
             
         public virtual bool Add(T item)
         {
+            //Check if Item is Entity
             Entity e = _CheckEntity(item);
+
+            if (e == null)
+                return false;
 
             if (!_IsEntityRegistered(e))
                 return false;
             
-            if (!Exists(e))
+            if (!Contains(e))
             {
                 Entities.Add(item);
-                EntityMap[(e.GetComponent<GUIDComponent>() as GUIDComponent).ID] = e;
+                EntityMap[(e.GetComponent<GUIDComponent>() as GUIDComponent).ID] = item;
                 EntityCount++;
                 return true;
             }
@@ -47,9 +65,9 @@ namespace NbCore.Managers
 
         public virtual bool Remove(T item)
         {
-            Entity e = _CheckEntity(item);
-            if (Exists(e))
+            if (Contains(item))
             {
+                Entity e = (Entity) (object) item;
                 Entities.Remove(item);
                 EntityMap.Remove((e.GetComponent<GUIDComponent>() as GUIDComponent).ID);
                 EntityCount--;
@@ -58,9 +76,11 @@ namespace NbCore.Managers
             return false;
         }
 
-        public Entity Get(long id)
+        public T Get(long id)
         {
-            return EntityMap[id];
+            if (Contains(id))
+                return EntityMap[id];
+            return default;
         }
 
         public virtual void CleanUp()

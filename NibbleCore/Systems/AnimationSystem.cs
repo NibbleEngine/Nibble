@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Text;
 using OpenTK;
 using OpenTK.Mathematics;
+using NbCore.Managers;
 
 namespace NbCore.Systems
 {
     public class AnimationSystem : EngineSystem
     {
-        public List<Entity> AnimScenes = new();
-        public Dictionary<string, Animation> Animations = new();
-        
+        public AnimationManager AnimMgr = new();
+        public readonly ObjectManager<AnimationData> AnimDataMgr = new();
+
         public AnimationSystem() : base(EngineSystemEnum.ANIMATION_SYSTEM)
         {
             
@@ -18,8 +19,20 @@ namespace NbCore.Systems
 
         public override void CleanUp()
         {
-            AnimScenes.Clear();
-            Animations.Clear();
+            AnimMgr.CleanUp();
+        }
+
+        public void RegisterEntity(Animation e)
+        {
+            if (e.Type != EntityType.Animation)
+            {
+                Log($"Unable to register {e.Type} entity", Common.LogVerbosityLevel.WARNING);
+                return;
+            }
+            
+            AnimMgr.Add(e);
+            if (!AnimDataMgr.Add((ulong) e.animData.MetaData.GetHashCode(), e.animData))
+                Log("Animation Data already registered.", Common.LogVerbosityLevel.INFO);
         }
 
         public override void OnRenderUpdate(double dt)
@@ -137,9 +150,8 @@ namespace NbCore.Systems
             */
         }
 
-        public static void StartAnimation(Entity anim_model, string Anim)
+        public static void StartAnimation(AnimComponent ac, string Anim)
         {
-            AnimComponent ac = anim_model.GetComponent<AnimComponent>() as AnimComponent;
             Animation ad = ac.getAnimation(Anim);
 
             if (ad != null)
@@ -165,7 +177,7 @@ namespace NbCore.Systems
 
             foreach (Animation ad in ad_list)
             {
-                if (ad.animData.AnimType == AnimationType.Loop)
+                if (ad.animData.MetaData.AnimType == AnimationType.Loop)
                     ad.IsPlaying = false;
             }
                 
@@ -193,11 +205,6 @@ namespace NbCore.Systems
                 return ad.animData.FrameCount;
             }
             return -1;
-        }
-
-        public void Add(Entity m)
-        {
-            AnimScenes.Add(m);
         }
 
         

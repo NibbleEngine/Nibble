@@ -23,6 +23,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\Scene.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Events\EventData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GMDL\GLVao.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GMDL\NbMeshGroup.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Managers\AnimationManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Managers\NonEntityManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\KeyboardInput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\MouseInput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLSLShaderConfig.cs" />

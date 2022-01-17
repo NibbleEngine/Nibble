@@ -12,19 +12,27 @@ namespace NbCore.Systems
 {
     public class RenderingSystem : EngineSystem, IDisposable
     {
-        //Entity Registration Management
-        private readonly Dictionary<long, MeshComponent> EntityDataMap;
-        
+        //Constants
+        private const ulong MAX_OCTREE_WIDTH = 256;
+
         //Mesh Management
         readonly List<NbMesh> globalMeshList = new();
         readonly List<NbMesh> collisionMeshList = new();
         readonly List<NbMesh> locatorMeshList = new();
         readonly List<NbMesh> jointMeshList = new();
         readonly List<NbMesh> lightMeshList = new();
-        
+        readonly Dictionary<int, NbMeshGroup> MeshGroupDict = new() { };
+        readonly List<NbMeshGroup> MeshGroups = new();
+        //This is used during group population
+        readonly Dictionary<int, NbMeshGroup> OpenMeshGroups = new(); 
+
+        //Counters
+        public int MeshGroupCount = 1; //Account for the default group
+
         public IGraphicsApi Renderer;
-        
+
         //Entity Managers used by the rendering system
+        public readonly ObjectManager<NbMeshData> MeshDataMgr = new();
         public readonly MaterialManager MaterialMgr = new();
         public readonly GeometryManager GeometryMgr = new();
         public readonly TextureManager TextureMgr = new();
@@ -44,14 +52,19 @@ namespace NbCore.Systems
         private FBO renderBuffer;
         
         
-        private const ulong MAX_OCTREE_WIDTH = 256;
 
         //Octree Structure
         private Octree octree;
 
         public RenderingSystem() : base(EngineSystemEnum.RENDERING_SYSTEM)
         {
-            EntityDataMap = new();
+            NbMeshGroup group = new()
+            {
+                ID = 0,
+                Meshes = new()
+            };
+            MeshGroupDict[0] = group;
+            MeshGroups.Add(group);
         }
 
         public NbVector2i GetViewportSize()
@@ -671,12 +684,6 @@ namespace NbCore.Systems
 
         public void RegisterEntity(Entity e)
         {
-            if (EntityDataMap.ContainsKey(e.GetID()))
-            {
-                Log("Entity Already Registered", Common.LogVerbosityLevel.INFO);
-                return;
-            }
-
             if (!e.HasComponent<MeshComponent>())
             {
                 Log(string.Format("Entity {0} should have a mesh component", e.GetID()), Common.LogVerbosityLevel.INFO);
@@ -687,11 +694,18 @@ namespace NbCore.Systems
 
             Renderer.AddMesh(mc.Mesh);
             MaterialMgr.AddMaterial(mc.Material);
-            
-            //Insert to Maps
-            EntityDataMap[e.GetID()] = mc;
-            process_model(mc);
 
+            //Store Mesh Data Here
+            MeshDataMgr.Add(mc.Mesh.Data.Hash, mc.Mesh.Data);
+
+            //Add to MeshGroup
+            if (mc.Mesh.GroupID >= 0)
+                if (!OpenMeshGroups.ContainsKey(mc.Mesh.GroupID))
+                    OpenNewMeshGroup(mc.Mesh.GroupID);
+            
+            AddMeshToOpenGroup(mc.Mesh.GroupID, mc.Mesh);
+            
+            process_model(mc);
         }   
 
         public void populate(Scene s)
@@ -718,14 +732,18 @@ namespace NbCore.Systems
         {
             if (m == null)
                 return;
-
+            
             bool connect_material_to_shader = false;
+            bool save_to_group = false;
             //Explicitly handle locator, scenes and collision meshes
             switch (m.Mesh.Type)
             {
                 case (NbMeshType.Mesh):
+                    {
                         connect_material_to_shader = true;
+                        save_to_group = true;
                         break;
+                    }
                 case (NbMeshType.Locator):  
                     {
                         if (!locatorMeshList.Contains(m.Mesh))
@@ -766,7 +784,21 @@ namespace NbCore.Systems
 
             //Add meshes to their associated material meshlist
             if (!MaterialMgr.MaterialContainsMesh(m.Material, m.Mesh))
+            {
                 MaterialMgr.AddMeshToMaterial(m.Material, m.Mesh);
+                m.Mesh.MaterialID = m.Material.GetID();
+            }
+                
+            //Organize Meshes to Meshgroup
+            if (m.Mesh.GroupID < 0 && save_to_group)
+            {
+                if (!MeshGroupDict[0].Meshes.Contains(m.Mesh))
+                {
+                    MeshGroupDict[0].Meshes.Add(m.Mesh);
+                    m.Mesh.GroupID = 0;
+                }
+                    
+            }
             
         }
 
@@ -802,9 +834,95 @@ namespace NbCore.Systems
         }
 
 
+        #region MeshGroupActions
+        //MeshGroup Actions
+        public void OpenNewMeshGroup(int id)
+        {
+            if (OpenMeshGroups.ContainsKey(id))
+            {
+                Log("MeshGroup Already Open!", LogVerbosityLevel.WARNING);
+                return;
+            }
+
+            NbMeshGroup group = new()
+            {
+                Meshes = new()
+            };
+
+            //TODO: Generate TBO
+            
+            OpenMeshGroups[id] = group;
+        }
+
+        public void DeleteOpenMeshGroup(int id)
+        {
+            if (!OpenMeshGroups.ContainsKey(id))
+            {
+                Log($"There is no MeshGroup with ID {id}!", LogVerbosityLevel.WARNING);
+                return;
+            }
+            OpenMeshGroups.Remove(id);
+        }
+
+        public void SubmitMeshGroup(int id)
+        {
+            if (!OpenMeshGroups.ContainsKey(id))
+            {
+                Log($"There is no open MeshGroup with ID {id}!", LogVerbosityLevel.WARNING);
+                return;
+            }
+
+            NbMeshGroup mg = OpenMeshGroups[id];
+            mg.ID = MeshGroups.Count;
+            MeshGroups.Add(OpenMeshGroups[id]);
+            OpenMeshGroups.Remove(id);
+        }
+
+        public void AddMeshToOpenGroup(int id, NbMesh mesh)
+        {
+            if (!OpenMeshGroups.ContainsKey(id))
+            {
+                Log($"There is no open MeshGroup with ID {id}!", LogVerbosityLevel.WARNING);
+                return;
+            }
+
+            NbMeshGroup mg = OpenMeshGroups[id];
+            mg.Meshes.Add(mesh);
+        }
+
+        public void SubmitOpenMeshGroups()
+        {
+            foreach (var pair in OpenMeshGroups)
+            {
+                pair.Value.ID = MeshGroupCount;
+                foreach (NbMesh mesh in pair.Value.Meshes)
+                    mesh.GroupID = MeshGroupCount;
+                
+                MeshGroupDict[pair.Value.ID] = pair.Value;
+                MeshGroups.Add(pair.Value);
+                OpenMeshGroups.Remove(pair.Key);
+
+                SortMeshGroup(pair.Value);
+            }
+        }
+
+        #endregion
 
 
-#region Rendering Methods
+        #region SortingProcedures
+        private void SortMeshGroup(NbMeshGroup group)
+        {
+            group.Meshes.Sort((NbMesh a, NbMesh b) =>
+            {
+                MeshMaterial ma = MaterialMgr.Get(a.MaterialID);
+                MeshMaterial mb = MaterialMgr.Get(b.MaterialID);
+                return ma.Shader.GetID().CompareTo(mb.Shader.GetID());
+            });
+        }
+
+        #endregion
+
+        #region Rendering Methods
 
         private void sortLights()
         {
@@ -1016,51 +1134,19 @@ namespace NbCore.Systems
             //Set polygon mode
             GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.renderSettings.RENDERMODE);
             
-            foreach (GLSLShaderConfig shader in ShaderMgr.GLDeferredShaders)
+            foreach(NbMeshGroup mg in MeshGroups)
             {
-                foreach (MeshMaterial mat in ShaderMgr.GetShaderMaterials(shader))
+                foreach (NbMesh mesh in mg.Meshes)
                 {
-                    foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
-                    {
-                        if (mesh.InstanceCount == 0)
-                            continue;
-
-                        Renderer.SetProgram(shader.ProgramID);
-                        Renderer.RenderMesh(mesh, mat);
-
-                        //TODO : Store the bhull as a separate mesh and render it just like any other mesh
-                        //if (RenderState.settings.viewSettings.ViewBoundHulls)
-                        //{
-                        //    GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
-                        //    //Renderer.RenderMesh(mesh, mat, RENDERPASS.BHULL);
-                        //    GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.renderSettings.RENDERMODE);
-                        //}
-                    }
-                }
-                
-                //GL.BindBuffer(BufferTarget.UniformBuffer, 0); //Unbind UBOs
-                
-                /*
-                //TESTING - Render Bound Boxes for the transparent meshes
-                shader = resMgr.GLShaders[GLSLHelper.SHADER_TYPE.BBOX_SHADER];
-                GL.UseProgram(shader.program_id);
-                
-                //I don't expect any other object type here
-                foreach (GLMeshVao m in transparentMeshQueue)
-                {
-                    if (m.instance_count == 0)
+                    if (mesh.InstanceCount == 0)
                         continue;
-                    
-                    //GL.BindBufferRange(BufferRangeTarget.UniformBuffer, 1, UBOs["_COMMON_PER_MESH"],
-                    //    (IntPtr)(m.UBO_offset), m.UBO_aligned_size);
 
-                    m.render(shader, RENDERPASS.BHULL);
-                    //if (RenderOptions.RenderBoundHulls)
-                    //    m.render(RENDERPASS.BHULL);
+                    MeshMaterial mat = MaterialMgr.Get(mesh.MaterialID);
+                    Renderer.SetProgram(mat.Shader.ProgramID);
+                    Renderer.RenderMesh(mesh, mat);
                 }
-                */
             }
-
+            
             //Set polygon mode
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         }
@@ -1074,6 +1160,7 @@ namespace NbCore.Systems
             GL.Enable(EnableCap.CullFace);
 
             //DEFERRED STAGE
+            GL.ClearColor(new OpenTK.Mathematics.Color4(0.0f, 0, 0, 1.0f));
             Renderer.BindDrawFrameBuffer(gBuffer, new int[] {0, 1, 2});
             Renderer.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
 
@@ -1249,9 +1336,8 @@ namespace NbCore.Systems
             gfTime += dt; //Update render time
 
             //Log("Rendering Frame");
-            GL.ClearColor(new OpenTK.Mathematics.Color4(0.0f, 0, 0, 1.0f));
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-
+            
+            
             //TEST RENDERING
 
             //GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
