@@ -51,23 +51,6 @@ namespace NbCore
             Mesh = mesh;
         }
 
-        public void SetupTBO()
-        {
-            //Setup the TBO
-            instanceBoneMatricesTex = GL.GenTexture();
-            instanceBoneMatricesTexTBO = GL.GenBuffer();
-
-            int bufferSize = Mesh.InstanceCount * 128 * 16 * 4;
-            
-            GL.BindBuffer(BufferTarget.TextureBuffer, instanceBoneMatricesTexTBO);
-            GL.BufferData(BufferTarget.TextureBuffer, bufferSize, Mesh.instanceBoneMatrices, BufferUsageHint.StreamDraw);
-            GL.TexBuffer(TextureBufferTarget.TextureBuffer, SizedInternalFormat.Rgba32f, instanceBoneMatricesTexTBO);
-            GL.BindBuffer(BufferTarget.TextureBuffer, 0);
-        }
-
-        
-
-        
 
     }
 

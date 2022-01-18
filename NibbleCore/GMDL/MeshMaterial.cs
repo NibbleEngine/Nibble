@@ -91,6 +91,7 @@ namespace NbCore
 
         public static List<MaterialFlagEnum> supported_flags = new() {
             MaterialFlagEnum._F01_DIFFUSEMAP,
+            MaterialFlagEnum._F02_SKINNED,
             MaterialFlagEnum._F03_NORMALMAP,
             MaterialFlagEnum._F07_UNLIT,
             MaterialFlagEnum._F09_TRANSPARENT,

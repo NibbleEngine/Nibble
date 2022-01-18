@@ -6,20 +6,23 @@ using NbCore.Common;
 
 namespace NbCore
 {
-    public class Scene
+    public class SceneGraph
     {
-        public int ID = -1;
-        public string Name = "";
+        public int ID;
         public SceneGraphNode Root = null;
         public readonly List<SceneGraphNode> Nodes = new();
         public readonly List<SceneGraphNode> MeshNodes = new();
+        public readonly List<SceneGraphNode> JointNodes = new();
+        public readonly List<SceneGraphNode> SceneNodes = new();
         public readonly List<SceneGraphNode> LightNodes = new();
 
-        public Scene()
+        public SceneGraph()
         {
             Nodes = new();
             MeshNodes = new();
+            SceneNodes = new();
             LightNodes = new();
+            JointNodes = new();
         }
 
         public void SetID(int id)
@@ -32,11 +35,16 @@ namespace NbCore
             return Nodes.Contains(n);
         }
 
+        public SceneGraphNode GetNodeByName(string name)
+        {
+            return Nodes.Find(x => x.Name == name);
+        }
+
         public void RemoveNode(SceneGraphNode n)
         {
             if (!HasNode(n))
             {
-                Callbacks.Log(string.Format("Node {0} does not belongs to scene {1}", n.Name, ID),
+                Callbacks.Log(string.Format("Node {0} does not belongs to this scene", n.Name),
                     LogVerbosityLevel.WARNING);
                 return;
             }
@@ -44,65 +52,57 @@ namespace NbCore
             //Handle orphans
             if (n.Parent != null)
                 n.Parent.RemoveChild(n);
-            
+
             if (n.HasComponent<MeshComponent>())
                 MeshNodes.Remove(n);
 
             if (n.HasComponent<LightComponent>())
                 LightNodes.Remove(n);
 
-            //Set scene Reference
-            n.SceneRef = null;
+            if (n.HasComponent<JointComponent>())
+                JointNodes.Remove(n);
+
+            if (n.HasComponent<SceneComponent>())
+                SceneNodes.Remove(n);
+
         }
 
         public void AddNode(SceneGraphNode n)
         {
-            //I should not chekck for registration status of n here
-            //This should allow for node generation from the plugins
-            //And then try to register the entire scene once its ready
-            //to the entity registry
-            
             if (HasNode(n))
             {
-                Callbacks.Log(string.Format("Node {0} already belongs to scene {1}", n.Name, ID),
+                Callbacks.Log(string.Format("Node {0} already belongs to scene", n.Name),
                     LogVerbosityLevel.WARNING);
                 return;
             }
-
-            //Handle orphans
-            if (n.Parent == null)
-                Root?.AddChild(n);
 
             Nodes.Add(n);
 
             if (n.HasComponent<MeshComponent>())
                 MeshNodes.Add(n);
-            
+
             if (n.HasComponent<LightComponent>())
                 LightNodes.Add(n);
 
-            //Set scene Reference
-            n.SceneRef = this;
+            if (n.HasComponent<JointComponent>())
+                JointNodes.Add(n);
+
+            if (n.HasComponent<SceneComponent>())
+                SceneNodes.Add(n);
+
+            foreach (SceneGraphNode child in n.Children)
+                AddNode(child);
         }
 
-        public void CacheUninitializedNodes()
+        public void Clear()
         {
-            foreach (SceneGraphNode n in Nodes)
-            {
-                GUIDComponent gc = n.GetComponent<GUIDComponent>() as GUIDComponent;
-
-                if (!gc.Initialized)
-                {
-                    
-                }
-            }
+            Root.Children.Clear();
+            Nodes.Clear();
+            MeshNodes.Clear();
+            SceneNodes.Clear();
+            LightNodes.Clear();
+            JointNodes.Clear();
         }
-
-        public void SetRoot(SceneGraphNode n)
-        {
-            Root = n;
-        }
-
 
     }
 }

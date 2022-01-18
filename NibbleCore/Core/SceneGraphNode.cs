@@ -33,8 +33,8 @@ namespace NbCore
         //public SceneGraphNode ParentScene = null; //Is this useful at all?
         public List<float> LODDistances = new();
         public Dictionary<string, string> Attributes = new();
+        public SceneGraphNode Root = null;
         public SceneGraphNode Parent = null;
-        public Scene SceneRef = null;
         public List<SceneGraphNode> Children = new();
         
         //Disposable Stuff
@@ -101,6 +101,12 @@ namespace NbCore
             e.SetParent(this);
         }
 
+        public void SetRootScene(SceneGraphNode e)
+        {
+            if (e.HasComponent<SceneComponent>())
+                Root = e;
+        }
+
         public void SetParent(SceneGraphNode e)
         {
             Parent = e;
@@ -112,18 +118,6 @@ namespace NbCore
                 TransformComponent tc = GetComponent<TransformComponent>() as TransformComponent;
                 TransformComponent parent_tc = Parent.GetComponent<TransformComponent>() as TransformComponent;
                 tc.Data.SetParentData(parent_tc.Data);
-            }
-        }
-
-        public void DettachFromParent()
-        {
-            Common.Callbacks.Assert(Parent != null, "Parent Entity should not be null");
-            Parent.RemoveChild(this);
-            
-            if (HasComponent<TransformComponent>())
-            {
-                TransformComponent tc = GetComponent<TransformComponent>() as TransformComponent;
-                tc.Data.ClearParentData();
             }
         }
 

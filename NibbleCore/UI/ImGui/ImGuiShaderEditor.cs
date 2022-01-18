@@ -29,7 +29,7 @@ namespace NbCore.UI.ImGui
             for (int i = 0; i < items.Length; i++)
             {
                 GLSLShaderSource ss = (GLSLShaderSource) shaderSourceList[i];
-                items[i] = ss.Name == "" ? "Shader_" + i : ss.Name;
+                items[i] = ss.SourceFilePath;
             }
                 
             if (ImGuiCore.Combo("##1", ref selectedId, items, items.Length))

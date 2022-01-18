@@ -163,8 +163,8 @@ namespace NbCore
             //Move Camera based on the impulse
 
             //Calculate Next State 
-            NbVector3 currentPosition = t_controller.LastPosition;
-            NbQuaternion currentRotation = t_controller.LastRotation;
+            NbVector3 currentPosition = t_controller.Position;
+            NbQuaternion currentRotation = t_controller.Rotation;
             NbVector3 currentScale = new(1.0f);
 
             NbVector3 offset = new();

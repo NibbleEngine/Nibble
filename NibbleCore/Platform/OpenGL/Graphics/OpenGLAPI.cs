@@ -210,21 +210,26 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, UBOs["_COMMON_PER_FRAME"]);
         }
 
-        private void setupSceneSSBO(int size)
+        public int CreateGroupBuffer()
         {
+            int size = (256 * 16 + 128) * 4; //FIXED SIZE FOR NOW
             int ssbo_id = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo_id);
             GL.BufferStorage(BufferTarget.ShaderStorageBuffer, size,
-                IntPtr.Zero, BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapWriteBit);
+                IntPtr.Zero, BufferStorageFlags.DynamicStorageBit);
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
 
-            //Store buffer to UBO dictionary
-            UBOs["_COMMON_PER_SCENE"] = ssbo_id;
-            
             //Attach the generated buffers to the binding points
-            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 1, UBOs["_COMMON_PER_SCENE"]);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, ssbo_id);
+
+            return ssbo_id;
         }
 
+        public void DestroyGroupBuffer(int id)
+        {
+            GL.DeleteBuffer(id);
+        }
+            
         private bool prepareCommonPermeshSSBO(GLInstancedMesh m, uint max_buffer_size, ref int UBO_Offset, ref int instance_counter)
         {
             //if (m.instance_count == 0 || m.visible_instances == 0) //use the visible_instance if we maintain an occluded status
@@ -237,6 +242,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             //Calculate aligned size
             int newsize = m.Mesh.InstanceCount * Marshal.SizeOf(typeof(MeshInstance));
             
+
             if (newsize + UBO_Offset > max_buffer_size)
             {
 #if DEBUG
@@ -727,15 +733,6 @@ namespace NbCore.Platform.Graphics.OpenGL
             }
         }
 
-        public void uploadSkinningData(GLInstancedMesh mesh)
-        {
-            GL.BindBuffer(BufferTarget.TextureBuffer, mesh.instanceBoneMatricesTexTBO);
-            int bufferSize = mesh.Mesh.InstanceCount * 128 * 16 * 4;
-            GL.BufferSubData(BufferTarget.TextureBuffer, IntPtr.Zero, bufferSize, mesh.Mesh.instanceBoneMatrices);
-            //Console.WriteLine(GL.GetError());
-            GL.BindBuffer(BufferTarget.TextureBuffer, 0);
-        }
-        
         public void renderBbox(MeshComponent mc)
         {
             if (mc == null)
@@ -857,14 +854,14 @@ namespace NbCore.Platform.Graphics.OpenGL
             
             //BIND TEXTURE Buffer
             //TODO: RESTORE
-            if (Mesh.Mesh.MetaData.skinned && false)
-            {
-                GL.Uniform1(shader.uniformLocations["skinMatsTex"], 6);
-                GL.ActiveTexture(TextureUnit.Texture6);
-                GL.BindTexture(TextureTarget.TextureBuffer, Mesh.instanceBoneMatricesTex);
-                GL.TexBuffer(TextureBufferTarget.TextureBuffer,
-                    SizedInternalFormat.Rgba32f, Mesh.instanceBoneMatricesTexTBO);
-            }
+            //if (Mesh.Mesh.MetaData.skinned && false)
+            //{
+            //    GL.Uniform1(shader.uniformLocations["skinMatsTex"], 6);
+            //    GL.ActiveTexture(TextureUnit.Texture6);
+            //    GL.BindTexture(TextureTarget.TextureBuffer, Mesh.instanceBoneMatricesTex);
+            //    GL.TexBuffer(TextureBufferTarget.TextureBuffer,
+            //        SizedInternalFormat.Rgba32f, Mesh.instanceBoneMatricesTexTBO);
+            //}
         }
         
         public void SyncGPUCommands()

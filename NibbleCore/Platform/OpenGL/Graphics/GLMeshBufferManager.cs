@@ -95,33 +95,11 @@ namespace NbCore.Platform.Graphics.OpenGL
             SetInstanceWorldMat(mesh, mc.InstanceID, actualWorldMat);
             SetInstanceWorldMatInv(mesh, mc.InstanceID, actualWorldMatInv);
             SetInstanceNormalMat(mesh, mc.InstanceID, NbMatrix4.Transpose(actualWorldMatInv));
-
+            //Save firstskin mat for skinned instances
+            SetInstanceUniform4(mesh, mc.InstanceID, 0, new NbVector4(mesh.MetaData.FirstSkinMat, 0.0f, 0.0f, 0.0f));
             mesh.InstanceCount++;
         }
         
-        //public static int AddRenderInstance(ref NbMesh mesh, NbMatrix4 worldMat, NbMatrix4 worldMatInv, NbMatrix4 normMat)
-        //{
-        
-        //    int render_instance_id = mesh.InstanceCount;
-
-        //    //Expand mesh data buffer if required
-        //    if (render_instance_id * instance_struct_size_bytes > mesh.InstanceDataBuffer.Length)
-        //    {
-        //        float[] newBuffer = new float[mesh.InstanceDataBuffer.Length + instance_struct_size_floats * 5]; //Extend by 5 instances
-        //        Array.Copy(mesh.InstanceDataBuffer, newBuffer, mesh.InstanceDataBuffer.Length);
-        //        mesh.InstanceDataBuffer = newBuffer;
-        //    }
-            
-        //    //Uplod worldMat to the meshVao
-        //    SetInstanceWorldMat(mesh, render_instance_id, worldMat);
-        //    SetInstanceWorldMatInv(mesh, render_instance_id, worldMatInv);
-        //    SetInstanceNormalMat(mesh, render_instance_id, normMat);
-
-        //    mesh.InstanceCount++;
-            
-        //    return render_instance_id;
-        //}
-
         public static void RemoveRenderInstance(ref NbMesh mesh, MeshComponent mc)
         {
             Callbacks.Assert(mc.InstanceID >= 0, "Negative instance ID. ILLEGAL instance removal");

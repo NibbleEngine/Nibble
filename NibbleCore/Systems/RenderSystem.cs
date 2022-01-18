@@ -58,13 +58,7 @@ namespace NbCore.Systems
 
         public RenderingSystem() : base(EngineSystemEnum.RENDERING_SYSTEM)
         {
-            NbMeshGroup group = new()
-            {
-                ID = 0,
-                Meshes = new()
-            };
-            MeshGroupDict[0] = group;
-            MeshGroups.Add(group);
+            
         }
 
         public NbVector2i GetViewportSize()
@@ -103,8 +97,6 @@ namespace NbCore.Systems
 
             Log("Resource Manager Initialized", LogVerbosityLevel.INFO);
         }
-
-        
 
         public void setupGBuffer(int width, int height)
         {
@@ -160,13 +152,17 @@ namespace NbCore.Systems
             jointMeshList.Clear();
             lightMeshList.Clear();
             octree.clear();
+
+            DeleteMeshGroups(); //This frees TBOs as well
         }
 
         public override void CleanUp()
         {
             //Just cleanup the queues
             //The resource manager will handle the cleanup of the buffers and shit
+            //TODO: No proper disposal of vao's at the moment
             CleanUpGeometry();
+            
             //Manager Cleanups
             TextureMgr.CleanUp();
             MaterialMgr.CleanUp();
@@ -387,6 +383,19 @@ namespace NbCore.Systems
 
         private void AddDefaultPrimitives()
         {
+
+            //Create Default MeshGroup
+            NbMeshGroup group = new()
+            {
+                ID = 0,
+                GroupTBO1Data = new float[256 * 16],
+                GroupTBO1 = Renderer.CreateGroupBuffer(),
+                boneRemapIndices = new int[1],
+                Meshes = new()
+            };
+            MeshGroupDict[0] = group;
+            MeshGroups.Add(group);
+
             //Setup Primitive Vaos
 
             //Default quad
@@ -479,6 +488,9 @@ namespace NbCore.Systems
             lsph.Dispose();
             
             GenerateGizmoParts();
+
+            
+
         }
 
         private void AddDefaultMaterials()
@@ -699,34 +711,12 @@ namespace NbCore.Systems
             MeshDataMgr.Add(mc.Mesh.Data.Hash, mc.Mesh.Data);
 
             //Add to MeshGroup
-            if (mc.Mesh.GroupID >= 0)
-                if (!OpenMeshGroups.ContainsKey(mc.Mesh.GroupID))
-                    OpenNewMeshGroup(mc.Mesh.GroupID);
-            
-            AddMeshToOpenGroup(mc.Mesh.GroupID, mc.Mesh);
+            if (mc.Mesh.Group != null)
+                if (!OpenMeshGroups.ContainsKey(mc.Mesh.Group.ID))
+                    AddNewMeshGroup(mc.Mesh.Group);
             
             process_model(mc);
         }   
-
-        public void populate(Scene s)
-        {
-            CleanUpGeometry();
-            
-            //Populate octree
-            //octree.insert(root);
-            //octree.report();
-            MeshComponent mc;
-            foreach (SceneGraphNode n in s.MeshNodes)
-            {
-                mc = n.GetComponent<MeshComponent>() as MeshComponent;
-                process_model(mc);
-            }
-            
-            //Add default light mesh
-            var light = EngineRef.GetSceneNodeByNameType(SceneNodeType.LIGHT, "Default Light");
-            mc = light.GetComponent<MeshComponent>() as MeshComponent;
-            process_model(mc);
-        }
 
         private void process_model(MeshComponent m)
         {
@@ -790,12 +780,12 @@ namespace NbCore.Systems
             }
                 
             //Organize Meshes to Meshgroup
-            if (m.Mesh.GroupID < 0 && save_to_group)
+            if (m.Mesh.Group == null && save_to_group)
             {
                 if (!MeshGroupDict[0].Meshes.Contains(m.Mesh))
                 {
                     MeshGroupDict[0].Meshes.Add(m.Mesh);
-                    m.Mesh.GroupID = 0;
+                    m.Mesh.Group = MeshGroupDict[0];
                 }
                     
             }
@@ -836,22 +826,15 @@ namespace NbCore.Systems
 
         #region MeshGroupActions
         //MeshGroup Actions
-        public void OpenNewMeshGroup(int id)
+        public void AddNewMeshGroup(NbMeshGroup mg)
         {
-            if (OpenMeshGroups.ContainsKey(id))
+            if (OpenMeshGroups.ContainsKey(mg.ID))
             {
                 Log("MeshGroup Already Open!", LogVerbosityLevel.WARNING);
                 return;
             }
-
-            NbMeshGroup group = new()
-            {
-                Meshes = new()
-            };
-
-            //TODO: Generate TBO
             
-            OpenMeshGroups[id] = group;
+            OpenMeshGroups[mg.ID] = mg;
         }
 
         public void DeleteOpenMeshGroup(int id)
@@ -864,18 +847,29 @@ namespace NbCore.Systems
             OpenMeshGroups.Remove(id);
         }
 
-        public void SubmitMeshGroup(int id)
+        public void DeleteMeshGroup(NbMeshGroup mg)
         {
-            if (!OpenMeshGroups.ContainsKey(id))
-            {
-                Log($"There is no open MeshGroup with ID {id}!", LogVerbosityLevel.WARNING);
-                return;
-            }
+            Renderer.DestroyGroupBuffer(mg.GroupTBO1);
+        }
 
-            NbMeshGroup mg = OpenMeshGroups[id];
+        public void DeleteMeshGroups()
+        {
+            foreach (NbMeshGroup mg in MeshGroups)
+            {
+                DeleteMeshGroup(mg);
+            }
+            
+            MeshGroups.Clear();
+            MeshGroupDict.Clear();
+        }
+
+        public void SubmitMeshGroup(NbMeshGroup mg)
+        {
             mg.ID = MeshGroups.Count;
-            MeshGroups.Add(OpenMeshGroups[id]);
-            OpenMeshGroups.Remove(id);
+            mg.GroupTBO1 = Renderer.CreateGroupBuffer();
+            mg.GroupTBO1Data = new float[256 * 16];
+            MeshGroups.Add(mg);
+            MeshGroupDict[mg.ID] = mg;
         }
 
         public void AddMeshToOpenGroup(int id, NbMesh mesh)
@@ -894,16 +888,19 @@ namespace NbCore.Systems
         {
             foreach (var pair in OpenMeshGroups)
             {
-                pair.Value.ID = MeshGroupCount;
-                foreach (NbMesh mesh in pair.Value.Meshes)
-                    mesh.GroupID = MeshGroupCount;
-                
-                MeshGroupDict[pair.Value.ID] = pair.Value;
-                MeshGroups.Add(pair.Value);
-                OpenMeshGroups.Remove(pair.Key);
-
+                SubmitMeshGroup(pair.Value);
                 SortMeshGroup(pair.Value);
+                OpenMeshGroups.Remove(pair.Key);
             }
+        }
+
+        public void UpdateMeshGroupData(NbMeshGroup mg)
+        {
+            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, mg.GroupTBO1);
+            //Upload skinning data
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, mg.GroupTBO1Data.Length * 4, mg.GroupTBO1Data);
+            //Upload remap data
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero + mg.GroupTBO1Data.Length * 4, mg.boneRemapIndices.Length * 4, mg.boneRemapIndices);
         }
 
         #endregion
@@ -1136,6 +1133,9 @@ namespace NbCore.Systems
             
             foreach(NbMeshGroup mg in MeshGroups)
             {
+                //Bind Group Data Buffer
+                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, mg.GroupTBO1);
+
                 foreach (NbMesh mesh in mg.Meshes)
                 {
                     if (mesh.InstanceCount == 0)
@@ -1268,7 +1268,6 @@ namespace NbCore.Systems
             GL.BlendFunc(BlendingFactor.OneMinusSrcAlpha, BlendingFactor.SrcAlpha); //Set compositing blend func
                                                                                     //GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha); //Set compositing blend func
 
-
             //Prepare Shader State
             bwoit_composite_shader.ClearCurrentState();
             bwoit_composite_shader.CurrentState.AddSampler("in1Tex",
@@ -1293,8 +1292,6 @@ namespace NbCore.Systems
             GL.Disable(EnableCap.Blend);
         }
 
-        
-        
         private void renderFinalPass()
         {
             //Blit albedo, normals and depth to the final render buffer
@@ -1775,7 +1772,11 @@ namespace NbCore.Systems
         {
             Camera.UpdateCameraDirectionalVectors(RenderState.activeCam);
 
-            //Compile shaders
+            //Re-upload meshgroup buffers
+            foreach(NbMeshGroup mg in MeshGroups)
+                UpdateMeshGroupData(mg);
+                
+            //Re-Compile requested shaders
             while (ShaderMgr.CompilationQueue.Count > 0)
             {
                 GLSLShaderConfig shader = ShaderMgr.CompilationQueue.Dequeue();

@@ -122,9 +122,33 @@ namespace NbCore.UI.ImGui
                 if (transform_changed)
                     RequestNodeUpdateRecursive(_model);
             }
-            
+
             //Draw Components
-            
+
+
+            //SceneComponent
+            if (_model.HasComponent<SceneComponent>())
+            {
+                SceneComponent sc = _model.GetComponent<SceneComponent>() as SceneComponent;
+
+                if (ImGuiCore.CollapsingHeader("Scene Component", ImGuiTreeNodeFlags.DefaultOpen))
+                {
+                    //Report Scene Statistics
+                    ImGuiCore.Columns(2);
+                    ImGuiCore.Text("Node Count");
+                    ImGuiCore.Text("Light Count");
+                    ImGuiCore.Text("Mesh Count");
+                    ImGuiCore.Text("Joint Count");
+                    ImGuiCore.NextColumn();
+                    ImGuiCore.Text(sc.Nodes.Count.ToString());
+                    ImGuiCore.Text(sc.LightNodes.Count.ToString());
+                    ImGuiCore.Text(sc.MeshNodes.Count.ToString());
+                    ImGuiCore.Text(sc.JointNodes.Count.ToString());
+                    ImGuiCore.Columns(1);
+                }
+            }
+
+
             //MeshComponent
             if (_model.HasComponent<MeshComponent>())
             {
@@ -138,7 +162,7 @@ namespace NbCore.UI.ImGui
                     ImGuiCore.Text("Material");
                     ImGuiCore.NextColumn();
                     ImGuiCore.Text(mc.InstanceID.ToString());
-                    ImGuiCore.Text(mc.Mesh.GroupID.ToString());
+                    ImGuiCore.Text(mc.Mesh.Group != null ? mc.Mesh.Group.ID.ToString() : "-1");
                     if (mm != null)
                     {
                         ImGuiCore.Text(mm.Name);
@@ -343,12 +367,26 @@ namespace NbCore.UI.ImGui
                                 ImGuiCore.TableSetColumnIndex(0);
                                 ImGuiCore.Selectable(anim.animData.MetaData.Name);
                                 ImGuiCore.TableSetColumnIndex(1);
-                                ImGuiCore.Button("Play##" + anim.animData.MetaData.Name);
+                                if (ImGuiCore.Button("Play##" + anim.animData.MetaData.Name))
+                                {
+                                    anim.IsPlaying = true;
+                                };
                                 ImGuiCore.SameLine();
-                                ImGuiCore.Button("Stop##" + anim.animData.MetaData.Name);
+                                if(ImGuiCore.Button("Stop##" + anim.animData.MetaData.Name))
+                                {
+                                    anim.IsPlaying = false;
+                                };
                                 ImGuiCore.TableSetColumnIndex(2);
 
-                                ImGuiCore.SliderInt("##AnimFrame" + anim.animData.MetaData.Name, ref slider_test, 0, 100);
+                                ImGuiCore.Checkbox("##Override", ref anim.Override);
+                                ImGuiCore.SameLine();
+
+                                if (!anim.Override)
+                                    ImGuiCore.PushItemFlag(ImGuiItemFlags.Disabled, true);
+                                ImGuiCore.SliderInt("##AnimFrame" + anim.animData.MetaData.Name, ref anim.ActiveFrameIndex, 
+                                    0, anim.animData.FrameCount);
+                                if (!anim.Override)
+                                    ImGuiCore.PopItemFlag();
                             }
 
                             ImGuiCore.EndTable();

@@ -32,9 +32,9 @@ namespace NbCore
         public int LODDistance2;
 
         //Skinning Data
-        public bool skinned = false;
+        //public bool skinned = false;
         public int BoneRemapIndicesCount;
-        public int[] BoneRemapIndices;
+        //public int[] BoneRemapIndices;
 
 
         public NbMeshMetaData()
