@@ -51,9 +51,10 @@ namespace NbCore
         //Rendering 
         public EngineRenderingState rt_State;
 
-        //Event Handlers
-        public event EventHandler<AddSceneEventData> AddSceneEventHandler;
-    
+        //Events
+        public delegate void NewSceneEventHandler(SceneGraph s);
+        public NewSceneEventHandler NewSceneEvent;
+
         //Plugin List
         public Dictionary<string, PluginBase> Plugins = new();
 
@@ -302,7 +303,7 @@ namespace NbCore
         }
 
         
-        public void RemoveEntity(Entity e)
+        public void DestroyEntity(Entity e)
         {
             //Remove from main registry
             if (registrySys.DeleteEntity(e))
@@ -313,15 +314,21 @@ namespace NbCore
             }
         }
 
-        
-        public void ImportNode(SceneGraphNode node)
+        public void ImportScene(SceneGraphNode scene)
         {
-            RegisterSceneGraphNode(node);
-            RequestEntityTransformUpdate(node);
+            RegisterSceneGraphNode(scene);
+            RequestEntityTransformUpdate(scene);
+
+            scene.SetParent(GetActiveSceneGraph().Root);
+            scene.Root = scene.Parent;
             
             //Post Import procedures
             renderSys.SubmitOpenMeshGroups();
+
+            //Invoke Event
+            NewSceneEvent?.Invoke(GetActiveSceneGraph());
         }
+
 
         public void RegisterEntity(Entity e)
         {
@@ -358,6 +365,9 @@ namespace NbCore
 
                 }
 
+                if (e is SceneGraphNode)
+                    sceneMgmtSys.AddNode(e as SceneGraphNode);
+                
                 //TODO Register to the rest systems if necessary
             }
         }
@@ -365,7 +375,6 @@ namespace NbCore
         public void RegisterSceneGraphNode(SceneGraphNode node)
         {
             RegisterEntity(node);
-            sceneMgmtSys.ActiveScene.AddNode(node); //Add to the active scene
             foreach (SceneGraphNode child in node.Children)
                 RegisterSceneGraphNode(child);
         }
@@ -378,20 +387,10 @@ namespace NbCore
         }
 
         #region SceneManagement
-        public Scene CreateScene()
+        
+        public void ClearActiveSceneGraph()
         {
-            Scene scn = sceneMgmtSys.CreateScene();
-            //Register Entities
-            RegisterEntity(scn.Root);
-            transformSys.RequestEntityUpdate(scn.Root);
-            
-            return scn;
-        }
-
-        public void ClearScene()
-        {
-            Scene scn = sceneMgmtSys.ActiveScene;
-            sceneMgmtSys.ClearScene(scn);
+            sceneMgmtSys.ClearSceneGraph(sceneMgmtSys.ActiveSceneGraph);
         }
 
         #endregion
@@ -556,7 +555,6 @@ namespace NbCore
             TransformationSystem.AddTransformComponentToEntity(cam);
             TransformComponent tc = cam.GetComponent<TransformComponent>() as TransformComponent;
             tc.IsControllable = true;
-            tc.IsDynamic = true;
             RegisterEntity(cam);
             
             //Set global reference to cam
@@ -695,7 +693,7 @@ namespace NbCore
             scene.Children.Add(l);
 
             //Populate RenderManager
-            renderSys.populate(null);
+            //renderSys.populate(null); //OBSOLETE
 
             scene.IsSelected = true;
             //RenderState.activeModel = root; //Set the new scene as the new activeModel
@@ -721,46 +719,6 @@ namespace NbCore
         }
 
 #endif
-
-        private void rt_addScene(SceneGraphNode node)
-        {
-            //Once the new scene has been loaded, 
-            //Initialize Palettes
-            
-            //Clear Systems
-            actionSys.CleanUp();
-            animationSys.CleanUp();
-
-            //Clear Resources
-            //ModelProcGen.procDecisions.Clear();
-            
-            RenderState.itemCounter = 0;
-            
-            //Clear RenderStats
-            RenderStats.ClearStats();
-
-            //Stop animation if on
-            bool animToggleStatus = RenderState.settings.renderSettings.ToggleAnimations;
-            RenderState.settings.renderSettings.ToggleAnimations = false;
-            
-            //Register Scene to Entity Registry
-            
-            //Explicitly add default light to the rootObject
-            SceneGraphNode l = CreateLightNode();
-            node.AddChild(l);
-            
-            RegisterSceneGraphNode(node);
-            
-            //root.update(); //Refresh all transforms
-            //root.setupSkinMatrixArrays();
-
-            //Populate RenderManager
-            renderSys.populate(null);
-
-            //Restart anim worker if it was active
-            RenderState.settings.renderSettings.ToggleAnimations = animToggleStatus;
-        }
-        
 
         public void SendRequest(ref ThreadRequest r)
         {
@@ -798,8 +756,7 @@ namespace NbCore
             //Add Transform Component
             TransformData td = new();
             TransformComponent tc = new(td);
-            tc.IsDynamic = false;
-            tc.IsControllable = true;
+            tc.IsControllable = false;
             n.AddComponent<TransformComponent>(tc);
 
             //Create MeshComponent
@@ -848,8 +805,7 @@ namespace NbCore
             //Add Transform Component
             TransformData td = new();
             TransformComponent tc = new(td);
-            tc.IsDynamic = false;
-            tc.IsControllable = true;
+            tc.IsControllable = false;
             n.AddComponent<TransformComponent>(tc);
 
             //Create MeshComponent
@@ -1029,6 +985,7 @@ namespace NbCore
                 //Attach UBO binding Points
                 renderSys.Renderer.AttachUBOToShaderBindingPoint(conf, "_COMMON_PER_FRAME", 0);
                 renderSys.Renderer.AttachSSBOToShaderBindingPoint(conf, "_COMMON_PER_MESH", 1);
+                renderSys.Renderer.AttachSSBOToShaderBindingPoint(conf, "_COMMON_PER_MESHGROUP", 2);
 
                 Callbacks.Assert(conf.Hash == hash, "Inconsistent Shader Hash Calculation");
 
@@ -1044,9 +1001,7 @@ namespace NbCore
 
         public void DisposeSceneGraphNode(SceneGraphNode node)
         {
-            node.SceneRef?.RemoveNode(node); //Remove from its scene
-            
-            RemoveEntity(node);
+            DestroyEntity(node);
             
             //Mesh Node Disposal
             if (node.HasComponent<MeshComponent>())
@@ -1080,9 +1035,13 @@ namespace NbCore
 
         #region StateQueries
 
-        public Scene GetActiveScene()
+        public SceneGraph GetActiveSceneGraph()
         {
-            return sceneMgmtSys.ActiveScene;
+            //TODO: This should return the visible scenegraph
+            //Ideally we would like to have multiple scenegraphs
+            //With different objects on each one and just render the
+            //visible one
+            return sceneMgmtSys.ActiveSceneGraph;
         }
 
         public override void OnRenderUpdate(double dt)

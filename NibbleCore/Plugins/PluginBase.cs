@@ -32,7 +32,7 @@ namespace NbCore.Plugins
 
         public abstract void DrawImporters(); //Used to draw import functions in the File menu
         
-        public abstract void DrawExporters(Scene scn); //Used to draw export functions in the File menu
+        public abstract void DrawExporters(SceneGraph scn); //Used to draw export functions in the File menu
 
         public abstract void Draw(); //Used to draw plugin panels and popups
 

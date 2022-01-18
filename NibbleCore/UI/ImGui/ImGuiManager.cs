@@ -127,7 +127,7 @@ namespace NbCore.UI.ImGui
             SceneGraphViewer?.Draw();
         }
 
-        public void PopulateSceneGraph(Scene scn)
+        public void PopulateSceneGraph(SceneGraph scn)
         {
             SceneGraphViewer.Init(scn.Root);
         }

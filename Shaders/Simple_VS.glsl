@@ -32,6 +32,12 @@ layout (std430, binding=1) buffer _COMMON_PER_MESH
     MeshInstance instanceData[512];
 };
 
+layout (std430, binding=2) buffer _COMMON_PER_MESHGROUP
+{
+    mat4 boneMatricesTBO[256];
+    int BoneIndicesRemap[128];
+};
+
 //Outputs
 out vec4 fragPos; 
 out vec4 screenPos;
@@ -42,26 +48,6 @@ out vec3 mTangentSpaceNormalVec3;
 out vec4 uv;
 out mat3 TBN;
 flat out int instanceId;
-
-
-/*
-** Returns matrix4x4 from texture cache.
-*/
-#ifdef _F02_SKINNED
-
-mat4 get_skin_matrix(int offset)
-{
-    // return (mat4(texelFetch(mpCommonPerScene.skinMatsTex, offset),
-    //              texelFetch(mpCommonPerScene.skinMatsTex, offset + 1),
-    //              texelFetch(mpCommonPerScene.skinMatsTex, offset + 2),
-    //              texelFetch(mpCommonPerScene.skinMatsTex, offset + 3)));
-    return (mat4(1.0, 0.0, 0.0, 0.0,
-                 0.0, 1.0, 0.0, 0.0,
-                 0.0, 0.0, 1.0, 0.0,
-                 0.0, 0.0, 0.0, 1.0));
-}
-
-#endif
 
 void main()
 {
@@ -74,8 +60,8 @@ void main()
     instanceColor = instanceData[gl_InstanceID].color;
     isSelected = instanceData[gl_InstanceID].isSelected;
     
-    mat4 lWorldMat;
-    
+    mat4 lWorldMat = instanceData[gl_InstanceID].worldMat;
+    vec4 wPos = vPosition;
     //Check F02_SKINNED
     #ifdef _F02_SKINNED
         ivec4 index;
@@ -85,17 +71,22 @@ void main()
         index.z = int(blendIndices.z);
         index.w = int(blendIndices.w);
 
+        //Remapped indices
+        int offset = int(instanceData[gl_InstanceID].uniforms[0].x); //First element of the first uniform contains the firstskinmat
+        index.x = BoneIndicesRemap[offset + index.x];
+        index.y = BoneIndicesRemap[offset + index.y];
+        index.z = BoneIndicesRemap[offset + index.z];
+        index.w = BoneIndicesRemap[offset + index.w];
+
         //Assemble matrices from 
-        int instanceMatOffset = gl_InstanceID * 128 * 4;
-        lWorldMat =  blendWeights.x * get_skin_matrix(instanceMatOffset + 4 * index.x);
-        lWorldMat += blendWeights.y * get_skin_matrix(instanceMatOffset + 4 * index.y);
-        lWorldMat += blendWeights.z * get_skin_matrix(instanceMatOffset + 4 * index.z);
-        lWorldMat += blendWeights.w * get_skin_matrix(instanceMatOffset + 4 * index.w);
-    #else
-        lWorldMat = instanceData[gl_InstanceID].worldMat;
+        lWorldMat =  blendWeights.x * boneMatricesTBO[index.x];
+        lWorldMat += blendWeights.y * boneMatricesTBO[index.y];
+        lWorldMat += blendWeights.z * boneMatricesTBO[index.z];
+        lWorldMat += blendWeights.w * boneMatricesTBO[index.w];
+        //wPos.y += boneMatricesTBO[index.x];
     #endif
 
-    vec4 wPos = lWorldMat * vPosition; //Calculate world Position
+    wPos = lWorldMat * vPosition; //Calculate world Position
     fragPos = wPos; //Export world position to the fragment shader
     screenPos = mpCommonPerFrame.mvp * mpCommonPerFrame.rotMat * fragPos;
     gl_Position = screenPos;

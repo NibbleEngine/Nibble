@@ -10,7 +10,6 @@ namespace NbCore
     public unsafe class TransformComponent : Component {
 
         public TransformData Data;
-        public bool IsDynamic = false;
         public bool IsControllable = false;
 
         public TransformComponent(TransformData data): base()

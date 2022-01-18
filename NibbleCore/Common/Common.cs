@@ -242,6 +242,7 @@ namespace NbCore.Common
         public static int trisNum = 0;
         public static int texturesNum = 0;
         public static float fpsCount = 0;
+        public static float FrameTime = 0.0f;
         public static int occludedNum = 0;
 
         public static void ClearStats()

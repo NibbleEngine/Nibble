@@ -55,7 +55,6 @@ namespace NbCore.UI.ImGui
 
             //Setup root
             _root = root;
-            Traverse_Init(root);
         }
 
         public void DrawModals()
@@ -109,14 +108,9 @@ namespace NbCore.UI.ImGui
                 //Register new locator node to engine
                 _manager.EngineRef.RegisterEntity(new_node);
 
-                //Add locator the activeScene
-                Scene activeScene = _manager.EngineRef.GetActiveScene();
-
                 //Set parent
                 new_node.SetParent(_clicked);
-
-                activeScene.AddNode(new_node);
-
+                
                 _manager.EngineRef.transformSys.RequestEntityUpdate(new_node);
 
                 _clicked.IsOpen = true; //Make sure to open the node so that the new node is visible

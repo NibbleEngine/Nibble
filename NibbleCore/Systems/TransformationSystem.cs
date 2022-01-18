@@ -51,10 +51,11 @@ namespace NbCore.Systems
             _Data.Add(tc.Data); //Add ref to TransformData list
             
             if (tc.IsControllable)
+            {
                 EntityControllerMap[e.GetID()] = new TransformController(tc.Data);
-
-            if (tc.IsDynamic)
                 AddDynamicEntity(e);
+            }
+    
         }
 
         public void DeleteEntity(Entity e)
@@ -78,21 +79,22 @@ namespace NbCore.Systems
             _Data.Remove(tc.Data);
 
             if (tc.IsControllable)
+            {
                 EntityControllerMap.Remove(e.GetID());
-
-            if (tc.IsDynamic)
                 RemoveDynamicEntity(e);
+            }
+                
         }
 
         public override void OnRenderUpdate(double dt)
         {
             //Dynamic entities that have transform controllers should be updated per frame
 
-            //Update Dynamic Entities
+            //Calculate Current Transform states
             foreach (Entity e in DynamicEntities)
             {
                 TransformController tc = GetEntityTransformController(e);
-                tc.Update(dt);
+                tc.Update(dt); //Recalculate state
             }
 
             //TODO: Apply frustum culling to all transform data objects and set visibility
@@ -108,6 +110,12 @@ namespace NbCore.Systems
 
         public override void OnFrameUpdate(double dt)
         {
+            foreach (Entity e in DynamicEntities)
+            {
+                TransformController tc = GetEntityTransformController(e);
+                tc.Advance();
+            }
+
             //Update On Demand Entities
             while (UpdatedEntities.Count > 0)
             {
@@ -115,7 +123,6 @@ namespace NbCore.Systems
 
                 //Immediately calculate new transforms
                 TransformData td = GetEntityTransformData(e);
-                MeshComponent mc = e.GetComponent<MeshComponent>() as MeshComponent;
                 td.RecalculateTransformMatrices();
             }
         }

@@ -270,7 +270,7 @@ namespace NibbleOBJPlugin
 
         }
 
-        public override void DrawExporters(Scene scn)
+        public override void DrawExporters(SceneGraph scn)
         {
             return;
         }

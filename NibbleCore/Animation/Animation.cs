@@ -13,8 +13,10 @@ namespace NbCore
     public class Animation : Entity
     {
         public AnimationData animData; //Static Animation Data
+        public SceneGraphNode AnimationRoot; //Reference node to be able to search for joints
+        public NbMeshGroup RefMeshGroup = null; //Referenced group of animated meshes
         private int prevFrameIndex = 0;
-        private int activeFrameIndex = 0;
+        public int ActiveFrameIndex = 0;
         private int nextFrameIndex = 0;
         private float animationTime = 0.0f;
         private float prevFrameTime = 0.0f;
@@ -39,11 +41,6 @@ namespace NbCore
             
         }
 
-        public int GetActiveFrameIndex()
-        {
-            return activeFrameIndex;
-        }
-
         public Animation Clone()
         {
             Animation ad = new();
@@ -59,7 +56,7 @@ namespace NbCore
             Progress();
         }
 
-        public void Progress() 
+        private void Progress() 
         {
             //Override frame based on the GUI
             if (Override)
@@ -77,7 +74,7 @@ namespace NbCore
 
             int activeFrameCount = (animData.MetaData.FrameEnd == 0 ? animData.FrameCount : System.Math.Min(animData.MetaData.FrameEnd, animData.FrameCount)) - (animData.MetaData.FrameStart != 0 ? animData.MetaData.FrameStart : 0);
             //Assuming a fixed frequency of 60 fps for the animations
-            float activeAnimDuration = activeFrameCount * 1000.0f / 60.0f; // In ms TOTAL
+            float activeAnimDuration = activeFrameCount / 60.0f; // In ms TOTAL
             float activeAnimInterval = activeAnimDuration / (activeFrameCount - 1); // Per frame time
 
             if (animationTime > activeAnimDuration)
@@ -108,7 +105,7 @@ namespace NbCore
             {
                 //Progress animation
                 prevFrameIndex = nextFrameIndex;
-                activeFrameIndex = prevFrameIndex;
+                ActiveFrameIndex = prevFrameIndex;
                 prevFrameTime = nextFrameTime;
                 
                 nextFrameIndex = (prevFrameIndex + 1) % activeFrameCount;
@@ -120,6 +117,66 @@ namespace NbCore
             //Console.WriteLine("AnimationTime {0} PrevAnimationTime {1} NextAnimationTime {2} LERP Coeff {3}",
             //    animationTime, prevFrameTime, nextFrameTime, LERP_coeff);
 
+        }
+
+        public NbVector3 GetNodeTranslation(string node)
+        {
+            //Fetch prevFrame stuff
+            NbVector3 prev_p = animData.GetNodeTranslation(node, prevFrameIndex);
+            //Fetch nextFrame stuff
+            NbVector3 next_p = animData.GetNodeTranslation(node, nextFrameIndex);
+            //Interpolate
+            NbVector3 p = next_p * LERP_coeff + prev_p * (1.0f - LERP_coeff);
+
+            return p;
+        }
+
+        public NbQuaternion GetNodeRotation(string node)
+        {
+            //Fetch prevFrame stuff
+            NbQuaternion prev_q = animData.GetNodeRotation(node, prevFrameIndex);
+            //Fetch nextFrame stuff
+            NbQuaternion next_q = animData.GetNodeRotation(node, nextFrameIndex);
+            //Interpolate
+            NbQuaternion q = NbQuaternion.Slerp(next_q, prev_q, LERP_coeff);
+
+            return q;
+        }
+
+        public NbVector3 GetNodeScale(string node)
+        {
+            //Fetch prevFrame stuff
+            NbVector3 prev_s = animData.GetNodeScale(node, prevFrameIndex);
+
+            //Fetch nextFrame stuff
+            NbVector3 next_s = animData.GetNodeScale(node, nextFrameIndex);
+
+            //Interpolate
+            NbVector3 s = next_s * LERP_coeff + prev_s * (1.0f - LERP_coeff);
+
+            return s;
+        }
+
+        public NbMatrix4 GetNodeTransform(Animation a, string node)
+        {
+            //Fetch prevFrame stuff
+            NbQuaternion prev_q = a.animData.GetNodeRotation(node, a.prevFrameIndex);
+            NbVector3 prev_p = a.animData.GetNodeTranslation(node, a.prevFrameIndex);
+            NbVector3 prev_s = a.animData.GetNodeScale(node, a.prevFrameIndex);
+
+            //Fetch nextFrame stuff
+            NbQuaternion next_q = a.animData.GetNodeRotation(node, a.nextFrameIndex);
+            NbVector3 next_p = a.animData.GetNodeTranslation(node, a.nextFrameIndex);
+            NbVector3 next_s = a.animData.GetNodeScale(node, a.nextFrameIndex);
+
+            //Interpolate
+            NbQuaternion q = NbQuaternion.Slerp(next_q, prev_q, a.LERP_coeff);
+            NbVector3 p = next_p * a.LERP_coeff + prev_p * (1.0f - a.LERP_coeff);
+            NbVector3 s = next_s * a.LERP_coeff + prev_s * (1.0f - a.LERP_coeff);
+
+            return NbMatrix4.CreateFromQuaternion(q) * NbMatrix4.CreateTranslation(p);
+            //return NbMatrix4.CreateTranslation(p) * NbMatrix4.CreateFromQuaternion(q);
+            //return NbMatrix4.CreateFromQuaternion(q);
         }
 
         //TODO: Use this new definition for animation blending

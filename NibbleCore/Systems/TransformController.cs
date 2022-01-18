@@ -17,19 +17,15 @@ namespace NbCore
         public NbQuaternion NextRotation;
         public NbVector3 NextScale;
 
-        //LastQueued
-        public NbVector3 LastPosition;
-        public NbQuaternion LastRotation;
-        public NbVector3 LastScale;
-
         //Current
         public NbVector3 Position;
         public NbQuaternion Rotation;
         public NbVector3 Scale;
-        
-        private Queue<NbVector3> FutureTranslation = new();
-        private Queue<NbQuaternion> FutureRotation = new();
-        private Queue<NbVector3> FutureScale = new();
+
+        //Future
+        public NbVector3 FuturePosition;
+        public NbQuaternion FutureRotation;
+        public NbVector3 FutureScale;
 
         private double Time = 0.0;
         private double InterpolationCoeff = 1.0f;
@@ -40,6 +36,11 @@ namespace NbCore
             SetActor(data);
         }
         
+        public TransformData GetActor()
+        {
+            return actorData;
+        }
+
         public void SetActor(TransformData data)
         {
             actorData = data;
@@ -53,9 +54,9 @@ namespace NbCore
             NextRotation = actorData.localRotation;
             NextScale = actorData.localScale;
 
-            LastPosition = actorData.localTranslation;
-            LastRotation = actorData.localRotation;
-            LastScale = actorData.localScale;
+            FuturePosition = actorData.localTranslation;
+            FutureRotation = actorData.localRotation;
+            FutureScale = actorData.localScale;
         }
 
         public void ClearActor()
@@ -65,54 +66,34 @@ namespace NbCore
 
         public void AddFutureState(NbVector3 dp, NbQuaternion dr, NbVector3 ds)
         {
-            LastPosition = dp;
-            LastRotation = dr;
-            LastScale = ds;
-
-            FutureTranslation.Enqueue(dp);
-            FutureRotation.Enqueue(dr);
-            FutureScale.Enqueue(ds);
+            FuturePosition = dp;
+            FutureRotation = dr;
+            FutureScale = ds;
         }
         
+        public void Advance()
+        {
+            PrevPosition = Position;
+            PrevRotation = Rotation;
+            PrevScale = Scale;
+
+            NextPosition = FuturePosition;
+            NextRotation = FutureRotation;
+            NextScale = FutureScale;
+
+            Time = 0.0; //Reset Time
+        }
+
         public void Update(double interval)
         {
             Time += interval;
+            Time = System.Math.Min(Time, TransformationSystem.updateInterval);
 
-            //For performance reasons the check for an empty queue is removed
-            //The movement component assumes that future states are continously
-            //added to the moving objects
-            
-            if (Time > TransformationSystem.updateInterval)
-            {
-                PrevPosition = NextPosition;
-                PrevRotation = NextRotation;
-                PrevScale = NextScale;
-                
-                if (FutureTranslation.Count > 5)
-                {
-                    FutureTranslation.Dequeue();
-                    FutureRotation.Dequeue();
-                    FutureScale.Dequeue();
-                } 
-                
-                if (FutureTranslation.Count > 0)
-                {
-                    NextPosition = FutureTranslation.Dequeue();
-                    NextRotation = FutureRotation.Dequeue();
-                    NextScale = FutureScale.Dequeue();
-                } 
-
-                Time %= TransformationSystem.updateInterval;
-            }
-
-            InterpolationCoeff = 1.0 - (TransformationSystem.updateInterval - Time) / 
-                                  TransformationSystem.updateInterval;
-            
-            CalculateState(); //Recalculate state
-            ApplyStateToActor(); //Update Actor Data
+            InterpolationCoeff = Time / TransformationSystem.updateInterval;
+            CalculateState();
         }
 
-        public void CalculateState()
+        private void CalculateState()
         {
             //Interpolate between the two states
             Position = NbVector3.Lerp(PrevPosition, NextPosition, (float) InterpolationCoeff);
@@ -122,7 +103,8 @@ namespace NbCore
             //Callbacks.Log(string.Format("Interpolated Position {0} {1} {2}",
             //                    Position.X, Position.Y, Position.Z, Time),
             //                    LogVerbosityLevel.INFO);
-
+            
+            ApplyStateToActor(); //Update Actor Data
         }
 
         private void ApplyStateToActor()

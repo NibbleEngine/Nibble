@@ -6,60 +6,37 @@ namespace NbCore.Systems
 {
     public class SceneManagementSystem : EngineSystem
     {
-        private Dictionary<long, Scene> _SceneMap = new(); //Maps entities to scenes
-        private int SceneCount;
-        public Scene ActiveScene = null;
+        private Dictionary<long, SceneGraph> _SceneGraphMap = new(); //Maps entities to scenes
+        public List<SceneGraph> SceneGraphs = new();
+        public SceneGraph ActiveSceneGraph = null;
 
         public SceneManagementSystem() : base(EngineSystemEnum.SCENE_MANAGEMENT_SYSTEM)
         {
             
         }
 
-        //For now I think one Scene is enough
-        public Scene CreateScene()
+        public void CreateSceneGraph()
         {
-            int sceneID = SceneCount++;
-            Scene scn = new Scene();
-            scn.SetID(sceneID);
+            SceneGraph sceneGraph = new();
+            sceneGraph.ID = SceneGraphs.Count;
+            //Create Root
+            SceneGraphNode root = EngineRef.CreateSceneNode("DefaultRoot");
+            EngineRef.RegisterSceneGraphNode(root);
             
-            //Create root
-            SceneGraphNode sceneRoot = EngineRef.CreateSceneNode("SCENE ROOT");
-            scn.SetRoot(sceneRoot);
-            
-            _SceneMap[sceneID] = scn; //Register
-            return scn;
+            sceneGraph.Root = root;
+            SceneGraphs.Add(sceneGraph);
+            _SceneGraphMap[sceneGraph.ID] = sceneGraph;
         }
 
-        public void DeleteScene(int id)
+        public void SetActiveScene(SceneGraph s)
         {
-            //TODO: Add Scene dispose method to also dispose the root node
-            ClearScene(_SceneMap[id]);
-            _SceneMap.Remove(id);
+            if (SceneGraphs.Contains(s))
+                ActiveSceneGraph = s;
         }
 
-        public void SetActiveScene(Scene s)
+        public void UpdateActiveSceneGraph()
         {
-            SetActiveScene(s.ID);
-        }
-
-        public void SetActiveScene(int id)
-        {
-            if (_SceneMap.ContainsKey(id))
-                ActiveScene = _SceneMap[id];
-            else
-                Log(string.Format("Invalid Scene ID {0}", id), 
-                    Common.LogVerbosityLevel.WARNING);
-        }
-
-        public void UpdateActiveScene()
-        {
-            UpdateScene(ActiveScene);
-        }
-
-        public void UpdateAllScenes()
-        {
-            foreach (Scene s in _SceneMap.Values)
-                UpdateScene(s);
+            UpdateSceneGraph(ActiveSceneGraph);
         }
 
         public override void OnFrameUpdate(double dt)
@@ -69,13 +46,13 @@ namespace NbCore.Systems
 
         public override void OnRenderUpdate(double dt)
         {
-            UpdateActiveScene();
+            UpdateActiveSceneGraph();
         }
 
-        public void UpdateScene(Scene s)
+        public void UpdateSceneGraph(SceneGraph graph)
         {
             //Add instances to all non occluded Nodes
-            foreach (SceneGraphNode n in s.MeshNodes)
+            foreach (SceneGraphNode n in graph.MeshNodes)
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
                 MeshComponent mc = n.GetComponent<MeshComponent>() as MeshComponent;
@@ -108,7 +85,7 @@ namespace NbCore.Systems
             }
 
             //Process Lights
-            foreach (SceneGraphNode n in s.LightNodes)
+            foreach (SceneGraphNode n in graph.LightNodes)
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
                 LightComponent lc = n.GetComponent<LightComponent>() as LightComponent;
@@ -142,23 +119,27 @@ namespace NbCore.Systems
             }
         }
 
-        public void ClearScene(Scene s)
+
+        public void ClearSceneGraph(SceneGraph graph)
         {
-            foreach (SceneGraphNode node in s.Nodes)
+            foreach (SceneGraphNode node in graph.Nodes)
                 EngineRef.DisposeSceneGraphNode(node);
             
-            s.Root.Children.Clear();
-            s.Nodes.Clear();
-            s.MeshNodes.Clear();
-            s.LightNodes.Clear();
+            graph.Clear();
+        }
+
+        public void AddNode(SceneGraphNode node)
+        {
+            ActiveSceneGraph?.AddNode(node);
         }
 
         public override void CleanUp()
         {
             //TODO : Check if more has to be cleaned up or if the registry system will handle everything
-            foreach (Scene s in _SceneMap.Values)
-                ClearScene(s);
-            _SceneMap.Clear();
+            foreach (SceneGraph s in SceneGraphs)
+                s.Clear();
+            SceneGraphs.Clear();
+            _SceneGraphMap.Clear();
         }
     }
 }

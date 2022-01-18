@@ -20,7 +20,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Components\TransformData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\DDSImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ApplicationLayer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\Scene.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\SceneGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Events\EventData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GMDL\GLVao.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)GMDL\NbMeshGroup.cs" />
