@@ -58,28 +58,10 @@ namespace NbCore
             
         }
 
-        //TODO: Move that function to the meshgroup
-        //public void setSkinMatrices(SceneComponent sc, int instance_id)
-        //{
-        //    int instance_offset = 128 * 16 * instance_id;
-
-        //    for (int i = 0; i < BoneRemapIndicesCount; i++)
-        //    {
-        //        Array.Copy(sc.skinMats, BoneRemapIndices[i] * 16, instanceBoneMatrices, instance_offset + i * 16, 16);
-        //    }
-        //}
-
-        //TODO: Move that function to the meshgroup
-        //public void setDefaultSkinMatrices(int instance_id)
-        //{
-        //    int instance_offset = 128 * 16 * instance_id;
-        //    for (int i = 0; i < BoneRemapIndicesCount; i++)
-        //    {
-        //        MathUtils.insertMatToArray16(instanceBoneMatrices, instance_offset + i * 16, NbMatrix4.Identity());
-        //    }
-        //}
-
-        
+        public override NbMesh Clone()
+        {
+            throw new NotImplementedException();
+        }
 
         protected override void Dispose(bool disposing)
         {

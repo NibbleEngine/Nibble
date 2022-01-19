@@ -22,7 +22,8 @@ using OpenTK.Windowing.Desktop; //TODO: figure out how to remove that shit
 using System.IO;
 using System.Reflection;
 using Font = NbCore.Text.Font;
-using Image = System.Drawing.Image;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using System.Linq;
 
 namespace NbCore
@@ -294,8 +295,7 @@ namespace NbCore
         {
             byte[] fontData = File.ReadAllBytes(fontPath);
             byte[] fontAtlasData = File.ReadAllBytes(fontAtlas);
-            MemoryStream ms = new MemoryStream(fontAtlasData);
-            Bitmap FontAtlas = new(ms);
+            Image<Rgba32> FontAtlas = SixLabors.ImageSharp.Image.Load<Rgba32>(fontAtlasData);
             
             Font f = new Font(fontData, FontAtlas, 1);
             renderSys.FontMgr.addFont(f);
@@ -671,7 +671,7 @@ namespace NbCore
             MeshMaterial mat = new();
             mat.Name = "default_scn";
             
-            Uniform uf = new();
+            NbUniform uf = new();
             uf.Name = "gMaterialColourVec4";
             uf.Values = new(1.0f,0.0f,0.0f,1.0f);
             mat.Uniforms.Add(uf);

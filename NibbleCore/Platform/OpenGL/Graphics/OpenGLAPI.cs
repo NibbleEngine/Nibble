@@ -837,12 +837,12 @@ namespace NbCore.Platform.Graphics.OpenGL
             //Upload Material Information
             
             //Upload Custom Per Material Uniforms
-            foreach (Uniform un in Material.ActiveUniforms)
+            foreach (NbUniform un in Material.ActiveUniforms)
                 GL.Uniform4(un.ShaderLocation, un.Values);
             
             //BIND TEXTURES
             //Diffuse Texture
-            foreach (Sampler s in Material.Samplers)
+            foreach (NbSampler s in Material.Samplers)
             {
                 if (shader.uniformLocations.ContainsKey(s.Name) && s.Map != "")
                 {
@@ -921,7 +921,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             mat.Shader = shader;
 
             //Load Active Uniforms to Material
-            foreach (Uniform un in mat.Uniforms)
+            foreach (NbUniform un in mat.Uniforms)
             {
                 if (shader.uniformLocations.ContainsKey($"mpCustomPerMaterial.uniforms[{un.ID}]"))
                 {
@@ -930,7 +930,7 @@ namespace NbCore.Platform.Graphics.OpenGL
                 }
             }
             
-            foreach (Sampler s in mat.Samplers)
+            foreach (NbSampler s in mat.Samplers)
             {
                 if (shader.uniformLocations.ContainsKey(s.Name))
                 {

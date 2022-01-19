@@ -90,227 +90,227 @@ namespace NbCore {
             }
         }
 
-        private Bitmap readBlockImage(byte[] data, int w, int h) {
-			switch (header.ddspf.dwFourCC) {
-				case FOURCC_DXT1:
-					return UncompressDXT1(data, w, h);
-				case FOURCC_DXT5:
-					return UncompressDXT5(data, w, h);
-				default: break;
-			}
-			throw new Exception(string.Format("0x{0} texture compression not implemented.", header.ddspf.dwFourCC.ToString("X")));
-		}
+  //      private Bitmap readBlockImage(byte[] data, int w, int h) {
+		//	switch (header.ddspf.dwFourCC) {
+		//		case FOURCC_DXT1:
+		//			return UncompressDXT1(data, w, h);
+		//		case FOURCC_DXT5:
+		//			return UncompressDXT5(data, w, h);
+		//		default: break;
+		//	}
+		//	throw new Exception(string.Format("0x{0} texture compression not implemented.", header.ddspf.dwFourCC.ToString("X")));
+		//}
 
-		#region DXT1
-		private Bitmap UncompressDXT1(byte[] data, int w, int h) {
-			Bitmap res = new Bitmap((w < 4) ? 4 : w, (h < 4) ? 4 : h);
-			using (MemoryStream ms = new MemoryStream(data)) {
-				using (BinaryReader r = new BinaryReader(ms)) {
-					for (int j = 0; j < h; j += 4) {
-						for (int i = 0; i < w; i += 4) {
-							DecompressBlockDXT1(i, j, r.ReadBytes(8), res);
-						}
-					}
-				}
-			}
-			return res;
-		}
+		//#region DXT1
+		//private Bitmap UncompressDXT1(byte[] data, int w, int h) {
+		//	Bitmap res = new Bitmap((w < 4) ? 4 : w, (h < 4) ? 4 : h);
+		//	using (MemoryStream ms = new MemoryStream(data)) {
+		//		using (BinaryReader r = new BinaryReader(ms)) {
+		//			for (int j = 0; j < h; j += 4) {
+		//				for (int i = 0; i < w; i += 4) {
+		//					DecompressBlockDXT1(i, j, r.ReadBytes(8), res);
+		//				}
+		//			}
+		//		}
+		//	}
+		//	return res;
+		//}
 
-		private void DecompressBlockDXT1(int x, int y, byte[] blockStorage, Bitmap image) {
-			ushort color0 = (ushort)(blockStorage[0] | blockStorage[1] << 8);
-			ushort color1 = (ushort)(blockStorage[2] | blockStorage[3] << 8);
+		//private void DecompressBlockDXT1(int x, int y, byte[] blockStorage, Bitmap image) {
+		//	ushort color0 = (ushort)(blockStorage[0] | blockStorage[1] << 8);
+		//	ushort color1 = (ushort)(blockStorage[2] | blockStorage[3] << 8);
 
-			int temp;
+		//	int temp;
 
-			temp = (color0 >> 11) * 255 + 16;
-			byte r0 = (byte)((temp / 32 + temp) / 32);
-			temp = ((color0 & 0x07E0) >> 5) * 255 + 32;
-			byte g0 = (byte)((temp / 64 + temp) / 64);
-			temp = (color0 & 0x001F) * 255 + 16;
-			byte b0 = (byte)((temp / 32 + temp) / 32);
+		//	temp = (color0 >> 11) * 255 + 16;
+		//	byte r0 = (byte)((temp / 32 + temp) / 32);
+		//	temp = ((color0 & 0x07E0) >> 5) * 255 + 32;
+		//	byte g0 = (byte)((temp / 64 + temp) / 64);
+		//	temp = (color0 & 0x001F) * 255 + 16;
+		//	byte b0 = (byte)((temp / 32 + temp) / 32);
 
-			temp = (color1 >> 11) * 255 + 16;
-			byte r1 = (byte)((temp / 32 + temp) / 32);
-			temp = ((color1 & 0x07E0) >> 5) * 255 + 32;
-			byte g1 = (byte)((temp / 64 + temp) / 64);
-			temp = (color1 & 0x001F) * 255 + 16;
-			byte b1 = (byte)((temp / 32 + temp) / 32);
+		//	temp = (color1 >> 11) * 255 + 16;
+		//	byte r1 = (byte)((temp / 32 + temp) / 32);
+		//	temp = ((color1 & 0x07E0) >> 5) * 255 + 32;
+		//	byte g1 = (byte)((temp / 64 + temp) / 64);
+		//	temp = (color1 & 0x001F) * 255 + 16;
+		//	byte b1 = (byte)((temp / 32 + temp) / 32);
 
-			uint code = (uint)(blockStorage[4] | blockStorage[5] << 8 | blockStorage[6] << 16 | blockStorage[7] << 24);
+		//	uint code = (uint)(blockStorage[4] | blockStorage[5] << 8 | blockStorage[6] << 16 | blockStorage[7] << 24);
 
-			for (int j = 0; j < 4; j++) {
-				for (int i = 0; i < 4; i++) {
-					Color finalColor = Color.FromArgb(0);
-					byte positionCode = (byte)((code >> 2 * (4 * j + i)) & 0x03);
+		//	for (int j = 0; j < 4; j++) {
+		//		for (int i = 0; i < 4; i++) {
+		//			Color finalColor = Color.FromArgb(0);
+		//			byte positionCode = (byte)((code >> 2 * (4 * j + i)) & 0x03);
 
-					if (color0 > color1) {
-						switch (positionCode) {
-							case 0:
-								finalColor = Color.FromArgb(255, r0, g0, b0);
-								break;
-							case 1:
-								finalColor = Color.FromArgb(255, r1, g1, b1);
-								break;
-							case 2:
-								finalColor = Color.FromArgb(255, (2 * r0 + r1) / 3, (2 * g0 + g1) / 3, (2 * b0 + b1) / 3);
-								break;
-							case 3:
-								finalColor = Color.FromArgb(255, (r0 + 2 * r1) / 3, (g0 + 2 * g1) / 3, (b0 + 2 * b1) / 3);
-								break;
-						}
-					} else {
-						switch (positionCode) {
-							case 0:
-								finalColor = Color.FromArgb(255, r0, g0, b0);
-								break;
-							case 1:
-								finalColor = Color.FromArgb(255, r1, g1, b1);
-								break;
-							case 2:
-								finalColor = Color.FromArgb(255, (r0 + r1) / 2, (g0 + g1) / 2, (b0 + b1) / 2);
-								break;
-							case 3:
-								finalColor = Color.FromArgb(255, 0, 0, 0);
-								break;
-						}
-					}
+		//			if (color0 > color1) {
+		//				switch (positionCode) {
+		//					case 0:
+		//						finalColor = Color.FromArgb(255, r0, g0, b0);
+		//						break;
+		//					case 1:
+		//						finalColor = Color.FromArgb(255, r1, g1, b1);
+		//						break;
+		//					case 2:
+		//						finalColor = Color.FromArgb(255, (2 * r0 + r1) / 3, (2 * g0 + g1) / 3, (2 * b0 + b1) / 3);
+		//						break;
+		//					case 3:
+		//						finalColor = Color.FromArgb(255, (r0 + 2 * r1) / 3, (g0 + 2 * g1) / 3, (b0 + 2 * b1) / 3);
+		//						break;
+		//				}
+		//			} else {
+		//				switch (positionCode) {
+		//					case 0:
+		//						finalColor = Color.FromArgb(255, r0, g0, b0);
+		//						break;
+		//					case 1:
+		//						finalColor = Color.FromArgb(255, r1, g1, b1);
+		//						break;
+		//					case 2:
+		//						finalColor = Color.FromArgb(255, (r0 + r1) / 2, (g0 + g1) / 2, (b0 + b1) / 2);
+		//						break;
+		//					case 3:
+		//						finalColor = Color.FromArgb(255, 0, 0, 0);
+		//						break;
+		//				}
+		//			}
 
-					image.SetPixel(x + i, y + j, finalColor);
-				}
-			}
-		}
-		#endregion
-		#region DXT5
-		private Bitmap UncompressDXT5(byte[] data, int w, int h) {
-			Bitmap res = new Bitmap((w < 4) ? 4 : w, (h < 4) ? 4 : h);
-			using (MemoryStream ms = new MemoryStream(data)) {
-				using (BinaryReader r = new BinaryReader(ms)) {
-					for (int j = 0; j < h; j += 4) {
-						for (int i = 0; i < w; i += 4) {
-							DecompressBlockDXT5(i, j, r.ReadBytes(16), res);
-						}
-					}
-				}
-			}
-			return res;
-		}
+		//			image.SetPixel(x + i, y + j, finalColor);
+		//		}
+		//	}
+		//}
+		//#endregion
+		//#region DXT5
+		//private Bitmap UncompressDXT5(byte[] data, int w, int h) {
+		//	Bitmap res = new Bitmap((w < 4) ? 4 : w, (h < 4) ? 4 : h);
+		//	using (MemoryStream ms = new MemoryStream(data)) {
+		//		using (BinaryReader r = new BinaryReader(ms)) {
+		//			for (int j = 0; j < h; j += 4) {
+		//				for (int i = 0; i < w; i += 4) {
+		//					DecompressBlockDXT5(i, j, r.ReadBytes(16), res);
+		//				}
+		//			}
+		//		}
+		//	}
+		//	return res;
+		//}
 
-		void DecompressBlockDXT5(int x, int y, byte[] blockStorage, Bitmap image) {
-			byte alpha0 = blockStorage[0];
-			byte alpha1 = blockStorage[1];
+		//void DecompressBlockDXT5(int x, int y, byte[] blockStorage, Bitmap image) {
+		//	byte alpha0 = blockStorage[0];
+		//	byte alpha1 = blockStorage[1];
 
-			int bitOffset = 2;
-			uint alphaCode1 = (uint)(blockStorage[bitOffset + 2] | (blockStorage[bitOffset + 3] << 8) | (blockStorage[bitOffset + 4] << 16) | (blockStorage[bitOffset + 5] << 24));
-			ushort alphaCode2 = (ushort)(blockStorage[bitOffset + 0] | (blockStorage[bitOffset + 1] << 8));
+		//	int bitOffset = 2;
+		//	uint alphaCode1 = (uint)(blockStorage[bitOffset + 2] | (blockStorage[bitOffset + 3] << 8) | (blockStorage[bitOffset + 4] << 16) | (blockStorage[bitOffset + 5] << 24));
+		//	ushort alphaCode2 = (ushort)(blockStorage[bitOffset + 0] | (blockStorage[bitOffset + 1] << 8));
 
-			ushort color0 = (ushort)(blockStorage[8] | blockStorage[9] << 8);
-			ushort color1 = (ushort)(blockStorage[10] | blockStorage[11] << 8);
+		//	ushort color0 = (ushort)(blockStorage[8] | blockStorage[9] << 8);
+		//	ushort color1 = (ushort)(blockStorage[10] | blockStorage[11] << 8);
 
-			int temp;
+		//	int temp;
 
-			temp = (color0 >> 11) * 255 + 16;
-			byte r0 = (byte)((temp / 32 + temp) / 32);
-			temp = ((color0 & 0x07E0) >> 5) * 255 + 32;
-			byte g0 = (byte)((temp / 64 + temp) / 64);
-			temp = (color0 & 0x001F) * 255 + 16;
-			byte b0 = (byte)((temp / 32 + temp) / 32);
+		//	temp = (color0 >> 11) * 255 + 16;
+		//	byte r0 = (byte)((temp / 32 + temp) / 32);
+		//	temp = ((color0 & 0x07E0) >> 5) * 255 + 32;
+		//	byte g0 = (byte)((temp / 64 + temp) / 64);
+		//	temp = (color0 & 0x001F) * 255 + 16;
+		//	byte b0 = (byte)((temp / 32 + temp) / 32);
 
-			temp = (color1 >> 11) * 255 + 16;
-			byte r1 = (byte)((temp / 32 + temp) / 32);
-			temp = ((color1 & 0x07E0) >> 5) * 255 + 32;
-			byte g1 = (byte)((temp / 64 + temp) / 64);
-			temp = (color1 & 0x001F) * 255 + 16;
-			byte b1 = (byte)((temp / 32 + temp) / 32);
+		//	temp = (color1 >> 11) * 255 + 16;
+		//	byte r1 = (byte)((temp / 32 + temp) / 32);
+		//	temp = ((color1 & 0x07E0) >> 5) * 255 + 32;
+		//	byte g1 = (byte)((temp / 64 + temp) / 64);
+		//	temp = (color1 & 0x001F) * 255 + 16;
+		//	byte b1 = (byte)((temp / 32 + temp) / 32);
 
-			uint code = (uint)(blockStorage[12] | blockStorage[13] << 8 | blockStorage[14] << 16 | blockStorage[15] << 24);
+		//	uint code = (uint)(blockStorage[12] | blockStorage[13] << 8 | blockStorage[14] << 16 | blockStorage[15] << 24);
 
-			for (int j = 0; j < 4; j++) {
-				for (int i = 0; i < 4; i++) {
-					ushort alphaCodeIndex = (ushort) (3 * (4 * j + i));
-					ushort alphaCode;
+		//	for (int j = 0; j < 4; j++) {
+		//		for (int i = 0; i < 4; i++) {
+		//			ushort alphaCodeIndex = (ushort) (3 * (4 * j + i));
+		//			ushort alphaCode;
 
-					if (alphaCodeIndex <= 12) {
-						alphaCode = (ushort) ((alphaCode2 >> alphaCodeIndex) & 0x07);
-					} else if (alphaCodeIndex == 15) {
-						alphaCode = (ushort) ((alphaCode2 >> 15) | ((alphaCode1 << 1) & 0x06));
-					} else {
-						alphaCode = (ushort) ((alphaCode1 >> (alphaCodeIndex - 16)) & 0x07);
-					}
+		//			if (alphaCodeIndex <= 12) {
+		//				alphaCode = (ushort) ((alphaCode2 >> alphaCodeIndex) & 0x07);
+		//			} else if (alphaCodeIndex == 15) {
+		//				alphaCode = (ushort) ((alphaCode2 >> 15) | ((alphaCode1 << 1) & 0x06));
+		//			} else {
+		//				alphaCode = (ushort) ((alphaCode1 >> (alphaCodeIndex - 16)) & 0x07);
+		//			}
 
-					byte finalAlpha;
-					if (alphaCode == 0) {
-						finalAlpha = alpha0;
-					} else if (alphaCode == 1) {
-						finalAlpha = alpha1;
-					} else {
-						if (alpha0 > alpha1) {
-							finalAlpha = (byte)(((8 - alphaCode) * alpha0 + (alphaCode - 1) * alpha1) / 7);
-						} else {
-							if (alphaCode == 6)
-								finalAlpha = 0;
-							else if (alphaCode == 7)
-								finalAlpha = 255;
-							else
-								finalAlpha = (byte)(((6 - alphaCode) * alpha0 + (alphaCode - 1) * alpha1) / 5);
-						}
-					}
+		//			byte finalAlpha;
+		//			if (alphaCode == 0) {
+		//				finalAlpha = alpha0;
+		//			} else if (alphaCode == 1) {
+		//				finalAlpha = alpha1;
+		//			} else {
+		//				if (alpha0 > alpha1) {
+		//					finalAlpha = (byte)(((8 - alphaCode) * alpha0 + (alphaCode - 1) * alpha1) / 7);
+		//				} else {
+		//					if (alphaCode == 6)
+		//						finalAlpha = 0;
+		//					else if (alphaCode == 7)
+		//						finalAlpha = 255;
+		//					else
+		//						finalAlpha = (byte)(((6 - alphaCode) * alpha0 + (alphaCode - 1) * alpha1) / 5);
+		//				}
+		//			}
 
-					byte colorCode = (byte)((code >> 2 * (4 * j + i)) & 0x03);
+		//			byte colorCode = (byte)((code >> 2 * (4 * j + i)) & 0x03);
 
-					Color finalColor = new Color();
-					switch (colorCode) {
-						case 0:
-							finalColor = Color.FromArgb(finalAlpha, r0, g0, b0);
-							break;
-						case 1:
-							finalColor = Color.FromArgb(finalAlpha, r1, g1, b1);
-							break;
-						case 2:
-							finalColor = Color.FromArgb(finalAlpha, (2 * r0 + r1) / 3, (2 * g0 + g1) / 3, (2 * b0 + b1) / 3);
-							break;
-						case 3:
-							finalColor = Color.FromArgb(finalAlpha, (r0 + 2 * r1) / 3, (g0 + 2 * g1) / 3, (b0 + 2 * b1) / 3);
-							break;
-					}
-					image.SetPixel(x + i, y + j, finalColor);
-				}
-			}
-		}
-		#endregion
+		//			Color finalColor = new Color();
+		//			switch (colorCode) {
+		//				case 0:
+		//					finalColor = Color.FromArgb(finalAlpha, r0, g0, b0);
+		//					break;
+		//				case 1:
+		//					finalColor = Color.FromArgb(finalAlpha, r1, g1, b1);
+		//					break;
+		//				case 2:
+		//					finalColor = Color.FromArgb(finalAlpha, (2 * r0 + r1) / 3, (2 * g0 + g1) / 3, (2 * b0 + b1) / 3);
+		//					break;
+		//				case 3:
+		//					finalColor = Color.FromArgb(finalAlpha, (r0 + 2 * r1) / 3, (g0 + 2 * g1) / 3, (b0 + 2 * b1) / 3);
+		//					break;
+		//			}
+		//			image.SetPixel(x + i, y + j, finalColor);
+		//		}
+		//	}
+		//}
+		//#endregion
 
-		#region V8U8
-		private Bitmap UncompressV8U8(byte[] data, int w, int h) {
-			Bitmap res = new Bitmap(w, h);
-			using (MemoryStream ms = new MemoryStream(data)) {
-				using (BinaryReader r = new BinaryReader(ms)) {
-					for (int y = 0; y < h; y++) {
-						for (int x = 0; x < w; x++) {
-							sbyte red = r.ReadSByte();
-							sbyte green = r.ReadSByte();
-							byte blue = 0xFF;
+		//#region V8U8
+		//private Bitmap UncompressV8U8(byte[] data, int w, int h) {
+		//	Bitmap res = new Bitmap(w, h);
+		//	using (MemoryStream ms = new MemoryStream(data)) {
+		//		using (BinaryReader r = new BinaryReader(ms)) {
+		//			for (int y = 0; y < h; y++) {
+		//				for (int x = 0; x < w; x++) {
+		//					sbyte red = r.ReadSByte();
+		//					sbyte green = r.ReadSByte();
+		//					byte blue = 0xFF;
 
-							res.SetPixel(x, y, Color.FromArgb(0x7F - red, 0x7F - green, blue));
-						}
-					}
-				}
-			}
-			return res;
-		}
-		#endregion
+		//					res.SetPixel(x, y, Color.FromArgb(0x7F - red, 0x7F - green, blue));
+		//				}
+		//			}
+		//		}
+		//	}
+		//	return res;
+		//}
+		//#endregion
 
-		private Bitmap readLinearImage(byte[] data, int w, int h) {
-			Bitmap res = new Bitmap(w, h);
-			using (MemoryStream ms = new MemoryStream(data)) {
-				using (BinaryReader r = new BinaryReader(ms)) {
-					for (int y = 0; y < h; y++) {
-						for (int x = 0; x < w; x++) {
-							res.SetPixel(x, y, Color.FromArgb(r.ReadInt32()));
-						}
-					}
-				}
-			}
-			return res;
-		}
+		//private Bitmap readLinearImage(byte[] data, int w, int h) {
+		//	Bitmap res = new Bitmap(w, h);
+		//	using (MemoryStream ms = new MemoryStream(data)) {
+		//		using (BinaryReader r = new BinaryReader(ms)) {
+		//			for (int y = 0; y < h; y++) {
+		//				for (int x = 0; x < w; x++) {
+		//					res.SetPixel(x, y, Color.FromArgb(r.ReadInt32()));
+		//				}
+		//			}
+		//		}
+		//	}
+		//	return res;
+		//}
 
 		private void Read_DDS_HEADER(DDS_HEADER h, BinaryReader r) {
 			h.dwSize = r.ReadInt32();

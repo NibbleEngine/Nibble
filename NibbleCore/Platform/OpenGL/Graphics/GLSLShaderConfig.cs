@@ -112,6 +112,12 @@ namespace NbCore.Platform.Graphics.OpenGL
             }
 
         }
+
+        public override GLSLShaderConfig Clone()
+        {
+            throw new NotImplementedException();
+        }
+
     }
 
 

@@ -47,7 +47,9 @@ namespace NbCore
             //Create and start Thread
             Thread t = null;
 
-            t = new Thread(() => tr.Method.Invoke(null, (object?[]) tr.Data));
+#nullable enable
+            t = new Thread(() => tr.Method.Invoke(null, (object?[])tr.Data));
+#nullable disable
             Common.Callbacks.Log("* Issuing Requested Method", Common.LogVerbosityLevel.INFO);
 
             tk.thread = t;

@@ -70,7 +70,11 @@ namespace NbCore.Systems
         {
             foreach (Animation a in AnimMgr.Entities)
             {
-                if (a.IsPlaying)
+                if (a.Override)
+                {
+
+                }
+                else if (a.IsPlaying)
                 {
                     a.Update(a.animData.MetaData.Speed * (float) dt);
 

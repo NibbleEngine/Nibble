@@ -32,7 +32,7 @@ namespace NbCore
         InstancedMesh,
         LightInstancedMesh
     }
-    public class Entity : IDisposable
+    public abstract class Entity : IDisposable
     {
         //Public
         public ulong NameHash;
@@ -95,14 +95,7 @@ namespace NbCore
                 _componentMap.Remove(typeof(T));
         }
 
-
-        public virtual Entity Clone()
-        {
-            Entity n = new(this.Type);
-            n.CopyFrom(this);
-            
-            return n;
-        }
+        public abstract Entity Clone();
 
         public void CopyFrom(Entity e)
         {

@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Graphics.OpenGL4;
 using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 
 namespace NbCore.UI.ImGui
@@ -39,7 +41,7 @@ namespace NbCore.UI.ImGui
         public readonly int MipmapLevels;
         public readonly SizedInternalFormat InternalFormat;
 
-        public ImGuiTexture(string name, Bitmap image, bool generateMipmaps, bool srgb)
+        public ImGuiTexture(string name, Image<Rgba32> image, bool generateMipmaps, bool srgb)
         {
             Name = name;
             Width = image.Width;
@@ -63,14 +65,17 @@ namespace NbCore.UI.ImGui
             GL.TextureStorage2D(GLTexture, MipmapLevels, InternalFormat, Width, Height);
             ImGuiUtil.CheckGLError("Storage2d");
 
-            BitmapData data = image.LockBits(new Rectangle(0, 0, Width, Height),
-                ImageLockMode.ReadOnly, global::System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+            unsafe
+            {
+                Span<Rgba32> pixels;
+                image.TryGetSinglePixelSpan(out pixels);
+                fixed (void *ptr = pixels)
+                {
+                    GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, (IntPtr) ptr);
+                }
+            }
+            
             ImGuiUtil.CheckGLError("SubImage");
-
-            image.UnlockBits(data);
-
             if (generateMipmaps) GL.GenerateTextureMipmap(GLTexture);
 
             GL.TextureParameter(GLTexture, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);

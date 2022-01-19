@@ -340,6 +340,11 @@ namespace NbCore.Platform.Graphics.OpenGL
             return text;
         }
 
+        public override GLSLShaderSource Clone()
+        {
+            throw new NotImplementedException();
+        }
+
         private bool disposed = false;
         protected override void Dispose(bool disposing)
         {

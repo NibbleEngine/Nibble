@@ -36,17 +36,23 @@ namespace NbCore
             CopyFrom(anim);
         }
 
-        public void CopyFrom(Animation anim)
+        public void SetFrame(int frame_id)
         {
-            
+            prevFrameIndex = frame_id;
+            nextFrameIndex = frame_id;
+            ActiveFrameIndex = frame_id;
         }
 
-        public Animation Clone()
+        public void CopyFrom(Animation anim)
+        {
+            base.CopyFrom(anim);
+        }
+
+        public override Animation Clone()
         {
             Animation ad = new();
             ad.CopyFrom(this);
             
-
             return ad;
         }
 

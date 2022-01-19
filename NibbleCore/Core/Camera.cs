@@ -330,6 +330,12 @@ namespace NbCore
             return frustum_occlude(v1.Xyz, v2.Xyz, transform);
         }
 
+
+        public override Camera Clone()
+        {
+            throw new NotImplementedException();
+        }
+
     }
 
     public class Frustum
