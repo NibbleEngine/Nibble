@@ -378,7 +378,7 @@ namespace NbCore.UI.ImGui
                                 };
                                 ImGuiCore.TableSetColumnIndex(2);
 
-                                ImGuiCore.Checkbox("##Override", ref anim.Override);
+                                ImGuiCore.Checkbox("##Override" + anim.animData.MetaData.Name, ref anim.Override);
                                 ImGuiCore.SameLine();
 
                                 if (!anim.Override)

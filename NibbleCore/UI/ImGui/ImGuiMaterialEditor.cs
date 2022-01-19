@@ -119,7 +119,7 @@ namespace NbCore.UI.ImGui
 
             for (int i = 0; i < _ActiveMaterial.Samplers.Count; i++)
             {
-                Sampler current_sampler = _ActiveMaterial.Samplers[i];
+                NbSampler current_sampler = _ActiveMaterial.Samplers[i];
                 if (current_sampler.Tex.target != NbTextureTarget.Texture2DArray)
                     ImGuiNET.ImGui.Image((IntPtr)current_sampler.Tex.texID, new Vector2(64, 64));
                 else
@@ -151,7 +151,7 @@ namespace NbCore.UI.ImGui
             List<string> uniforms = new();
             for (int i = 0; i < _ActiveMaterial.Uniforms.Count; i++)
             {
-                Uniform un = _ActiveMaterial.Uniforms[i];
+                NbUniform un = _ActiveMaterial.Uniforms[i];
                 ImGuiNET.ImGui.Text(un.Name);
                 ImGuiNET.ImGui.NextColumn();
                 Vector4 val = new Vector4();

@@ -235,7 +235,7 @@ namespace NibbleOBJPlugin
 
             mat.Name = "objMat";
             mat.add_flag(MaterialFlagEnum._F07_UNLIT);
-            Uniform uf = new()
+            NbUniform uf = new()
             {
                 Name = "mpCustomPerMaterial.gMaterialColourVec4",
                 Values = new(0.0f, 1.0f, 1.0f, 1.0f)

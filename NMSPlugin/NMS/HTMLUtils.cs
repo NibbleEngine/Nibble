@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace NbCore.Utils
+namespace NibbleNMSPlugin
 {
     public static class HTMLUtils
     {
@@ -49,13 +49,13 @@ namespace NbCore.Utils
 
                 try
                 {
-                    Common.Callbacks.Log(string.Format("Downloading libMbin from {0}", downloadUrl),
-                        Common.LogVerbosityLevel.INFO);
+                    PluginState.PluginRef.Log(string.Format("Downloading libMbin from {0}", downloadUrl),
+                        NbCore.Common.LogVerbosityLevel.INFO);
                     using (var client = new WebClient())
                     {
                         client.DownloadFile(downloadUrl, "libMBIN.dll");
                     }
-                    Common.Callbacks.Log("libMBIN.dll Downloaded. Please Restart.", Common.LogVerbosityLevel.INFO);
+                    PluginState.PluginRef.Log("libMBIN.dll Downloaded. Please Restart.", NbCore.Common.LogVerbosityLevel.INFO);
                 }
                 catch
                 {

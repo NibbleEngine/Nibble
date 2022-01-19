@@ -7,6 +7,8 @@ using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NbCore.Text
 {
@@ -42,15 +44,15 @@ namespace NbCore.Text
 
             string img_path = Path.ChangeExtension(path, "png");
 
-            Bitmap bmp = new Bitmap(img_path);
-
+            Image<Rgba32> bmp = Image.Load<Rgba32>(img_path);
+            
             if (format == 1)
                 loadHieroFont(fnt_sr, bmp);
             else
                 loadJsonFont(fnt_sr, bmp);
         }
 
-        public Font(byte[] fnt_data, Bitmap img_data, int format)
+        public Font(byte[] fnt_data, Image<Rgba32> img_data, int format)
         {
             MemoryStream ms = new MemoryStream(fnt_data);
             StreamReader fnt_sr = new StreamReader(ms);
@@ -59,7 +61,7 @@ namespace NbCore.Text
                 loadHieroFont(fnt_sr, img_data);
         }
 
-        private void loadHieroFont(StreamReader fnt_sr, Bitmap img_data)
+        private void loadHieroFont(StreamReader fnt_sr, Image<Rgba32> img_data)
         {
             while (!fnt_sr.EndOfStream)
             {
@@ -125,7 +127,7 @@ namespace NbCore.Text
             tex.texID = genGLTexture(img_data);
 
             //Generate Sampler
-            Sampler sampl = new Sampler();
+            NbSampler sampl = new NbSampler();
             //TODO: Remove NMS stuff from here
             sampl.Name = "mpCustomPerMaterial.gDiffuseMap";
             sampl.SamplerID = 0;
@@ -137,7 +139,7 @@ namespace NbCore.Text
             material.SamplerMap[sampl.Name] = sampl;
         }
 
-        private void loadJsonFont(StreamReader fnt_sr, Bitmap img_data)
+        private void loadJsonFont(StreamReader fnt_sr, Image<Rgba32> img_data)
         {
             fnt_sr.BaseStream.Seek(0, SeekOrigin.Begin);
             string data = fnt_sr.ReadToEnd();
@@ -171,7 +173,7 @@ namespace NbCore.Text
             tex.texID = genGLTexture(img_data);
 
             //Generate Sampler
-            Sampler sampl = new Sampler();
+            NbSampler sampl = new NbSampler();
             sampl.Name = "mpCustomPerMaterial.gDiffuseMap";
             sampl.SamplerID = 0;
             sampl.texUnit = TextureUnit.Texture0;
@@ -182,11 +184,10 @@ namespace NbCore.Text
             material.SamplerMap[sampl.Name] = sampl;
         }
 
-        private int genGLTexture(Bitmap bmp)
-        {
-            Rectangle rect = new Rectangle(0, 0, bmp.Width, bmp.Height);
-            var rect_data = bmp.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly,
-                bmp.PixelFormat);
+        private unsafe int genGLTexture(Image<Rgba32> bmp)
+        {   
+            Span<Rgba32> pixels;
+            bmp.TryGetSinglePixelSpan(out pixels);
 
             int texID = GL.GenTexture();
             Console.WriteLine(GL.GetError());
@@ -195,8 +196,12 @@ namespace NbCore.Text
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureBaseLevel, 0);
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMaxLevel, 0);
 
-            GL.TexImage3D(TextureTarget.Texture2DArray, 0, PixelInternalFormat.Rgba8, bmp.Width, bmp.Height,
-                1, 0, PixelFormat.Rgba, PixelType.UnsignedByte, rect_data.Scan0);
+            fixed (void* ptr = pixels)
+            {
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, bmp.Width, bmp.Height,
+                0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) ptr);
+            }   
+            
             Console.WriteLine(GL.GetError());
             //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
@@ -206,8 +211,7 @@ namespace NbCore.Text
 
 
             GL.BindTexture(TextureTarget.Texture2DArray, 0);
-            bmp.UnlockBits(rect_data);
-
+            
             return texID;
         }
 

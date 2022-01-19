@@ -82,9 +82,9 @@ namespace NbCore
         public string name_key = "";
         public TextureManager texMgr;
         public GLSLShaderConfig Shader;
-        public readonly List<Uniform> Uniforms = new();
-        public readonly List<Sampler> Samplers = new();
-        public readonly Dictionary<string, Sampler> SamplerMap = new();
+        public readonly List<NbUniform> Uniforms = new();
+        public readonly List<NbSampler> Samplers = new();
+        public readonly Dictionary<string, NbSampler> SamplerMap = new();
         public readonly List<MaterialFlagEnum> Flags = new();
         
         public readonly float[] material_flags = new float[64];
@@ -111,7 +111,7 @@ namespace NbCore
             MaterialFlagEnum._F55_MULTITEXTURE
         };
 
-        public List<Uniform> ActiveUniforms = new();
+        public List<NbUniform> ActiveUniforms = new();
 
         //Disposable Stuff
         private bool disposed = false;

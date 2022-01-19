@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace NbCore
 {
-    public class Sampler
+    public class NbSampler
     {
         public string Name = "";
         public string Map = "";
@@ -22,14 +22,14 @@ namespace NbCore
         public bool isProcGen = false; //TODO : to be removed once we are done with the stupid proc gen texture parsing
 
         //Override Properties
-        public Sampler()
+        public NbSampler()
         {
             
         }
 
-        public Sampler Clone()
+        public NbSampler Clone()
         {
-            Sampler newsampler = new()
+            NbSampler newsampler = new()
             {
                 Name = Name,
                 Map = Map,

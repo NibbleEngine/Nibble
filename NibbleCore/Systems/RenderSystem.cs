@@ -503,7 +503,7 @@ namespace NbCore.Systems
             mat.Name = "crossMat";
             mat.add_flag(MaterialFlagEnum._F07_UNLIT);
             mat.add_flag(MaterialFlagEnum._F21_VERTEXCOLOUR);
-            Uniform uf = new()
+            NbUniform uf = new()
             {
                 ID = 0,
                 Name = "gMaterialColourVec4",

@@ -227,14 +227,10 @@ namespace NbCore
             GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, fbo_id);
             GL.ReadBuffer(from_channel);
             GL.ReadPixels(0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
-            var bmp = new Bitmap(width, height);
-            for (int i = 0; i < height; i++)
-            for (int j = 0; j < width; j++)
-                bmp.SetPixel(j, i, Color.FromArgb(pixels[4 * (width * i + j) + 3],
-                    (int)pixels[4 * (width * i + j) + 0],
-                    (int)pixels[4 * (width * i + j) + 1],
-                    (int)pixels[4 * (width * i + j) + 2]));
-            bmp.Save("Temp//framebuffer_raw_" + name + ".png", System.Drawing.Imaging.ImageFormat.Png);
+
+            SixLabors.ImageSharp.Image test = 
+                SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(pixels);
+            SixLabors.ImageSharp.ImageExtensions.SaveAsPng(test, "Temp//framebuffer_raw_" + name + ".png");
         }
 
         //Disposable Stuff

@@ -156,6 +156,11 @@ namespace NbCore
             td.ResetTransform();
         }
 
+        public override Entity Clone()
+        {
+            throw new NotImplementedException();
+        }
+
         //WARNING: This should NOT be called directly, object disposals should happen via the engine
         protected override void Dispose(bool disposing)
         {

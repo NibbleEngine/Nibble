@@ -15,7 +15,8 @@ using Newtonsoft.Json;
 using System.Resources;
 using System.Reflection;
 using System.IO;
-using System.Drawing;
+//using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Linq;
 using NbCore.Plugins;
 
@@ -123,7 +124,7 @@ namespace NbCore.Common
         }
 
         [JsonIgnore]
-        public Color clearColor = System.Drawing.Color.FromArgb(255, 33, 33, 33);
+        public Color clearColor = new(new SixLabors.ImageSharp.PixelFormats.Rgba32(33,33,33,255));
         public bool UseTextures = true;
         public bool UseLighting = true;
 
@@ -154,8 +155,6 @@ namespace NbCore.Common
         public bool ToggleAnimations = true;
 
     }
-
-
 
 
     public class EngineSettings : ISettings
@@ -273,7 +272,7 @@ namespace NbCore.Common
     public delegate void SendRequestCallback(ref ThreadRequest req);
     public delegate byte[] GetResourceCallback(string resourceName);
     public delegate byte[] GetResourceFromAssemblyCallback(Assembly assembly, string resourceName);
-    public delegate Bitmap GetBitMapResourceCallback(string resourceName);
+    public delegate Image GetBitMapResourceCallback(string resourceName);
     public delegate string GetTextResourceCallback(string resourceName);
     public delegate object GetResourceWithTypeCallback(string resourceName, out string resourceType);
 
@@ -347,14 +346,13 @@ namespace NbCore.Common
             return DefaultGetResourceFromAssembly(assembly, resource_name);
         }
 
-        public static Bitmap DefaultGetBitMapResource(string resource_name)
+        public static Image DefaultGetBitMapResource(string resource_name)
         {
             byte[] data = DefaultGetResource(resource_name);
 
             if (data != null)
             {
-                MemoryStream ms = new(data);
-                Bitmap im = new(ms);
+                Image im = Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(data);
                 return im;
             }
 

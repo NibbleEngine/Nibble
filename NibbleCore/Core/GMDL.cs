@@ -244,10 +244,13 @@ namespace NbCore
             return temp;
         }
 
+        public override GeomObject Clone()
+        {
+            throw new NotImplementedException();
+        }
 
-        
 
-#region IDisposable Support
+        #region IDisposable Support
         protected override void Dispose(bool disposing)
         {
             if (disposed)

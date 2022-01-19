@@ -4,8 +4,8 @@ using NbCore.Platform.Graphics.OpenGL;
 using OpenTK.Graphics.OpenGL4;
 using System.IO;
 using NbCore.Common;
-using System.Drawing;
-using System.Drawing.Imaging;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NbCore
 {
@@ -91,15 +91,13 @@ namespace NbCore
             MemoryStream ms = new MemoryStream(imageData);
             
             //Load the image from file
-            Bitmap bmpTexture = new Bitmap(ms);
+            Image<Bgra32> bmpTexture = Image.Load<Bgra32>(ms);
+#if DEBUG
             bmpTexture.Save("test_image.bmp");
+#endif
+            Span<Bgra32> pixels;
+            bmpTexture.TryGetSinglePixelSpan(out pixels);
             
-            //Convert the image to a form compatible with openGL
-            Rectangle rctImageBounds = new Rectangle(0, 0, bmpTexture.Width, bmpTexture.Height);
-
-            BitmapData oTextureData = bmpTexture.LockBits(rctImageBounds, ImageLockMode.ReadOnly,
-                                                            System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
             //Console.WriteLine(GL.GetError());
             //Generate PBO
             //pboID = GL.GenBuffer();
@@ -116,14 +114,17 @@ namespace NbCore
 
             //Copy the image data into the texture
             GL.BindTexture(gl_target, texID);
-            GL.TexImage2D(gl_target, 0, PixelInternalFormat.Rgba, bmpTexture.Width, bmpTexture.Height, 0, 
-                OpenTK.Graphics.OpenGL4.PixelFormat.Bgra, PixelType.UnsignedByte, oTextureData.Scan0);
+            unsafe
+            {
+                fixed (void *ptr = pixels)
+                {
+                    GL.TexImage2D(gl_target, 0, PixelInternalFormat.Rgba, bmpTexture.Width, bmpTexture.Height, 0,
+                    PixelFormat.Bgra, PixelType.UnsignedByte, (IntPtr) ptr);
+                }
+            }
             
             GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (float) TextureMinFilter.Linear);
             GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (float) TextureMagFilter.Linear);
-
-            
-            bmpTexture.UnlockBits(oTextureData);
 
             //Cleanup
             bmpTexture = null;
@@ -137,7 +138,11 @@ namespace NbCore
 
         }
 
-        
+        public override Texture Clone()
+        {
+            throw new NotImplementedException();
+        }
+
         private void textureInitDDS(byte[] imageData)
         {
             DDSImage ddsImage;
@@ -360,15 +365,10 @@ namespace NbCore
         {
             var pixels = new byte[4 * tex.Width * tex.Height];
             GL.BindTexture(GraphicsAPI.TextureTargetMap[tex.target], tex.texID);
-            GL.GetTexImage(GraphicsAPI.TextureTargetMap[tex.target], 0, OpenTK.Graphics.OpenGL4.PixelFormat.Rgba, PixelType.Byte, pixels);
-            var bmp = new Bitmap(tex.Width, tex.Height);
-            for (int i = 0; i < tex.Height; i++)
-            for (int j = 0; j < tex.Width; j++)
-                bmp.SetPixel(j, i, Color.FromArgb(pixels[4 * (tex.Width * i + j) + 3],
-                    (int)pixels[4 * (tex.Width * i + j) + 0],
-                    (int)pixels[4 * (tex.Width * i + j) + 1],
-                    (int)pixels[4 * (tex.Width * i + j) + 2]));
-            bmp.Save("Temp//framebuffer_raw_" + name + ".png", ImageFormat.Png);
+            GL.GetTexImage(GraphicsAPI.TextureTargetMap[tex.target], 0, PixelFormat.Rgba, PixelType.Byte, pixels);
+
+            Image test = Image.Load<Rgba32>(pixels);
+            test.SaveAsPng("Temp//framebuffer_raw_" + name + ".png");
         }
 
     }
