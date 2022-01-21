@@ -10,9 +10,12 @@ namespace NbCore.Systems
 {
     public class AnimationSystem : EngineSystem
     {
+        //Keep animations
         public AnimationManager AnimMgr = new();
         public readonly ObjectManager<AnimationData> AnimDataMgr = new();
-
+        //Organize animations in groups
+        public List<NbAnimationGroup> AnimationGroups = new();
+        
         public AnimationSystem() : base(EngineSystemEnum.ANIMATION_SYSTEM)
         {
             
@@ -23,80 +26,88 @@ namespace NbCore.Systems
             AnimMgr.CleanUp();
         }
 
-        public void RegisterEntity(Animation e)
+        public void RegisterEntity(AnimComponent ac)
         {
-            if (e.Type != EntityType.Animation)
+            AnimationGroups.Add(ac.AnimGroup); //Store group
+            foreach (Animation anim in ac.AnimGroup.Animations)
             {
-                Log($"Unable to register {e.Type} entity", Common.LogVerbosityLevel.WARNING);
-                return;
+                AnimMgr.Add(anim);
+                
+                if (!AnimDataMgr.Add((ulong)anim.animData.MetaData.GetHashCode(), anim.animData))
+                    Log("Animation Data already registered.", Common.LogVerbosityLevel.INFO);
             }
-
-
-
-            
-            AnimMgr.Add(e);
-            if (!AnimDataMgr.Add((ulong) e.animData.MetaData.GetHashCode(), e.animData))
-                Log("Animation Data already registered.", Common.LogVerbosityLevel.INFO);
         }
 
         public override void OnRenderUpdate(double dt)
         {
-            foreach (Animation a in AnimMgr.Entities)
+            foreach (NbAnimationGroup group in AnimationGroups)
             {
-                //if (a.IsPlaying)
+                foreach (Animation a in group.Animations)
                 {
-                    //Update data to the meshgroups
-                    foreach (var pair in a.animData.NodeIndexMap)
+                    //if (a.IsPlaying)
                     {
-                        string node = pair.Key;
-                        
-                        //Get Node
-                        SceneComponent sc = a.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
-                        SceneGraphNode joint = sc.GetNodeByName(node);
-                        TransformController tc = EngineRef.transformSys.GetEntityTransformController(joint);
-                        
-                        int actualJointIndex = a.animData.NodeIndexMap[node];
-                        NbMatrix4 invBindMatrix = a.RefMeshGroup.JointBindingDataList[actualJointIndex].invBindMatrix;
-                        NbMatrix4 nodeTransform = invBindMatrix * tc.GetActor().WorldTransformMat;
-                        MathUtils.insertMatToArray16(a.RefMeshGroup.GroupTBO1Data, 16 * actualJointIndex, nodeTransform);
-                    
-                    }
+                        //Update data to the meshgroups
+                        foreach (var node in a.animData.Nodes)
+                        {
+                            //Get Node
+                            SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
+                            SceneGraphNode joint = sc.GetNodeByName(node);
+                            
+                            if (joint == null)
+                                continue;
+                            
+                            if (joint.Type == SceneNodeType.JOINT)
+                            {
+                                //TransformControllers are only available on dynamic entities....
+                                TransformController tc = EngineRef.transformSys.GetEntityTransformController(joint);
+                                JointComponent jc = joint.GetComponent<JointComponent>() as JointComponent;
+                                int actualJointIndex = jc.JointIndex;
+                                NbMatrix4 invBindMatrix = group.RefMeshGroup.JointBindingDataList[actualJointIndex].invBindMatrix;
+                                NbMatrix4 nodeTransform = invBindMatrix * tc.GetActor().WorldTransformMat;
+                                MathUtils.insertMatToArray16(group.RefMeshGroup.GroupTBO1Data, 16 * actualJointIndex, nodeTransform);
+                            } 
+                        }
 
+                    }
                 }
+                
             }
         }
 
         public override void OnFrameUpdate(double dt)
         {
-            foreach (Animation a in AnimMgr.Entities)
+            foreach (NbAnimationGroup group in AnimationGroups)
             {
-                if (a.Override)
+                foreach (Animation a in group.Animations)
                 {
+                    if (a.IsPlaying)
+                        a.Update((float)dt);
 
-                }
-                else if (a.IsPlaying)
-                {
-                    a.Update(a.animData.MetaData.Speed * (float) dt);
-
-                    //Update data to the meshgroups
-                    foreach (var pair in a.animData.NodeIndexMap)
+                    if (a.IsUpdated)
                     {
-                        string node = pair.Key;
-                        NbVector3 nodePosition = a.GetNodeTranslation(node);
-                        NbQuaternion nodeRotation = a.GetNodeRotation(node);
-                        NbVector3 nodeScale = a.GetNodeScale(node);
+                        //Update data to the meshgroups
+                        foreach (string node in a.animData.Nodes)
+                        {
+                            NbVector3 nodePosition = a.GetNodeTranslation(node);
+                            NbQuaternion nodeRotation = a.GetNodeRotation(node);
+                            NbVector3 nodeScale = a.GetNodeScale(node);
 
-                        //Get Node
-                        SceneComponent sc = a.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
-                        SceneGraphNode joint = sc.GetNodeByName(node);
-                        TransformController tc = EngineRef.transformSys.GetEntityTransformController(joint);
-
-                        //Add future state
-                        tc.AddFutureState(nodePosition, nodeRotation, nodeScale);
+                            //Get Node
+                            SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
+                            SceneGraphNode joint = sc.GetNodeByName(node);
+                            if (joint != null && joint.Type == SceneNodeType.JOINT)
+                            {
+                                TransformController tc = EngineRef.transformSys.GetEntityTransformController(joint);
+                                //Add future state
+                                tc.AddFutureState(nodePosition, nodeRotation, nodeScale);
+                            }
+                                
+                        }
+                        a.IsUpdated = false;
                     }
-
                 }
             }
+            
         }
 
         public static void StartAnimation(AnimComponent ac, string Anim)

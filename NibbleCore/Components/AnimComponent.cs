@@ -7,7 +7,7 @@ namespace NbCore
     public class AnimComponent : Component
     {
         //animations list Contains all the animations bound to the locator through Tkanimationcomponent
-        public List<Animation> Animations = new();
+        public NbAnimationGroup AnimGroup = new();
         public Dictionary<string, Animation> AnimationDict = new();
 
         //Default Constructor
@@ -27,7 +27,7 @@ namespace NbCore
         {
             List<Animation> animList = new();
             
-            foreach (Animation ad in Animations)
+            foreach (Animation ad in AnimGroup.Animations)
             {
                 if (ad.IsPlaying)
                     animList.Add(ad);
@@ -50,10 +50,10 @@ namespace NbCore
             AnimComponent ac = new();
 
             //Copy Animations
-            foreach (Animation ad in Animations)
+            foreach (Animation ad in AnimGroup.Animations)
             {
                 Animation clone = new Animation(ad);
-                ac.Animations.Add(clone);
+                ac.AnimGroup.Animations.Add(clone);
             }
                 
             return ac;

@@ -868,6 +868,12 @@ namespace NbCore.Systems
             mg.ID = MeshGroups.Count;
             mg.GroupTBO1 = Renderer.CreateGroupBuffer();
             mg.GroupTBO1Data = new float[256 * 16];
+
+            //Copy any existing data to the bytearray
+            for (int i = 0; i < mg.JointBindingDataList.Count; i++)
+                MathUtils.insertMatToArray16(mg.GroupTBO1Data, 16 * i, 
+                    mg.JointBindingDataList[i].invBindMatrix * mg.JointBindingDataList[i].BindMatrix);
+            
             MeshGroups.Add(mg);
             MeshGroupDict[mg.ID] = mg;
         }
