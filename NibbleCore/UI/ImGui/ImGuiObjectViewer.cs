@@ -356,35 +356,38 @@ namespace NbCore.UI.ImGui
                     {
                         if (ImGuiCore.BeginTable("##AnimationsTable", 3, ImGuiTableFlags.Resizable | ImGuiTableFlags.BordersOuter))
                         {
-                            ImGuiCore.TableSetupColumn("Animation");
+                            ImGuiCore.TableSetupColumn("Name");
                             ImGuiCore.TableSetupColumn("Actions");
                             ImGuiCore.TableSetupColumn("Frame");
                             ImGuiCore.TableHeadersRow();
 
-                            foreach (Animation anim in ac.Animations)
+                            foreach (Animation anim in ac.AnimGroup.Animations)
                             {
                                 ImGuiCore.TableNextRow();
                                 ImGuiCore.TableSetColumnIndex(0);
                                 ImGuiCore.Selectable(anim.animData.MetaData.Name);
                                 ImGuiCore.TableSetColumnIndex(1);
-                                if (ImGuiCore.Button("Play##" + anim.animData.MetaData.Name))
+                                string button_title = anim.IsPlaying ? "Stop##" + anim.animData.MetaData.Name :
+                                    "Play##" + anim.animData.MetaData.Name;
+                                
+                                if (ImGuiCore.Button(button_title))
                                 {
-                                    anim.IsPlaying = true;
-                                };
-                                ImGuiCore.SameLine();
-                                if(ImGuiCore.Button("Stop##" + anim.animData.MetaData.Name))
-                                {
-                                    anim.IsPlaying = false;
+                                    anim.IsPlaying = !anim.IsPlaying;
                                 };
                                 ImGuiCore.TableSetColumnIndex(2);
-
                                 ImGuiCore.Checkbox("##Override" + anim.animData.MetaData.Name, ref anim.Override);
                                 ImGuiCore.SameLine();
 
                                 if (!anim.Override)
                                     ImGuiCore.PushItemFlag(ImGuiItemFlags.Disabled, true);
-                                ImGuiCore.SliderInt("##AnimFrame" + anim.animData.MetaData.Name, ref anim.ActiveFrameIndex, 
-                                    0, anim.animData.FrameCount);
+
+                                int temp_frame = anim.ActiveFrameIndex;
+                                if (ImGuiCore.SliderInt("##AnimFrame" + anim.animData.MetaData.Name, ref temp_frame, 
+                                    0, anim.animData.FrameCount - 1))
+                                {
+                                    anim.SetFrame(temp_frame); //Kinda stupid but whatever
+                                }
+
                                 if (!anim.Override)
                                     ImGuiCore.PopItemFlag();
                             }

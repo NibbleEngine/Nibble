@@ -332,10 +332,7 @@ namespace NbCore
     }
 
     
-    
     //Animation Classes
-
-    
     public class AnimNodeFrameData
     {
         public List<NbQuaternion> rotations = new();
@@ -414,29 +411,6 @@ namespace NbCore
 
     }
 
-    //TODO: REDO
-    //private void loadData()
-    //{
-    //    for (int j = 0; j < NodeCount; j++)
-    //    {
-    //        TkAnimNodeData node = NodeData[j];
-    //        //Init dictionary entries
-
-    //        anim_rotations[node.Node] = new Quaternion[FrameCount];
-    //        anim_positions[node.Node] = new Vector3[FrameCount];
-    //        anim_scales[node.Node] = new Vector3[FrameCount];
-
-    //        for (int i = 0; i < FrameCount; i++)
-    //        {
-    //            Import.NMS.Util.fetchRotQuaternion(node, this, i, ref anim_rotations[node.Node][i]); //use Ref
-    //            Import.NMS.Util.fetchTransVector(node, this, i, ref anim_positions[node.Node][i]); //use Ref
-    //            Import.NMS.Util.fetchScaleVector(node, this, i, ref anim_scales[node.Node][i]); //use Ref
-    //        }
-    //    }
-    //}
-    
-
-    
     public class JointBindingData
     {
         public NbMatrix4 invBindMatrix = NbMatrix4.Identity();
@@ -484,7 +458,9 @@ namespace NbCore
             BindScale.Z = br.ReadSingle();
 
             //Generate Matrix
-            BindMatrix = NbMatrix4.CreateScale(BindScale) * NbMatrix4.CreateFromQuaternion(BindRotation) * NbMatrix4.CreateTranslation(BindTranslate);
+            BindMatrix = NbMatrix4.CreateScale(BindScale) * 
+                         NbMatrix4.CreateFromQuaternion(BindRotation) * 
+                         NbMatrix4.CreateTranslation(BindTranslate);
 
             //Check Results [Except from Joint 0, the determinant of the multiplication is always 1,
             // transforms should be good]

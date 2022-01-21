@@ -355,13 +355,13 @@ namespace NbCore
                 if (e.HasComponent<AnimComponent>())
                 {
                     AnimComponent ac = e.GetComponent<AnimComponent>() as AnimComponent;
-
                     //Iterate to all Animations
-                    foreach (Animation anim in ac.Animations)
+                    foreach (Animation anim in ac.AnimGroup.Animations)
                     {
                         RegisterEntity(anim);
-                        animationSys.RegisterEntity(anim);
                     }
+
+                    animationSys.RegisterEntity(ac);
 
                 }
 
@@ -391,6 +391,7 @@ namespace NbCore
         public void ClearActiveSceneGraph()
         {
             sceneMgmtSys.ClearSceneGraph(sceneMgmtSys.ActiveSceneGraph);
+        
         }
 
         #endregion
@@ -1011,12 +1012,25 @@ namespace NbCore
                     renderSys.Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
             }
 
-            //Mesh Node Disposal
+            //Light Node Disposal
             if (node.HasComponent<LightComponent>())
             {
                 LightComponent lc = node.GetComponent<LightComponent>() as LightComponent;
                 if (lc.InstanceID >= 0)
                     renderSys.Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
+            }
+
+            if (node.HasComponent<AnimComponent>())
+            {
+                AnimComponent ac = node.GetComponent<AnimComponent>() as AnimComponent;
+                ac.AnimationDict.Clear();
+                animationSys.AnimationGroups.Remove(ac.AnimGroup);
+                foreach (Animation anim in ac.AnimGroup.Animations)
+                {
+                    animationSys.AnimMgr.Remove(anim);
+                }
+
+                //TODO: Remove animation data objects as well
             }
 
             node.Dispose();

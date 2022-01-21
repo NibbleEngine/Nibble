@@ -45,7 +45,6 @@ namespace NbCore
         public AnimationDataMetaData MetaData;
         public int FrameCount;
         public List<string> Nodes;
-        public Dictionary<string, int> NodeIndexMap = new();
         
         //Fully unpacked scheme for now. Optimize later
         public Dictionary<string, List<NbVector3>> Translations;
