@@ -11,12 +11,16 @@ namespace NbCore
     {
         //Store TkSceneNodeAttributes for Meshes
         public NbMesh Mesh;
-        public MeshMaterial Material;
         public int InstanceID;
-        
+        public NbUniform[] InstanceUniforms;
+        public bool IsUpdated = true;
+
         public MeshComponent()
         {
             InstanceID = -1;
+            InstanceUniforms = new NbUniform[4];
+            for (int i = 0; i < 4; i++)
+                InstanceUniforms[i] = new();
         }
 
         public override Component Clone()
@@ -33,7 +37,6 @@ namespace NbCore
 
             MeshComponent mc = c as MeshComponent;
             Mesh = mc.Mesh;
-            Material = mc.Material;
         }
 
         /* Move that to the exporter class

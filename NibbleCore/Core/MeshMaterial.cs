@@ -82,12 +82,12 @@ namespace NbCore
         public string name_key = "";
         public TextureManager texMgr;
         public GLSLShaderConfig Shader;
-        public readonly List<NbUniform> Uniforms = new();
-        public readonly List<NbSampler> Samplers = new();
-        public readonly Dictionary<string, NbSampler> SamplerMap = new();
-        public readonly List<MaterialFlagEnum> Flags = new();
+        public List<NbUniform> Uniforms = new();
+        public List<NbSampler> Samplers = new();
+        public Dictionary<string, NbSampler> SamplerMap = new();
+        public List<MaterialFlagEnum> Flags = new();
         
-        public readonly float[] material_flags = new float[64];
+        public float[] material_flags = new float[64];
 
         public static List<MaterialFlagEnum> supported_flags = new() {
             MaterialFlagEnum._F01_DIFFUSEMAP,

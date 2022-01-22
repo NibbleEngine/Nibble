@@ -365,9 +365,9 @@ namespace NbCore
         {
             var pixels = new byte[4 * tex.Width * tex.Height];
             GL.BindTexture(GraphicsAPI.TextureTargetMap[tex.target], tex.texID);
-            GL.GetTexImage(GraphicsAPI.TextureTargetMap[tex.target], 0, PixelFormat.Rgba, PixelType.Byte, pixels);
+            GL.GetTexImage(GraphicsAPI.TextureTargetMap[tex.target], 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
 
-            Image test = Image.Load<Rgba32>(pixels);
+            Image<Rgba32> test = Image.LoadPixelData<Rgba32>(pixels, tex.Width, tex.Height);
             test.SaveAsPng("Temp//framebuffer_raw_" + name + ".png");
         }
 

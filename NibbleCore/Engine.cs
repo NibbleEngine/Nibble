@@ -346,8 +346,8 @@ namespace NbCore
                     MeshComponent mc = e.GetComponent<MeshComponent>() as MeshComponent;
                     
                     RegisterEntity(mc.Mesh);
-                    RegisterEntity(mc.Material);
-                    RegisterEntity(mc.Material.Shader);
+                    RegisterEntity(mc.Mesh.Material);
+                    RegisterEntity(mc.Mesh.Material.Shader);
                     
                     renderSys.RegisterEntity(e); //Register Mesh
                 }
@@ -763,8 +763,7 @@ namespace NbCore
             //Create MeshComponent
             MeshComponent mc = new()
             {
-                Mesh = GetPrimitiveMesh((ulong) "default_cross".GetHashCode()),
-                Material = GetMaterialByName("crossMat")
+                Mesh = GetPrimitiveMesh((ulong) "default_cross".GetHashCode())
             };
             
             n.AddComponent<MeshComponent>(mc);
@@ -772,7 +771,7 @@ namespace NbCore
             return n;
         }
         
-        public SceneGraphNode CreateMeshNode(string name, NbMesh mesh, MeshMaterial mat)
+        public SceneGraphNode CreateMeshNode(string name, NbMesh mesh)
         {
             SceneGraphNode n = new(SceneNodeType.MESH)
             {
@@ -787,8 +786,7 @@ namespace NbCore
             //Create MeshComponent
             MeshComponent mc = new()
             {
-                Mesh = mesh,
-                Material = mat
+                Mesh = mesh
             };
             
             n.AddComponent<MeshComponent>(mc);
@@ -812,8 +810,7 @@ namespace NbCore
             //Create MeshComponent
             MeshComponent mc = new()
             {
-                Mesh = GetPrimitiveMesh((ulong)"default_cross".GetHashCode()),
-                Material = GetMaterialByName("crossMat")
+                Mesh = GetPrimitiveMesh((ulong)"default_cross".GetHashCode())
             };
             
             n.AddComponent<MeshComponent>(mc);
@@ -841,9 +838,9 @@ namespace NbCore
                 Mesh = new()
                 {
                     Data = seg.geom.GetData(),
-                    MetaData = seg.geom.GetMetaData()
-                },
-                Material = Common.RenderState.engineRef.GetMaterialByName("jointMat")
+                    MetaData = seg.geom.GetMetaData(),
+                    Material = RenderState.engineRef.GetMaterialByName("jointMat")
+                }
             };
             n.AddComponent<MeshComponent>(mc);
             
@@ -878,9 +875,9 @@ namespace NbCore
                     Hash = (ulong)(name.GetHashCode() ^ DateTime.Now.GetHashCode()),
                     Type = NbMeshType.Light,
                     MetaData = ls.geom.GetMetaData(),
+                    Material = GetMaterialByName("lightMat"),
                     Data = ls.geom.GetData()
-                },
-                Material = GetMaterialByName("lightMat")
+                }
             };
             
             n.AddComponent<MeshComponent>(mc);
@@ -890,7 +887,6 @@ namespace NbCore
             LightComponent lc = new()
             {
                 Mesh = EngineRef.renderSys.GeometryMgr.GetPrimitiveMesh((ulong)"default_light_sphere".GetHashCode()),
-                Material = EngineRef.renderSys.MaterialMgr.GetByName("lightMat"),
                 Data = new()
                 {
                     FOV = 360.0f,

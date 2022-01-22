@@ -5,8 +5,8 @@
  
 
 //Diffuse Textures
-uniform sampler2DArray mainTex[8];
-uniform sampler2DArray alphaTex[8];
+uniform sampler2D mainTex[8];
+uniform sampler2D alphaTex[8];
 uniform float lbaseLayersUsed[8];
 uniform vec4 lRecolours[8];
 uniform vec4 lAverageColors[8];
@@ -74,9 +74,9 @@ vec4 MixTextures(){
 
 	//Fetch Diffuse Colors
 	for (int i=0; i<8; i++){
-		lLayerXVec4[i] = texture(mainTex[i], vec3(uv0, 0.0));
+		lLayerXVec4[i] = texture(mainTex[i], uv0);
 		if (use_alpha_textures > 0.0) {
-			lfAlpha[i] = texture(alphaTex[i], vec3(uv0, 0.0)).a;
+			lfAlpha[i] = texture(alphaTex[i], uv0).a;
 		}
 		 else {
 			lfAlpha[i] = lLayerXVec4[i].a;	
@@ -131,13 +131,13 @@ vec4 MixTextures(){
 	}
 
 	//Output Color
-	//return lLayerXVec4[4];
-	return lFinalDiffColor;
+	return lLayerXVec4[0];
+	//return lFinalDiffColor;
 }
 
 
 void main()
 {
 	fragColor = MixTextures();
-	//gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+	//fragColor = vec4(1.0, 1.0, 0.0, 1.0);
 }

@@ -243,9 +243,11 @@ namespace NibbleOBJPlugin
             mat.Uniforms.Add(uf);
             mat.Shader = EngineRef.renderSys.GetMaterialShader(mat, 
                 NbCore.Platform.Graphics.OpenGL.SHADER_MODE.DEFFERED);
-            
+
+            mesh.Material = mat;
+
             //Generate Mesh Node
-            SceneGraphNode mesh_node = EngineRef.CreateMeshNode("obj_mesh", mesh, mat);
+            SceneGraphNode mesh_node = EngineRef.CreateMeshNode("obj_mesh", mesh);
             
 
             return mesh_node;

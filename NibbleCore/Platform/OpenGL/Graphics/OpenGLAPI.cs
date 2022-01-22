@@ -838,7 +838,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             
             //Upload Custom Per Material Uniforms
             foreach (NbUniform un in Material.ActiveUniforms)
-                GL.Uniform4(un.ShaderLocation, un.Values);
+                GL.Uniform4(un.ShaderLocation, un.Values._Value);
             
             //BIND TEXTURES
             //Diffuse Texture
@@ -921,13 +921,17 @@ namespace NbCore.Platform.Graphics.OpenGL
             mat.Shader = shader;
 
             //Load Active Uniforms to Material
+            for (int i = 0; i < mat.Uniforms.Count; i++)
+            {
+                if (shader.uniformLocations.ContainsKey($"mpCustomPerMaterial.uniforms[{mat.Uniforms[i].ID}]"))
+                {
+                    mat.Uniforms[i].ShaderLocation = shader.uniformLocations[$"mpCustomPerMaterial.uniforms[{mat.Uniforms[i].ID}]"];
+                    mat.ActiveUniforms.Add(mat.Uniforms[i]);
+                }
+            }
             foreach (NbUniform un in mat.Uniforms)
             {
-                if (shader.uniformLocations.ContainsKey($"mpCustomPerMaterial.uniforms[{un.ID}]"))
-                {
-                    un.ShaderLocation = shader.uniformLocations[$"mpCustomPerMaterial.uniforms[{un.ID}]"];
-                    mat.ActiveUniforms.Add(un);
-                }
+                
             }
             
             foreach (NbSampler s in mat.Samplers)
@@ -1200,6 +1204,55 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         #endregion
 
+
+        #region TextureMethods
+
+        public static Texture CreateTexture(PixelInternalFormat fmt, int w, int h, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
+        {
+            Texture tex = new();
+            tex.texID = GL.GenTexture();
+            tex.target = NbTextureTarget.Texture2D;
+            tex.Width = w;
+            tex.Height = h;
+            GL.BindTexture(TextureTargetMap[tex.target], tex.texID);
+            GL.TexImage2D(TextureTargetMap[tex.target], 0, fmt, w, h, 0, pix_fmt, pix_type, IntPtr.Zero);
+
+            if (generate_mipmaps)
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+            return tex;
+        }
+
+        public static Texture CreateTexture(PixelInternalFormat fmt, int w, int h, int d, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
+        {
+            Texture tex = new();
+            tex.texID = GL.GenTexture();
+            tex.target = NbTextureTarget.Texture2DArray;
+            GL.BindTexture(TextureTargetMap[tex.target], tex.texID);
+            GL.TexImage3D(TextureTargetMap[tex.target], 0, fmt, w, h, d, 0, pix_fmt, pix_type, IntPtr.Zero);
+
+            if (generate_mipmaps)
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2DArray);
+
+            return tex;
+        }
+
+        public static void setupTextureParameters(Texture tex, int wrapMode, int magFilter, int minFilter, float af_amount)
+        {
+
+            GL.BindTexture(TextureTargetMap[tex.target], tex.texID);
+            GL.TexParameter(TextureTargetMap[tex.target], TextureParameterName.TextureWrapS, wrapMode);
+            GL.TexParameter(TextureTargetMap[tex.target], TextureParameterName.TextureWrapT, wrapMode);
+            GL.TexParameter(TextureTargetMap[tex.target], TextureParameterName.TextureMagFilter, magFilter);
+            GL.TexParameter(TextureTargetMap[tex.target], TextureParameterName.TextureMinFilter, minFilter);
+            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, 4.0f);
+
+            //Use anisotropic filtering
+            af_amount = System.Math.Max(af_amount, GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy));
+            GL.TexParameter(TextureTargetMap[tex.target], (TextureParameterName)0x84FE, af_amount);
+        }
+
+        #endregion
 
     }
 }

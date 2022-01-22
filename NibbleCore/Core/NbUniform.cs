@@ -1,24 +1,24 @@
-using OpenTK.Mathematics;
+using NbCore.Math;
 
 namespace NbCore
 {
     public class NbUniform
     {
-        public string Name;
-        public Vector4 Values;
+        public string Name = "Uniform";
+        public NbVector4 Values = new(0.0f);
         public int ShaderLocation = -1;
         public int ID = -1;
         
-        public NbUniform()
-        {
-            Values = new Vector4(0.0f);
-        }
-
-        public NbUniform(string name)
+        public NbUniform(string name, int loc, int id, NbVector4 values)
         {
             Name = name;
-            Values = new Vector4(0.0f);
+            ShaderLocation = loc;
+            ID = id;
+            Values = values;
         }
+
+        public NbUniform() { }
+
     }
 
 }
