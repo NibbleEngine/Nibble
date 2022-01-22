@@ -89,13 +89,12 @@ namespace NbCore.UI.ImGui
                     {
                         Hash = (ulong)mmd.GetHashCode(),
                         MetaData = mmd,
-                        Data = md
+                        Data = md,
+                        Material = _manager.EngineRef.GetMaterialByName("defaultMat")
                     };
 
-                    MeshMaterial mat = _manager.EngineRef.GetMaterialByName("defaultMat");
-                    
                     //Create and register locator node
-                    new_node = _manager.EngineRef.CreateMeshNode("Sphere#1", nm, mat);
+                    new_node = _manager.EngineRef.CreateMeshNode("Sphere#1", nm);
                     entity_added = true;
                     Callbacks.Log("Creating Sphere Mesh Node", LogVerbosityLevel.INFO);
                     ImGuiCore.CloseCurrentPopup();
@@ -219,16 +218,40 @@ namespace NbCore.UI.ImGui
                         {
                             Hash = (ulong)mmd.GetHashCode(),
                             MetaData = mmd,
-                            Data = md
+                            Data = md,
+                            Material = _manager.EngineRef.GetMaterialByName("defaultMat")
                         };
 
-                        MeshMaterial mat = _manager.EngineRef.GetMaterialByName("defaultMat");
-
                         //Create and register locator node
-                        new_node = _manager.EngineRef.CreateMeshNode("Box#1", nm, mat);
+                        new_node = _manager.EngineRef.CreateMeshNode("Box#1", nm);
                         entity_added = true;
                         Callbacks.Log("Creating Box Mesh Node", LogVerbosityLevel.INFO);
 
+                    }
+
+                    if (ImGuiCore.MenuItem("Add Quad"))
+                    {
+                        //Box Requires No parameters create it immediately
+
+                        //Create Mesh
+                        Primitives.Quad q = new(1.0f, 1.0f);
+
+                        NbMeshData md = q.geom.GetData();
+                        NbMeshMetaData mmd = q.geom.GetMetaData();
+                        q.Dispose();
+
+                        NbMesh nm = new()
+                        {
+                            Hash = (ulong)mmd.GetHashCode(),
+                            MetaData = mmd,
+                            Data = md,
+                            Material = _manager.EngineRef.GetMaterialByName("defaultMat")
+                        };
+
+                        //Create and register locator node
+                        new_node = _manager.EngineRef.CreateMeshNode("Quad#1", nm);
+                        entity_added = true;
+                        Callbacks.Log("Creating Quad Mesh Node", LogVerbosityLevel.INFO);
                     }
                     ImGuiCore.EndMenu();
                 }

@@ -86,8 +86,8 @@ namespace NbCore.Systems
 
             //Add default rendering resources
             CompileMainShaders();
-            AddDefaultPrimitives();
             AddDefaultMaterials();
+            AddDefaultPrimitives();
             
             //Initialize Octree
             octree = new Octree(MAX_OCTREE_WIDTH);
@@ -405,7 +405,8 @@ namespace NbCore.Systems
             {
                 Hash = (ulong) "default_quad".GetHashCode(),
                 Data = q.geom.GetData(),
-                MetaData = q.geom.GetMetaData()
+                MetaData = q.geom.GetMetaData(),
+                Material = MaterialMgr.GetByName("defaultMat")
             };
             
             Renderer.AddMesh(mesh);
@@ -435,7 +436,8 @@ namespace NbCore.Systems
                 Type = NbMeshType.Locator, //Explicitly set as locator mesh
                 Hash = (ulong)"default_cross".GetHashCode(),
                 Data = c.geom.GetData(),
-                MetaData = c.geom.GetMetaData()
+                MetaData = c.geom.GetMetaData(),
+                Material = MaterialMgr.GetByName("crossMat")
             };
             Renderer.AddMesh(mesh);
             EngineRef.RegisterEntity(mesh);
@@ -450,7 +452,8 @@ namespace NbCore.Systems
             {
                 Hash = (ulong)"default_box".GetHashCode(),
                 Data = bx.geom.GetData(),
-                MetaData = bx.geom.GetMetaData()
+                MetaData = bx.geom.GetMetaData(),
+                Material = MaterialMgr.GetByName("defaultMat")
             };
             Renderer.AddMesh(mesh);
             EngineRef.RegisterEntity(mesh);
@@ -464,7 +467,8 @@ namespace NbCore.Systems
             {
                 Hash = (ulong)"default_sphere".GetHashCode(),
                 Data = sph.geom.GetData(),
-                MetaData = sph.geom.GetMetaData()
+                MetaData = sph.geom.GetMetaData(),
+                Material = MaterialMgr.GetByName("defaultMat")
             };
 
             Renderer.AddMesh(mesh);
@@ -479,7 +483,8 @@ namespace NbCore.Systems
             {
                 Hash = (ulong)"default_light_sphere".GetHashCode(),
                 Data = lsph.geom.GetData(),
-                MetaData = lsph.geom.GetMetaData()
+                MetaData = lsph.geom.GetMetaData(),
+                Material = MaterialMgr.GetByName("lightMat")
             };
 
             Renderer.AddMesh(mesh);
@@ -705,7 +710,7 @@ namespace NbCore.Systems
             MeshComponent mc = e.GetComponent<MeshComponent>() as MeshComponent;
 
             Renderer.AddMesh(mc.Mesh);
-            MaterialMgr.AddMaterial(mc.Material);
+            MaterialMgr.AddMaterial(mc.Mesh.Material);
 
             //Store Mesh Data Here
             MeshDataMgr.Add(mc.Mesh.Data.Hash, mc.Mesh.Data);
@@ -757,28 +762,21 @@ namespace NbCore.Systems
             }
 
             //Check if the shader has been registered to the rendering system
-            if (!ShaderMgr.ShaderIDExists(m.Material.Shader.GetID()))
+            if (!ShaderMgr.ShaderIDExists(m.Mesh.Material.Shader.GetID()))
             {
-                ShaderMgr.AddShader(m.Material.Shader);
+                ShaderMgr.AddShader(m.Mesh.Material.Shader);
             }
 
             if (connect_material_to_shader && 
-                !ShaderMgr.ShaderContainsMaterial(m.Material.Shader, m.Material))
+                !ShaderMgr.ShaderContainsMaterial(m.Mesh.Material.Shader, m.Mesh.Material))
             {
-                ShaderMgr.AddMaterialToShader(m.Material);
+                ShaderMgr.AddMaterialToShader(m.Mesh.Material);
             }
             
             //Add all meshes to the global meshlist
             if (!globalMeshList.Contains(m.Mesh))
                 globalMeshList.Add(m.Mesh);
 
-            //Add meshes to their associated material meshlist
-            if (!MaterialMgr.MaterialContainsMesh(m.Material, m.Mesh))
-            {
-                MaterialMgr.AddMeshToMaterial(m.Material, m.Mesh);
-                m.Mesh.MaterialID = m.Material.GetID();
-            }
-                
             //Organize Meshes to Meshgroup
             if (m.Mesh.Group == null && save_to_group)
             {
@@ -917,8 +915,8 @@ namespace NbCore.Systems
         {
             group.Meshes.Sort((NbMesh a, NbMesh b) =>
             {
-                MeshMaterial ma = MaterialMgr.Get(a.MaterialID);
-                MeshMaterial mb = MaterialMgr.Get(b.MaterialID);
+                MeshMaterial ma = MaterialMgr.Get(a.Material.GetID());
+                MeshMaterial mb = MaterialMgr.Get(b.Material.GetID());
                 return ma.Shader.GetID().CompareTo(mb.Shader.GetID());
             });
         }
@@ -1147,7 +1145,7 @@ namespace NbCore.Systems
                     if (mesh.InstanceCount == 0)
                         continue;
 
-                    MeshMaterial mat = MaterialMgr.Get(mesh.MaterialID);
+                    MeshMaterial mat = MaterialMgr.Get(mesh.Material.GetID());
                     Renderer.SetProgram(mat.Shader.ProgramID);
                     Renderer.RenderMesh(mesh, mat);
                 }
@@ -1202,13 +1200,14 @@ namespace NbCore.Systems
 
                 foreach (MeshMaterial mat in ShaderMgr.GetShaderMaterials(shader))
                 {
-                    foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
-                    {
-                        if (mesh.InstanceCount == 0)
-                            continue;
+                    //REWRITE
+                    //foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
+                    //{
+                    //    if (mesh.InstanceCount == 0)
+                    //        continue;
                         
-                        Renderer.RenderMesh(mesh, mat);
-                    }
+                    //    Renderer.RenderMesh(mesh, mat);
+                    //}
                 }
             }
             
@@ -1251,13 +1250,14 @@ namespace NbCore.Systems
                 
                 foreach (MeshMaterial mat in ShaderMgr.GetShaderMaterials(shader))
                 {
-                    foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
-                    {
-                        if (mesh.InstanceCount == 0)
-                            continue;
+                    //REWRITE
+                    //foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
+                    //{
+                    //    if (mesh.InstanceCount == 0)
+                    //        continue;
                     
-                        Renderer.RenderMesh(mesh, mat);
-                    }
+                    //    Renderer.RenderMesh(mesh, mat);
+                    //}
                     
                 }
             }

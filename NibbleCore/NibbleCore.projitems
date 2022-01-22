@@ -33,6 +33,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\TwosComplement.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiOpenFileDialog.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Version.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbMeshData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\MeshMaterial.cs" />
@@ -52,7 +53,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiObjectViewer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiSceneGraphViewer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShader.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderEditor.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderSourceEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiTexture.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Managers\EntityManager.cs" />
@@ -113,6 +114,5 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Input\" />
-    <Folder Include="$(MSBuildThisFileDirectory)UI\" />
   </ItemGroup>
 </Project>

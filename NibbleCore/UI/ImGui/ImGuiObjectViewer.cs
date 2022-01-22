@@ -18,7 +18,7 @@ namespace NbCore.UI.ImGui
         private int current_material_sampler = 0;
         private int current_material_flag = 0;
         private int slider_test = 0;
-
+        
         public ImGuiObjectViewer(ImGuiManager mgr)
         {
             _manager = mgr;
@@ -66,61 +66,78 @@ namespace NbCore.UI.ImGui
         {
             GUIDComponent gc = _model.GetComponent<GUIDComponent>() as GUIDComponent;
             //Name
-            ImGuiCore.Columns(2);
-            ImGuiCore.Text("GUID");
-            ImGuiCore.Text("Type");
-            ImGuiCore.Text("LOD");
-            ImGuiCore.Text("Name");
-
-            ImGuiCore.NextColumn();
-            ImGuiCore.Text(gc.ID.ToString());
-            ImGuiCore.Text(_model.Type.ToString());
-            ImGuiCore.Text("TODO");
-            ImGuiCore.InputText("##Name", ref _model.Name, 30);
-
-            ImGuiCore.Columns(1);
+            if (ImGuiCore.BeginTable("##NodeInfo", 2, ImGuiTableFlags.None))
+            {
+                ImGuiCore.TableNextRow();
+                ImGuiCore.TableSetColumnIndex(0);
+                ImGuiCore.Text("GUID");
+                ImGuiCore.TableSetColumnIndex(1);
+                ImGuiCore.Text(gc.ID.ToString());
+                ImGuiCore.TableNextRow();
+                ImGuiCore.TableSetColumnIndex(0);
+                ImGuiCore.Text("Type");
+                ImGuiCore.TableSetColumnIndex(1);
+                ImGuiCore.Text(_model.Type.ToString());
+                ImGuiCore.TableNextRow();
+                ImGuiCore.TableSetColumnIndex(0);
+                ImGuiCore.Text("LOD");
+                ImGuiCore.TableSetColumnIndex(1);
+                ImGuiCore.Text("TODO");
+                ImGuiCore.TableNextRow();
+                ImGuiCore.TableSetColumnIndex(0);
+                ImGuiCore.Text("Name");
+                ImGuiCore.TableSetColumnIndex(1);
+                ImGuiCore.PushItemWidth(-1.0f);
+                ImGuiCore.InputText("##Name", ref _model.Name, 30);
+                ImGuiCore.PopItemWidth();
+                ImGuiCore.EndTable();
+            }
             
-
-
-            //ImGui.Text(_model.LODNumber.ToString());
-
-            ImGuiCore.Columns(1);
-            //TODO LOD Distances
-
+            
             //Draw Transform
             TransformData td = TransformationSystem.GetEntityTransformData(_model);
             if (ImGuiCore.CollapsingHeader("Transform", ImGuiTreeNodeFlags.DefaultOpen))
             {
-                //Draw TransformMatrix
-                bool transform_changed = false;
-                ImGuiCore.Columns(4);
-                ImGuiCore.Text("Translation");
-                ImGuiCore.NextColumn();
-                transform_changed |= ImGuiCore.DragFloat("##TransX", ref td.TransX, 0.005f);
-                ImGuiCore.NextColumn();
-                transform_changed |= ImGuiCore.DragFloat("##TransY", ref td.TransY, 0.005f);
-                ImGuiCore.NextColumn();
-                transform_changed |= ImGuiCore.DragFloat("##TransZ", ref td.TransZ, 0.005f);
-                ImGuiCore.NextColumn();
-                ImGuiCore.Text("Rotation");
-                ImGuiCore.NextColumn();
-                transform_changed |= ImGuiCore.DragFloat("##RotX", ref td.RotX);
-                ImGuiCore.NextColumn();
-                transform_changed |= ImGuiCore.DragFloat("##RotY", ref td.RotY);
-                ImGuiCore.NextColumn();
-                transform_changed |= ImGuiCore.DragFloat("##RotZ", ref td.RotZ);
-                ImGuiCore.NextColumn();
-                ImGuiCore.Text("Scale");
-                ImGuiCore.NextColumn();
-                transform_changed |= ImGuiCore.DragFloat("##ScaleX", ref td.ScaleX, 0.005f);
-                ImGuiCore.NextColumn();
-                transform_changed |= ImGuiCore.DragFloat("##ScaleY", ref td.ScaleY, 0.005f);
-                ImGuiCore.NextColumn();
-                transform_changed |= ImGuiCore.DragFloat("##ScaleZ", ref td.ScaleZ, 0.005f);
-                ImGuiCore.Columns(1);
+                if (ImGuiCore.BeginTable("##TransformTable", 4, ImGuiTableFlags.None))
+                {
+                    //Draw TransformMatrix
+                    bool transform_changed = false;
+                    ImGuiCore.TableNextRow();
+                    ImGuiCore.TableSetColumnIndex(0);
+                    ImGuiCore.Text("Translation");
+                    ImGuiCore.TableSetColumnIndex(1);
+                    ImGuiCore.PushItemWidth(-1.0f);
+                    transform_changed |= ImGuiCore.DragFloat("##TransX", ref td.TransX, 0.005f);
+                    ImGuiCore.TableSetColumnIndex(2);
+                    ImGuiCore.PushItemWidth(-1.0f);
+                    transform_changed |= ImGuiCore.DragFloat("##TransY", ref td.TransY, 0.005f);
+                    ImGuiCore.TableSetColumnIndex(3);
+                    ImGuiCore.PushItemWidth(-1.0f);
+                    transform_changed |= ImGuiCore.DragFloat("##TransZ", ref td.TransZ, 0.005f);
+                    ImGuiCore.TableNextRow();
+                    ImGuiCore.TableSetColumnIndex(0);
+                    ImGuiCore.Text("Rotation");
+                    ImGuiCore.TableSetColumnIndex(1);
+                    transform_changed |= ImGuiCore.DragFloat("##RotX", ref td.RotX);
+                    ImGuiCore.TableSetColumnIndex(2);
+                    transform_changed |= ImGuiCore.DragFloat("##RotY", ref td.RotY);
+                    ImGuiCore.TableSetColumnIndex(3);
+                    transform_changed |= ImGuiCore.DragFloat("##RotZ", ref td.RotZ);
+                    ImGuiCore.TableNextRow();
+                    ImGuiCore.TableSetColumnIndex(0);
+                    ImGuiCore.Text("Scale");
+                    ImGuiCore.TableSetColumnIndex(1);
+                    transform_changed |= ImGuiCore.DragFloat("##ScaleX", ref td.ScaleX, 0.005f);
+                    ImGuiCore.TableSetColumnIndex(2);
+                    transform_changed |= ImGuiCore.DragFloat("##ScaleY", ref td.ScaleY, 0.005f);
+                    ImGuiCore.TableSetColumnIndex(3);
+                    transform_changed |= ImGuiCore.DragFloat("##ScaleZ", ref td.ScaleZ, 0.005f);
 
-                if (transform_changed)
-                    RequestNodeUpdateRecursive(_model);
+                    if (transform_changed)
+                        RequestNodeUpdateRecursive(_model);
+
+                    ImGuiCore.EndTable();
+                }
             }
 
             //Draw Components
@@ -153,75 +170,71 @@ namespace NbCore.UI.ImGui
             if (_model.HasComponent<MeshComponent>())
             {
                 MeshComponent mc = _model.GetComponent<MeshComponent>() as MeshComponent;
-                MeshMaterial mm = mc.Material;
                 if (ImGuiCore.CollapsingHeader("Mesh Component", ImGuiTreeNodeFlags.DefaultOpen))
                 {
-                    ImGuiCore.Columns(2);
-                    ImGuiCore.Text("Instance ID");
-                    ImGuiCore.Text("Mesh Group ID");
-                    ImGuiCore.Text("Material");
-                    ImGuiCore.NextColumn();
-                    ImGuiCore.Text(mc.InstanceID.ToString());
-                    ImGuiCore.Text(mc.Mesh.Group != null ? mc.Mesh.Group.ID.ToString() : "-1");
-                    if (mm != null)
+                    if (ImGuiCore.BeginTable("##MeshInfo", 2))
                     {
-                        ImGuiCore.Text(mm.Name);
-                        ImGuiCore.SameLine();
-                        if (ImGuiCore.Button("-"))
-                            Console.WriteLine("Remove Material not implemented yet");
-                    }
-                    else
-                    {
-                        ImGuiCore.Text("Null");
-                        ImGuiCore.SameLine();
-                        if (ImGuiCore.Button("+"))
-                            Console.WriteLine("Add Material not implemented yet");
+                        ImGuiCore.TableNextRow();
+                        ImGuiCore.TableSetColumnIndex(0);
+                        ImGuiCore.Text("Instance ID");
+                        ImGuiCore.TableSetColumnIndex(1);
+                        ImGuiCore.Text(mc.InstanceID.ToString());
+                        ImGuiCore.TableNextRow();
+                        ImGuiCore.TableSetColumnIndex(0);
+                        ImGuiCore.Text("MeshGroup ID");
+                        ImGuiCore.TableSetColumnIndex(1);
+                        ImGuiCore.Text(mc.Mesh.Group != null ? mc.Mesh.Group.ID.ToString() : "-1");
+                        ImGuiCore.TableNextRow();
+                        ImGuiCore.TableSetColumnIndex(0);
+                        ImGuiCore.Text("Material");
+                        ImGuiCore.TableSetColumnIndex(1);
+
+                        //Items
+                        List<Entity> materialList = _manager.EngineRef.GetEntityTypeList(EntityType.Material);
+                        string[] items = new string[materialList.Count];
+                        for (int i = 0; i < items.Length; i++)
+                        {
+                            MeshMaterial mm = (MeshMaterial) materialList[i];
+                            items[i] = mm.Name == "" ? "Material_" + i : mm.Name;
+                        }
+                        
+                        int material_id = materialList.IndexOf(mc.Mesh.Material);
+
+                        if (ImGuiCore.Combo("##MaterialCombo", ref material_id, items, items.Length))
+                            mc.Mesh.Material = (MeshMaterial) materialList[material_id];
+
+                        ImGuiCore.EndTable();
                     }
 
-                    if (mc.InstanceID != -1)
-                    {
-                        ImGuiCore.NextColumn();
-                        ImGuiCore.Text("Mesh Uniforms");
-                        ImGuiCore.NewLine();
-                        ImGuiCore.NextColumn();
-                        ImGuiCore.NextColumn();
+                    ImGuiCore.Text("Mesh Uniforms");
+                    ImGuiCore.NewLine();
 
+                    if (ImGuiCore.BeginTable("##MeshUniforms", 2))
+                    {
                         for (int i = 0; i < 4; i++)
                         {
-                            ImGuiCore.Text("Uniform" + i);
-                            ImGuiCore.NextColumn();
-                            Math.NbVector4 uf = _manager.EngineRef.renderSys.Renderer.GetInstanceUniform4(mc.Mesh, mc.InstanceID, i);
+                            ImGuiCore.TableNextRow();
+                            ImGuiCore.TableSetColumnIndex(0);
+                            ImGuiCore.Text("Uniform " + i);
+                            ImGuiCore.TableSetColumnIndex(1);
+                            ImGuiCore.PushItemWidth(-1.0f);
+                            Math.NbVector4 uf = mc.InstanceUniforms[i].Values;
                             var val = new System.Numerics.Vector4();
                             val.X = uf.X;
                             val.Y = uf.Y;
                             val.Z = uf.Z;
                             val.W = uf.W;
-
+                            
                             if (ImGuiCore.InputFloat4($"##uf{i}", ref val))
                             {
-                                _manager.EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, i,
-                                    new Math.NbVector4(val));
+                                mc.InstanceUniforms[i].Values = new(val);
+                                mc.IsUpdated = true;
                             }
-
-                            if (i != 3)
-                                ImGuiCore.NextColumn();
+                            
+                            ImGuiCore.PopItemWidth();
                         }
-
-
-
-
+                        ImGuiCore.EndTable();
                     }
-
-                    
-
-
-
-
-
-                    ImGuiCore.Columns(1);
-                    
-                    
-
 
                     if (ImGuiCore.TreeNode("Mesh"))
                     {
@@ -402,25 +415,6 @@ namespace NbCore.UI.ImGui
             }
         }
 
-        private void DrawLocator()
-        {
-            DrawModel();
-            //TODO Add Locator Stuff
-        }
-
-        private void DrawMesh()
-        {
-            DrawModel();
-            //TODO add Mesh Stuff
-        }
-
-        private void DrawLight()
-        {
-            DrawModel();
-            //Todo add Light Stuff
-        }
-
-        
         ~ImGuiObjectViewer()
         {
 

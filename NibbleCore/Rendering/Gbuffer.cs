@@ -229,7 +229,7 @@ namespace NbCore
             GL.ReadPixels(0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
 
             SixLabors.ImageSharp.Image test = 
-                SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(pixels);
+                SixLabors.ImageSharp.Image.LoadPixelData<SixLabors.ImageSharp.PixelFormats.Rgba32>(pixels, width, height);
             SixLabors.ImageSharp.ImageExtensions.SaveAsPng(test, "Temp//framebuffer_raw_" + name + ".png");
         }
 

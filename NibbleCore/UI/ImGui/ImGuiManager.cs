@@ -32,12 +32,14 @@ namespace NbCore.UI.ImGui
             //Enable docking by default
             ImGuiIOPtr io = ImGuiNET.ImGui.GetIO();
             io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; //Enable Docking
-            
+            io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; //Enable MultipleViewport
+
             //Initialize items
             ObjectViewer = new(this);
             SceneGraphViewer = new(this);
             MaterialEditor = new();
             ShaderEditor = new();
+            TextureEditor = new();
         }
 
         //Resize available imgui space
@@ -93,7 +95,7 @@ namespace NbCore.UI.ImGui
             if (m.HasComponent<MeshComponent>())
             {
                 MeshComponent mc = m.GetComponent<MeshComponent>() as MeshComponent;
-                MaterialEditor.SetMaterial(mc.Material);
+                MaterialEditor.SetMaterial(mc.Mesh.Material);
             }
         }
 
@@ -103,7 +105,7 @@ namespace NbCore.UI.ImGui
             ShaderEditor?.Draw();
         }
 
-        public virtual void SetActiveShaderSource(GLSLShaderSource s)
+        public virtual void SetActiveShaderConfig(GLSLShaderConfig s)
         {
             ShaderEditor.SetShader(s);
         }

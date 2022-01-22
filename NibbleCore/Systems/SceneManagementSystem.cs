@@ -82,6 +82,18 @@ namespace NbCore.Systems
 
                     td.IsUpdated = false; //Reset updated status to prevent further updates on the same frame update
                 }
+
+                //Update Instance Data
+                if (mc.IsUpdated && !td.IsOccluded)
+                {
+                    //Upload Uniforms
+                    EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 0, mc.InstanceUniforms[0].Values);
+                    EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 1, mc.InstanceUniforms[1].Values);
+                    EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 2, mc.InstanceUniforms[2].Values);
+                    EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 3, mc.InstanceUniforms[3].Values);
+                    mc.IsUpdated = false;
+                }
+
             }
 
             //Process Lights
