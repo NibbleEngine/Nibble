@@ -80,15 +80,13 @@ namespace NbCore.Systems
             Renderer = new GraphicsAPI(); //Use OpenGL by default
             Renderer.Init();
 
-            //Setup Shadow Renderer
-            shdwRenderer = new ShadowRenderer();
-
-
-            //Add default rendering resources
             CompileMainShaders();
             AddDefaultMaterials();
             AddDefaultPrimitives();
             
+            //Setup Shadow Renderer
+            shdwRenderer = new ShadowRenderer();
+
             //Initialize Octree
             octree = new Octree(MAX_OCTREE_WIDTH);
 
@@ -169,60 +167,7 @@ namespace NbCore.Systems
             ShaderMgr.CleanUp();
             
         }
-        
-        
-        private GLSLShaderConfig CompileShader(string vs_path, string fs_path, string gs_path, 
-            List<string> directives, SHADER_TYPE stype, SHADER_MODE smode)
-        {
-            GLSLShaderConfig shader_conf;
-            List<string> hashdirectives = new();
-            int hash;
 
-            GLSLShaderSource vs, fs, gs, tes, tcs;
-            vs = null;
-            fs = null;
-            gs = null;
-            tes = null;
-            tcs = null;
-
-            hashdirectives = Renderer.CombineShaderDirectives(hashdirectives, smode);
-            foreach (string dir in directives)
-                hashdirectives.Add(dir);
-
-            //Compile Object Shaders
-            if (vs_path != null)
-            {
-                vs = EngineRef.GetShaderSourceByFilePath(vs_path);
-                hashdirectives.Add(Utils.FileUtils.FixPath(vs_path));
-            }
-
-            if (fs_path != null)
-            {
-                fs = EngineRef.GetShaderSourceByFilePath(fs_path);
-                hashdirectives.Add(Utils.FileUtils.FixPath(fs_path));
-            }
-
-            if (gs_path != null)
-            {
-                gs = EngineRef.GetShaderSourceByFilePath(gs_path);
-                hashdirectives.Add(Utils.FileUtils.FixPath(gs_path));
-            }
-
-            hash = Renderer.CalculateShaderHash(hashdirectives);
-
-            shader_conf = EngineRef.GetShaderByHash(hash);
-
-            if (shader_conf == null)
-            {
-                shader_conf = new(stype, vs, fs, gs, tcs, tes, directives, smode);
-                Renderer.CompileShader(shader_conf);
-                Callbacks.Assert(hash == shader_conf.Hash, "Hash mismatch");
-            }
-
-            return shader_conf;
-        }
-
-        
         private void CompileMainShaders()
         {
             //Populate shader list
@@ -246,139 +191,249 @@ namespace NbCore.Systems
 #endif
 
             GLSLShaderConfig shader_conf;
-            
-            //Debug Shader
-            shader_conf = CompileShader("Shaders/Simple_VSEmpty.glsl", 
-                "Shaders/Simple_FSEmpty.glsl", "Shaders/Simple_GS.glsl", 
-                new(), SHADER_TYPE.DEBUG_MESH_SHADER, SHADER_MODE.DEFFERED);
-                
-            shader_conf.GetComponent<GUIDComponent>().Dispose();
-            shader_conf.Dispose();
-
-            //Compile Object Shaders
-            shader_conf = CompileShader("Shaders/Gizmo_VS.glsl",
-                "Shaders/Gizmo_FS.glsl", null, 
-                new(), SHADER_TYPE.GIZMO_SHADER, SHADER_MODE.DEFFERED);
-
-            //Attach UBO binding Points
-            Renderer.AttachUBOToShaderBindingPoint(shader_conf, "_COMMON_PER_FRAME", 0);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-
-            //BoundBox Shader
-            shader_conf = CompileShader("Shaders/Bound_VS.glsl",
-                "Shaders/Bound_FS.glsl", null, new(), SHADER_TYPE.BBOX_SHADER, SHADER_MODE.DEFFERED);
-            shader_conf.Dispose();
-
-            //Texture Mixing Shader
-            shader_conf = CompileShader("Shaders/texture_mixer_VS.glsl",
-                "Shaders/texture_mixer_FS.glsl", null, 
-                new(), SHADER_TYPE.TEXTURE_MIX_SHADER, SHADER_MODE.DEFAULT);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-
-
-            //GBuffer Shaders
-            //GLSLShaderSource gbuffer_shader_vs = EngineRef.GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl");
-            //GLSLShaderSource gbuffer_shader_fs;
+            NbShader shader;
 
             //Light Pass Shaders
 
             //UNLIT
-            shader_conf = CompileShader("Shaders/light_pass_VS.glsl",
-                "Shaders/light_pass_FS.glsl", null, 
-                new(), SHADER_TYPE.LIGHT_PASS_UNLIT_SHADER, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
+            shader_conf = EngineRef.GetShaderConfigByName("LightPass_Unlit_Forward");
+            shader = new()
+            {
+                Type = NbShaderType.LIGHT_PASS_UNLIT_SHADER
+            };
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
 
             //LIT
-            shader_conf = CompileShader("Shaders/light_pass_VS.glsl",
-                "Shaders/light_pass_FS.glsl", null,
-                new() { "_D_LIGHTING" }, SHADER_TYPE.LIGHT_PASS_LIT_SHADER, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
+            shader_conf = EngineRef.GetShaderConfigByName("LightPass_Lit_Forward");
+            shader = new()
+            {
+                Type = NbShaderType.LIGHT_PASS_LIT_SHADER
+            };
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
 
             //GAUSSIAN HORIZONTAL BLUR SHADER
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/gaussian_horizontalBlur_FS.glsl", null,
-                new(), SHADER_TYPE.GAUSSIAN_HORIZONTAL_BLUR_SHADER, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-
+            shader_conf = EngineRef.GetShaderConfigByName("Horizontal_Gaussian_Blur");
+            shader = new();
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
 
             //GAUSSIAN VERTICAL BLUR SHADER
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/gaussian_verticalBlur_FS.glsl", null,
-                new(), SHADER_TYPE.GAUSSIAN_VERTICAL_BLUR_SHADER, SHADER_MODE.DEFAULT);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-            
+            shader_conf = EngineRef.GetShaderConfigByName("Vertical_Gaussian_Blur");
+            shader = new();
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
+
             //BRIGHTNESS EXTRACTION SHADER
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/brightness_extract_shader_fs.glsl", null,
-                new(), SHADER_TYPE.BRIGHTNESS_EXTRACT_SHADER, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-            
+            shader_conf = EngineRef.GetShaderConfigByName("Brightness_Extract");
+            shader = new();
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
+
             //ADDITIVE BLEND
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/additive_blend_fs.glsl", null,
-                new(), SHADER_TYPE.ADDITIVE_BLEND_SHADER, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
+            shader_conf = EngineRef.GetShaderConfigByName("Additive_Blend");
+            shader = new();
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
 
             //FXAA
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/fxaa_shader_fs.glsl", null,
-                new(), SHADER_TYPE.FXAA_SHADER, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-            
+            shader_conf = EngineRef.GetShaderConfigByName("FXAA");
+            shader = new();
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
+
             //TONE MAPPING + GAMMA CORRECTION
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/tone_mapping_fs.glsl", null,
-                new(), SHADER_TYPE.TONE_MAPPING, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
+            shader_conf = EngineRef.GetShaderConfigByName("ToneMapping");
+            shader = new()
+            {
+                Type = NbShaderType.TONE_MAPPING
+            };
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
 
             //INV TONE MAPPING + GAMMA CORRECTION
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/inv_tone_mapping_fs.glsl", null,
-                new(), SHADER_TYPE.INV_TONE_MAPPING, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-            
+            shader_conf = EngineRef.GetShaderConfigByName("InverseToneMapping");
+            shader = new()
+            {
+                Type = NbShaderType.INV_TONE_MAPPING
+            };
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
+
             //BWOIT SHADER
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/bwoit_shader_fs.glsl", null,
-                new(), SHADER_TYPE.BWOIT_COMPOSITE_SHADER, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-            
+            shader_conf = EngineRef.GetShaderConfigByName("BWOIT");
+            shader = new();
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
+
             //Text Shaders
-            shader_conf = CompileShader("Shaders/Text_VS.glsl",
-                "Shaders/Text_FS.glsl", null,
-                new(), SHADER_TYPE.TEXT_SHADER, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-            
+            shader_conf = EngineRef.GetShaderConfigByName("Text");
+            shader = new();
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
+
             //FILTERS - EFFECTS
 
             //Pass Shader
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/PassThrough_FS.glsl", null,
-                new(), SHADER_TYPE.PASSTHROUGH_SHADER, SHADER_MODE.FORWARD);
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
+            shader_conf = EngineRef.GetShaderConfigByName("Passthrough");
+            shader = new()
+            {
+                Type = NbShaderType.PASSTHROUGH_SHADER
+            }; 
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
 
             //Red Shader
-            shader_conf = CompileShader("Shaders/Gbuffer_VS.glsl",
-                "Shaders/RedFill.glsl", null,
-                new(), SHADER_TYPE.RED_FILL_SHADER, SHADER_MODE.FORWARD);
-            //Attach UBO binding Points
-            EngineRef.RegisterEntity(shader_conf);
-            ShaderMgr.AddGenericShader(shader_conf);
-            
+            shader_conf = EngineRef.GetShaderConfigByName("RedFill");
+            shader = new()
+            {
+                Type = NbShaderType.RED_FILL_SHADER
+            };
+            Renderer.CompileShader(ref shader, shader_conf);
+            EngineRef.RegisterEntity(shader);
+
+        }
+
+
+        private void AddDefaultMaterials()
+        {
+            //Cross Material
+            MeshMaterial mat;
+            GLSLShaderConfig config;
+            NbShader shader;
+
+            mat = new();
+            mat.Name = "crossMat";
+            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
+            mat.add_flag(MaterialFlagEnum._F21_VERTEXCOLOUR);
+            NbUniform uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(1.0f, 1.0f, 1.0f, 1.0f)
+            };
+            mat.Uniforms.Add(uf);
+            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
+            EngineRef.AttachShaderToMaterial(mat, shader);
+
+#if DEBUG
+            //Report UBOs
+            GraphicsAPI.reportUBOs(shader);
+#endif
+
+            EngineRef.RegisterEntity(mat.Shader); //Register Shader
+            EngineRef.RegisterEntity(mat); //Register Material
+            MaterialMgr.AddMaterial(mat);
+
+            //Joint Material
+            mat = new MeshMaterial
+            {
+                Name = "jointMat"
+            };
+            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
+
+            uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(1.0f, 0.0f, 0.0f, 1.0f)
+            };
+
+            mat.Uniforms.Add(uf);
+            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
+            EngineRef.AttachShaderToMaterial(mat, shader);
+
+            EngineRef.RegisterEntity(mat.Shader); //Register Shader
+            EngineRef.RegisterEntity(mat);
+            MaterialMgr.AddMaterial(mat);
+
+            //Light Material
+            mat = new()
+            {
+                Name = "lightMat"
+            };
+            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
+
+            uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(1.0f, 1.0f, 0.0f, 1.0f)
+            };
+
+            mat.Uniforms.Add(uf);
+            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
+            EngineRef.AttachShaderToMaterial(mat, shader);
+
+            EngineRef.RegisterEntity(mat.Shader); //Register Shader
+            EngineRef.RegisterEntity(mat);
+            MaterialMgr.AddMaterial(mat);
+
+            //Default Material
+            mat = new()
+            {
+                Name = "defaultMat"
+            };
+            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
+
+
+            uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(0.7f, 0.7f, 0.7f, 1.0f)
+            };
+
+            mat.Uniforms.Add(uf);
+            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
+            EngineRef.AttachShaderToMaterial(mat, shader);
+
+            EngineRef.RegisterEntity(mat.Shader); //Register Shader
+            EngineRef.RegisterEntity(mat);
+            MaterialMgr.AddMaterial(mat);
+
+            //Red  Material
+            mat = new()
+            {
+                Name = "redMat"
+            };
+
+            uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(0.7f, 0.7f, 0.7f, 1.0f)
+            };
+
+            mat.Uniforms.Add(uf);
+            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED | NbShaderMode.LIT);
+            EngineRef.AttachShaderToMaterial(mat, shader);
+
+            EngineRef.RegisterEntity(mat.Shader); //Register Shader
+            EngineRef.RegisterEntity(mat);
+            MaterialMgr.AddMaterial(mat);
+
+            //Collision Material
+            mat = new();
+            mat.Name = "collisionMat";
+            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
+
+            uf = new()
+            {
+                ID = 0,
+                Name = "gMaterialColourVec4",
+                Values = new(0.8f, 0.8f, 0.2f, 1.0f)
+            };
+
+            mat.Uniforms.Add(uf);
+            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
+            EngineRef.AttachShaderToMaterial(mat, shader);
+
+            EngineRef.RegisterEntity(mat.Shader); //Register Shader
+            EngineRef.RegisterEntity(mat);
+            MaterialMgr.AddMaterial(mat);
+
         }
 
         private void AddDefaultPrimitives()
@@ -403,12 +458,12 @@ namespace NbCore.Systems
 
             NbMesh mesh = new()
             {
-                Hash = (ulong) "default_quad".GetHashCode(),
+                Hash = (ulong)"default_quad".GetHashCode(),
                 Data = q.geom.GetData(),
                 MetaData = q.geom.GetMetaData(),
                 Material = MaterialMgr.GetByName("defaultMat")
             };
-            
+
             Renderer.AddMesh(mesh);
             EngineRef.RegisterEntity(mesh);
             GeometryMgr.AddPrimitiveMesh(mesh);
@@ -416,7 +471,7 @@ namespace NbCore.Systems
 
             //Default render quad
             q = new Primitives.Quad();
-            
+
             mesh = new()
             {
                 Hash = (ulong)"default_renderquad".GetHashCode(),
@@ -427,10 +482,10 @@ namespace NbCore.Systems
             EngineRef.RegisterEntity(mesh);
             GeometryMgr.AddPrimitiveMesh(mesh);
             q.Dispose();
-            
+
             //Default cross
             Primitives.Cross c = new(0.1f, true);
-            
+
             mesh = new()
             {
                 Type = NbMeshType.Locator, //Explicitly set as locator mesh
@@ -459,7 +514,7 @@ namespace NbCore.Systems
             EngineRef.RegisterEntity(mesh);
             GeometryMgr.AddPrimitiveMesh(mesh);
             bx.Dispose();
-            
+
             //Default sphere
             Primitives.Sphere sph = new(new NbVector3(0.0f, 0.0f, 0.0f), 100.0f);
 
@@ -478,7 +533,7 @@ namespace NbCore.Systems
 
             //Light Sphere Mesh
             Primitives.Sphere lsph = new(new NbVector3(0.0f, 0.0f, 0.0f), 1.0f);
-            
+
             mesh = new()
             {
                 Hash = (ulong)"default_light_sphere".GetHashCode(),
@@ -491,130 +546,13 @@ namespace NbCore.Systems
             EngineRef.RegisterEntity(mesh);
             GeometryMgr.AddPrimitiveMesh(mesh);
             lsph.Dispose();
-            
+
             GenerateGizmoParts();
 
-            
+
 
         }
 
-        private void AddDefaultMaterials()
-        {
-            //Cross Material
-            MeshMaterial mat;
-            GLSLShaderConfig shader;
-
-            mat = new();
-            mat.Name = "crossMat";
-            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
-            mat.add_flag(MaterialFlagEnum._F21_VERTEXCOLOUR);
-            NbUniform uf = new()
-            {
-                ID = 0,
-                Name = "gMaterialColourVec4",
-                Values = new(1.0f, 1.0f, 1.0f, 1.0f)
-            };
-            mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
-            EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
-
-#if DEBUG
-            //Report UBOs
-            GLShaderHelper.reportUBOs(shader);
-#endif
-
-            EngineRef.RegisterEntity(mat.Shader); //Register Shader
-            EngineRef.RegisterEntity(mat); //Register Material
-            MaterialMgr.AddMaterial(mat);
-            
-            //Joint Material
-            mat = new MeshMaterial
-            {
-                Name = "jointMat"
-            };
-            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
-
-            uf = new()
-            {
-                ID = 0,
-                Name = "gMaterialColourVec4",
-                Values = new(1.0f, 0.0f, 0.0f, 1.0f)
-            };
-            
-            mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
-            EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
-
-            EngineRef.RegisterEntity(mat.Shader); //Register Shader
-            EngineRef.RegisterEntity(mat);
-            MaterialMgr.AddMaterial(mat);
-
-            //Light Material
-            mat = new()
-            {
-                Name = "lightMat"
-            };
-            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
-
-            uf = new()
-            {
-                ID = 0,
-                Name = "gMaterialColourVec4",
-                Values = new(1.0f, 1.0f, 0.0f, 1.0f)
-            };
-
-            mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
-            EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
-
-            EngineRef.RegisterEntity(mat.Shader); //Register Shader
-            EngineRef.RegisterEntity(mat);
-            MaterialMgr.AddMaterial(mat);
-
-            //Light Material
-            mat = new()
-            {
-                Name = "defaultMat"
-            };
-            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
-
-
-            uf = new()
-            {
-                ID = 0,
-                Name = "gMaterialColourVec4",
-                Values = new(0.7f, 0.7f, 0.7f, 1.0f)
-            };
-
-            mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
-            EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
-
-            EngineRef.RegisterEntity(mat.Shader); //Register Shader
-            EngineRef.RegisterEntity(mat);
-            MaterialMgr.AddMaterial(mat);
-
-            //Collision Material
-            mat = new();
-            mat.Name = "collisionMat";
-            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
-
-            uf = new()
-            {
-                ID = 0,
-                Name = "gMaterialColourVec4",
-                Values = new(0.8f, 0.8f, 0.2f, 1.0f)
-            };
-
-            mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
-            EngineRef.renderSys.Renderer.AttachShaderToMaterial(mat, shader);
-
-            EngineRef.RegisterEntity(mat.Shader); //Register Shader
-            EngineRef.RegisterEntity(mat);
-            MaterialMgr.AddMaterial(mat);
-
-        }
 
         private void GenerateGizmoParts()
         {
@@ -676,15 +614,15 @@ namespace NbCore.Systems
 
         }
 
-        public GLSLShaderConfig GetMaterialShader(MeshMaterial mat, SHADER_MODE mode)
+        public NbShader GetMaterialShader(MeshMaterial mat, NbShaderMode mode)
         {
             //Calculate Shader hash
             List<string> directives = new();
-            directives = Renderer.CombineShaderDirectives(directives, mode);
-            directives.AddRange(Renderer.GetMaterialShaderDirectives(mat));
-            int shader_hash = Renderer.CalculateShaderHash(directives);
+            directives = EngineRef.CombineShaderDirectives(directives, mode);
+            directives.AddRange(EngineRef.GetMaterialShaderDirectives(mat));
+            int shader_hash = EngineRef.CalculateShaderHash(directives);
 
-            GLSLShaderConfig shader = null;
+            NbShader shader = null;
 
             if (ShaderMgr.ShaderHashExists(shader_hash))
             {
@@ -695,7 +633,7 @@ namespace NbCore.Systems
                 shader =  EngineRef.CompileMaterialShader(mat, mode);
             }
 
-            Renderer.AttachShaderToMaterial(mat, shader);
+            EngineRef.AttachShaderToMaterial(mat, shader);
             return shader;
         }
 
@@ -869,8 +807,12 @@ namespace NbCore.Systems
 
             //Copy any existing data to the bytearray
             for (int i = 0; i < mg.JointBindingDataList.Count; i++)
-                MathUtils.insertMatToArray16(mg.GroupTBO1Data, 16 * i, 
-                    mg.JointBindingDataList[i].invBindMatrix * mg.JointBindingDataList[i].BindMatrix);
+            {
+                NbMatrix4 temp_matrix = mg.JointBindingDataList[i].invBindMatrix * mg.JointBindingDataList[i].BindMatrix;
+                //This does not work for all models (e.g. the astronaut)
+                //I suspect that its just an issue with the model, this matrix multiplication should bring the model to its binding pose
+                MathUtils.insertMatToArray16(mg.GroupTBO1Data, 16 * i, temp_matrix);
+            }
             
             MeshGroups.Add(mg);
             MeshGroupDict[mg.ID] = mg;
@@ -1123,8 +1065,11 @@ namespace NbCore.Systems
             //Set polygon mode
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             //Set Test Program
-            GLSLShaderConfig shader = ShaderMgr.GetGenericShader(SHADER_TYPE.RED_FILL_SHADER);
-            Renderer.SetProgram(shader.ProgramID);
+
+
+            MeshMaterial mat = MaterialMgr.GetByName("redMat");
+            NbShader shader = mat.Shader;
+            Renderer.SetProgram(mat.Shader.ProgramID);
 
             Renderer.RenderQuad(GeometryMgr.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode()),
                 shader, shader.CurrentState);
@@ -1187,30 +1132,31 @@ namespace NbCore.Systems
             GL.CullFace(CullFaceMode.Back);
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
-            
-            foreach (GLSLShaderConfig shader in ShaderMgr.GLDeferredDecalShaders)
-            {
-                GL.UseProgram(shader.ProgramID);
-                //Upload depth texture to the shader
 
-                //Bind Depth Buffer
-                GL.Uniform1(shader.uniformLocations["mpCommonPerFrameSamplers.depthMap"], 6);
-                GL.ActiveTexture(TextureUnit.Texture6);
-                GL.BindTexture(TextureTarget.Texture2D, gBuffer.GetChannel(4));
+            //REWRITE
+            //foreach (GLSLShaderConfig shader in ShaderMgr.GLDeferredDecalShaders)
+            //{
+            //    GL.UseProgram(shader.ProgramID);
+            //    //Upload depth texture to the shader
 
-                foreach (MeshMaterial mat in ShaderMgr.GetShaderMaterials(shader))
-                {
-                    //REWRITE
-                    //foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
-                    //{
-                    //    if (mesh.InstanceCount == 0)
-                    //        continue;
-                        
-                    //    Renderer.RenderMesh(mesh, mat);
-                    //}
-                }
-            }
-            
+            //    //Bind Depth Buffer
+            //    GL.Uniform1(shader.uniformLocations["mpCommonPerFrameSamplers.depthMap"].loc, 6);
+            //    GL.ActiveTexture(TextureUnit.Texture6);
+            //    GL.BindTexture(TextureTarget.Texture2D, gBuffer.GetChannel(4));
+
+            //    foreach (MeshMaterial mat in ShaderMgr.GetShaderMaterials(shader))
+            //    {
+            //        
+            //        //foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
+            //        //{
+            //        //    if (mesh.InstanceCount == 0)
+            //        //        continue;
+
+            //        //    Renderer.RenderMesh(mesh, mat);
+            //        //}
+            //    }
+            //}
+
             GL.Disable(EnableCap.Blend);
             GL.CullFace(CullFaceMode.Back);
             GL.Enable(EnableCap.CullFace);
@@ -1244,29 +1190,30 @@ namespace NbCore.Systems
             //Set polygon mode
             GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.renderSettings.RENDERMODE);
 
-            foreach (GLSLShaderConfig shader in ShaderMgr.GLForwardTransparentShaders)
-            {
-                Renderer.EnableShaderProgram(shader); //Set Program
+            //REWRITE
+            //foreach (GLSLShaderConfig shader in ShaderMgr.GLForwardTransparentShaders)
+            //{
+            //    Renderer.EnableShaderProgram(shader); //Set Program
                 
-                foreach (MeshMaterial mat in ShaderMgr.GetShaderMaterials(shader))
-                {
-                    //REWRITE
-                    //foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
-                    //{
-                    //    if (mesh.InstanceCount == 0)
-                    //        continue;
+            //    foreach (MeshMaterial mat in ShaderMgr.GetShaderMaterials(shader))
+            //    {
                     
-                    //    Renderer.RenderMesh(mesh, mat);
-                    //}
+            //        //foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
+            //        //{
+            //        //    if (mesh.InstanceCount == 0)
+            //        //        continue;
                     
-                }
-            }
+            //        //    Renderer.RenderMesh(mesh, mat);
+            //        //}
+                    
+            //    }
+            //}
 
             Renderer.UnbindMeshBuffers();
             GL.DepthMask(true); //Re-enable depth buffer
             
             //Composite Step
-            GLSLShaderConfig bwoit_composite_shader = ShaderMgr.GetGenericShader(SHADER_TYPE.BWOIT_COMPOSITE_SHADER); 
+            NbShader bwoit_composite_shader = ShaderMgr.GetShaderByType(NbShaderType.BWOIT_COMPOSITE_SHADER);
             
             //Draw to main color channel
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
@@ -1376,7 +1323,7 @@ namespace NbCore.Systems
             //Render to render_fbo
             //GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, render_fbo.fbo);
             //GL.Viewport(0, 0, ViewportSize.X, ViewportSize.Y);
-            //render_quad(Array.Empty<string>(), Array.Empty<float>(), Array.Empty<string>(), Array.Empty<TextureTarget>(), Array.Empty<int>(), resMgr.GLShaders[SHADER_TYPE.RED_FILL_SHADER]);
+            //render_quad(Array.Empty<string>(), Array.Empty<float>(), Array.Empty<string>(), Array.Empty<TextureTarget>(), Array.Empty<int>(), resMgr.GLShaders[NbShaderType.RED_FILL_SHADER]);
 
         }
 
@@ -1405,7 +1352,7 @@ namespace NbCore.Systems
             Renderer.PrepareMeshBuffers();
 
             //Render octree
-            //octree.render(resMgr.GLShaders[GLSLHelper.SHADER_TYPE.BBOX_SHADER].program_id);
+            //octree.render(resMgr.GLShaders[GLSLHelper.NbShaderType.BBOX_SHADER].program_id);
 
             //Render Geometry
             renderGeometry();
@@ -1427,7 +1374,7 @@ namespace NbCore.Systems
         /*
         private void render_cameras()
         {
-            int active_program = resMgr.GLShaders[GLSLHelper.SHADER_TYPE.BBOX_SHADER].program_id;
+            int active_program = resMgr.GLShaders[GLSLHelper.NbShaderType.BBOX_SHADER].program_id;
 
             GL.UseProgram(active_program);
             int loc;
@@ -1466,10 +1413,10 @@ namespace NbCore.Systems
 
             GL.Disable(EnableCap.DepthTest); //Disable Depth test
             GL.Clear(ClearBufferMask.ColorBufferBit);
-            GLSLShaderConfig shader = EngineRef.GetShaderByType(SHADER_TYPE.PASSTHROUGH_SHADER);
+            NbShader shader = ShaderMgr.GetShaderByType(NbShaderType.PASSTHROUGH_SHADER);
             //render_quad(new string[] {"sizeX", "sizeY" }, new float[] { to_buf_size[0], to_buf_size[1]}, new string[] { "InTex" }, new int[] { InTex }, shader);
             shader.ClearCurrentState();
-            shader.CurrentState.AddSampler("InTex", new GLSLSamplerState()
+            shader.CurrentState.AddSampler("InTex", new NbSamplerState()
             {
                 Target = NbTextureTarget.Texture2D,
                 TextureID = InTex
@@ -1484,10 +1431,10 @@ namespace NbCore.Systems
         //private void bloom()
         //{
         //    //Load Programs
-        //    GLSLShaderConfig gs_horizontal_blur_program = EngineRef.GetShaderByType(SHADER_TYPE.GAUSSIAN_HORIZONTAL_BLUR_SHADER);
-        //    GLSLShaderConfig gs_vertical_blur_program = EngineRef.GetShaderByType(SHADER_TYPE.GAUSSIAN_VERTICAL_BLUR_SHADER);
-        //    GLSLShaderConfig br_extract_program = EngineRef.GetShaderByType(SHADER_TYPE.BRIGHTNESS_EXTRACT_SHADER) ;
-        //    GLSLShaderConfig add_program = EngineRef.GetShaderByType(SHADER_TYPE.ADDITIVE_BLEND_SHADER);
+        //    GLSLShaderConfig gs_horizontal_blur_program = EngineRef.GetShaderByType(NbShaderType.GAUSSIAN_HORIZONTAL_BLUR_SHADER);
+        //    GLSLShaderConfig gs_vertical_blur_program = EngineRef.GetShaderByType(NbShaderType.GAUSSIAN_VERTICAL_BLUR_SHADER);
+        //    GLSLShaderConfig br_extract_program = EngineRef.GetShaderByType(NbShaderType.BRIGHTNESS_EXTRACT_SHADER) ;
+        //    GLSLShaderConfig add_program = EngineRef.GetShaderByType(NbShaderType.ADDITIVE_BLEND_SHADER);
 
         //    GL.Disable(EnableCap.DepthTest);
 
@@ -1564,7 +1511,7 @@ namespace NbCore.Systems
         //    //inv_tone_mapping(); //Apply tone mapping pbuf.color shoud be ready
 
         //    //Load Programs
-        //    GLSLShaderConfig fxaa_program = ShaderMgr.GetGenericShader(SHADER_TYPE.FXAA_SHADER);
+        //    GLSLShaderConfig fxaa_program = ShaderMgr.GetGenericShader(NbShaderType.FXAA_SHADER);
 
         //    //Copy Color to first channel
         //    FBO.copyChannel(pbuf.fbo, pbuf.fbo, pbuf.size[0], pbuf.size[1], pbuf.size[0], pbuf.size[1],
@@ -1584,7 +1531,7 @@ namespace NbCore.Systems
         private void tone_mapping()
         {
             //Load Programs
-            GLSLShaderConfig shader = ShaderMgr.GetGenericShader(SHADER_TYPE.TONE_MAPPING);
+            NbShader shader = ShaderMgr.GetShaderByType(NbShaderType.TONE_MAPPING);
 
             //Copy Color to first channel
             pass_tex(renderBuffer.fbo, 
@@ -1597,12 +1544,13 @@ namespace NbCore.Systems
 
             //render_quad(new string[] {"sizeX", "sizeY" }, new float[] { to_buf_size[0], to_buf_size[1]}, new string[] { "InTex" }, new int[] { InTex }, shader);
             shader.ClearCurrentState();
-            shader.CurrentState.AddSampler("inTex", new GLSLSamplerState()
+            shader.CurrentState.AddSampler("inTex", new NbSamplerState()
             {
+                SamplerID = 0,
                 Target = NbTextureTarget.Texture2D,
                 TextureID = renderBuffer.GetChannel(1)
             });
-
+            
             Renderer.RenderQuad(GeometryMgr.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode()),
                         shader, shader.CurrentState);
         }
@@ -1610,7 +1558,7 @@ namespace NbCore.Systems
         //private void inv_tone_mapping()
         //{
         //    //Load Programs
-        //    GLSLShaderConfig inv_tone_mapping_program = ShaderMgr.GetGenericShader(SHADER_TYPE.INV_TONE_MAPPING);
+        //    GLSLShaderConfig inv_tone_mapping_program = ShaderMgr.GetGenericShader(NbShaderType.INV_TONE_MAPPING);
 
         //    //Copy Color to first channel
         //    pass_tex(pbuf.fbo, DrawBufferMode.ColorAttachment1, pbuf.color, pbuf.size); //LOOKS OK!
@@ -1662,7 +1610,7 @@ namespace NbCore.Systems
         {
             
             /*
-            GLSLShaderConfig shader_conf = resMgr.GLShaders[SHADER_TYPE.GBUFFER_SHADER];
+            GLSLShaderConfig shader_conf = resMgr.GLShaders[NbShaderType.GBUFFER_SHADER];
 
             //Bind the color channel of the pbuf for drawing
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, pbuf.fbo);
@@ -1681,7 +1629,7 @@ namespace NbCore.Systems
             */
 
             //Render Light volume
-            GLSLShaderConfig shader_conf = ShaderMgr.GetGenericShader(SHADER_TYPE.LIGHT_PASS_LIT_SHADER);
+            NbShader shader_conf = ShaderMgr.GetShaderByType(NbShaderType.LIGHT_PASS_LIT_SHADER);
             
             MeshMaterial mat = EngineRef.GetMaterialByName("lightMat");
             Renderer.EnableMaterialProgram(mat);
@@ -1727,7 +1675,7 @@ namespace NbCore.Systems
             {
                 if (shader_conf.uniformLocations.ContainsKey(sampler_names[i]))
                 {
-                    GL.Uniform1(shader_conf.uniformLocations[sampler_names[i]], i);
+                    GL.Uniform1(shader_conf.uniformLocations[sampler_names[i]].loc, i);
                     GL.ActiveTexture(TextureUnit.Texture0 + i);
                     GL.BindTexture(sampler_targets[i], texture_ids[i]);
                 }
@@ -1786,7 +1734,8 @@ namespace NbCore.Systems
             while (ShaderMgr.CompilationQueue.Count > 0)
             {
                 GLSLShaderConfig shader = ShaderMgr.CompilationQueue.Dequeue();
-                Renderer.CompileShader(shader);
+                //TODO: FIX
+                //Renderer.CompileShader(shader);
             }
             
             //Render Scene

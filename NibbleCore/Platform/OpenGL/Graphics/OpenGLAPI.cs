@@ -437,12 +437,12 @@ namespace NbCore.Platform.Graphics.OpenGL
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void EnableMaterialProgram(MeshMaterial mat)
         {
-            GLSLShaderConfig shader = mat.Shader;
+            NbShader shader = mat.Shader;
             GL.UseProgram(shader.ProgramID); //Set Program
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void EnableShaderProgram(GLSLShaderConfig shader)
+        public void EnableShaderProgram(NbShader shader)
         {
             GL.UseProgram(shader.ProgramID); //Set Program
         }
@@ -453,21 +453,21 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindBuffer(BufferTarget.UniformBuffer, 0); //Unbind UBOs
         }
 
-        public void RenderQuad(NbMesh quadMesh, GLSLShaderConfig shaderConf, GLSLShaderState state)
+        public void RenderQuad(NbMesh quadMesh, NbShader shader, NbShaderState state)
         {
             GLInstancedMesh glmesh = MeshMap[quadMesh.Hash];
             
-            GL.UseProgram(shaderConf.ProgramID);
+            GL.UseProgram(shader.ProgramID);
             GL.BindVertexArray(glmesh.vao.vao_id);
 
             //Filter State
-            shaderConf.FilterState(ref state);
+            shader.FilterState(ref state);
 
             //Upload samplers
             int i = 0;
-            foreach (KeyValuePair<string, GLSLSamplerState> sstate in state.Samplers)
+            foreach (KeyValuePair<string, NbSamplerState> sstate in state.Samplers)
             {
-                GL.Uniform1(shaderConf.uniformLocations[sstate.Key], i);
+                GL.Uniform1(shader.uniformLocations[sstate.Key].loc , sstate.Value.SamplerID);
                 GL.ActiveTexture(TextureUnit.Texture0 + i);
                 GL.BindTexture(TextureTargetMap[sstate.Value.Target], sstate.Value.TextureID);
             }
@@ -475,27 +475,27 @@ namespace NbCore.Platform.Graphics.OpenGL
             //Floats
             foreach (KeyValuePair<string, float> pair in state.Floats)
             {
-                GL.Uniform1(shaderConf.uniformLocations[pair.Key], pair.Value);
+                GL.Uniform1(shader.uniformLocations[pair.Key].loc, pair.Value);
             }
 
             //Vec2s
             foreach (KeyValuePair<string, NbVector2> pair in state.Vec2s)
             {
-                GL.Uniform2(shaderConf.uniformLocations[pair.Key],
+                GL.Uniform2(shader.uniformLocations[pair.Key].loc,
                     pair.Value.X, pair.Value.Y);
             }
 
             //Vec3s
             foreach (KeyValuePair<string, NbVector3> pair in state.Vec3s)
             {
-                GL.Uniform3(shaderConf.uniformLocations[pair.Key],
+                GL.Uniform3(shader.uniformLocations[pair.Key].loc,
                     pair.Value.X, pair.Value.Y, pair.Value.Z);
             }
 
             //Vec4s
             foreach (KeyValuePair<string, NbVector4> pair in state.Vec4s)
             {
-                GL.Uniform4(shaderConf.uniformLocations[pair.Key],
+                GL.Uniform4(shader.uniformLocations[pair.Key].loc,
                     pair.Value.X, pair.Value.Y, pair.Value.Z, pair.Value.W);
             }
 
@@ -611,7 +611,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr) glmesh.UBO_offset, glmesh.UBO_aligned_size);
 
-            SetShaderAndUniforms(glmesh, mat); //Set Shader and material uniforms
+            SetShaderAndUniforms(mat); //Set Shader and material uniforms
             
             GL.BindVertexArray(glmesh.vao.vao_id);
             GL.DrawElementsInstanced(PrimitiveType.Triangles,
@@ -630,7 +630,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(glmesh.UBO_offset), glmesh.UBO_aligned_size);
 
-            SetShaderAndUniforms(glmesh, mat);
+            SetShaderAndUniforms(mat);
             
             GL.BindVertexArray(glmesh.vao.vao_id);
             GL.DrawElementsInstanced(PrimitiveType.Lines, 6,
@@ -649,7 +649,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(glmesh.UBO_offset), glmesh.UBO_aligned_size);
 
-            SetShaderAndUniforms(glmesh, mat);
+            SetShaderAndUniforms(mat);
             
             GL.BindVertexArray(glmesh.vao.vao_id);
             GL.PointSize(5.0f);
@@ -668,7 +668,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(glmesh.UBO_offset), glmesh.UBO_aligned_size);
 
-            SetShaderAndUniforms(glmesh, mat);
+            SetShaderAndUniforms(mat);
 
             //Step 2: Render Elements
             GL.PointSize(8.0f);
@@ -694,7 +694,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(glmesh.UBO_offset), glmesh.UBO_aligned_size);
 
-            SetShaderAndUniforms(glmesh, mat);
+            SetShaderAndUniforms(mat);
             
             GL.BindVertexArray(glmesh.vao.vao_id);
             GL.PointSize(5.0f);
@@ -706,21 +706,6 @@ namespace NbCore.Platform.Graphics.OpenGL
         public void RenderLightVolume(NbMesh mesh, MeshMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.Hash] as GLInstancedMesh;
-            
-            //Upload Material Information
-            GLSLShaderConfig shader = mat.Shader;
-
-            
-            //TODO: Store any light properties in the pre-allocated stuff in the 
-            //comon instance struct.
-
-            ////LightInstanceTex
-            //GL.Uniform1(shader.uniformLocations["lightsTex"], 6);
-            //GL.ActiveTexture(TextureUnit.Texture6);
-            //GL.BindTexture(TextureTarget.TextureBuffer, glmesh.instanceLightTex);
-            //GL.TexBuffer(TextureBufferTarget.TextureBuffer,
-            //    SizedInternalFormat.Rgba32f, glmesh.instanceLightTexTBO);
-
             RenderMesh(glmesh.Mesh, mat);
         }
 
@@ -830,38 +815,44 @@ namespace NbCore.Platform.Graphics.OpenGL
         }
 
 
-        private void SetShaderAndUniforms(GLInstancedMesh Mesh, MeshMaterial Material)
+        private void UploadUniform(NbUniform uf)
         {
-            GLSLShaderConfig shader = Material.Shader;
-            
+            switch (uf.Format.type)
+            {
+                case (NbUniformType.Float):
+                    GL.Uniform1(uf.Format.loc, uf.Values._Value.X);
+                    break;
+                case (NbUniformType.Vector2):
+                    GL.Uniform2(uf.Format.loc, uf.Values._Value.Xy);
+                    break;
+                case (NbUniformType.Vector3):
+                    GL.Uniform3(uf.Format.loc, uf.Values._Value.Xyz);
+                    break;
+                case (NbUniformType.Vector4):
+                    GL.Uniform4(uf.Format.loc, uf.Values._Value);
+                    break;
+                default:
+                    Console.WriteLine($"Unsupported Uniform {uf.Format.type}");
+                    break;
+            }
+        }
+
+        private void SetShaderAndUniforms(MeshMaterial Material)
+        {
             //Upload Material Information
-            
+
             //Upload Custom Per Material Uniforms
             foreach (NbUniform un in Material.ActiveUniforms)
-                GL.Uniform4(un.ShaderLocation, un.Values._Value);
-            
+                UploadUniform(un);
+                
             //BIND TEXTURES
             //Diffuse Texture
-            foreach (NbSampler s in Material.Samplers)
+            foreach (NbSampler s in Material.ActiveSamplers)
             {
-                if (shader.uniformLocations.ContainsKey(s.Name) && s.Map != "")
-                {
-                    GL.Uniform1(shader.uniformLocations[s.Name], s.SamplerID);
-                    GL.ActiveTexture(s.texUnit);
-                    GL.BindTexture(TextureTargetMap[s.Tex.target], s.Tex.texID);
-                }
+                GL.Uniform1(s.State.ShaderLocation, s.State.SamplerID);
+                GL.ActiveTexture(TextureUnit.Texture0 + s.State.SamplerID);
+                GL.BindTexture(TextureTargetMap[s.State.Target], s.State.TextureID);
             }
-            
-            //BIND TEXTURE Buffer
-            //TODO: RESTORE
-            //if (Mesh.Mesh.MetaData.skinned && false)
-            //{
-            //    GL.Uniform1(shader.uniformLocations["skinMatsTex"], 6);
-            //    GL.ActiveTexture(TextureUnit.Texture6);
-            //    GL.BindTexture(TextureTarget.TextureBuffer, Mesh.instanceBoneMatricesTex);
-            //    GL.TexBuffer(TextureBufferTarget.TextureBuffer,
-            //        SizedInternalFormat.Rgba32f, Mesh.instanceBoneMatricesTexTBO);
-            //}
         }
         
         public void SyncGPUCommands()
@@ -906,91 +897,56 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         #region ShaderMethods
 
-        public static Dictionary<NbShaderType, ShaderType> ShaderTypeMap = new()
+        public static Dictionary<NbShaderSourceType, ShaderType> ShaderTypeMap = new()
         {
-            { NbShaderType.VertexShader, ShaderType.VertexShader },
-            { NbShaderType.FragmentShader, ShaderType.FragmentShader },
-            { NbShaderType.GeometryShader, ShaderType.GeometryShader },
-            { NbShaderType.TessControlShader, ShaderType.TessControlShader },
-            { NbShaderType.TessEvaluationShader, ShaderType.TessEvaluationShader },
-            { NbShaderType.ComputeShader, ShaderType.ComputeShader },
+            { NbShaderSourceType.VertexShader, ShaderType.VertexShader },
+            { NbShaderSourceType.FragmentShader, ShaderType.FragmentShader },
+            { NbShaderSourceType.GeometryShader, ShaderType.GeometryShader },
+            { NbShaderSourceType.TessControlShader, ShaderType.TessControlShader },
+            { NbShaderSourceType.TessEvaluationShader, ShaderType.TessEvaluationShader },
+            { NbShaderSourceType.ComputeShader, ShaderType.ComputeShader },
         };
 
-        public void AttachShaderToMaterial(MeshMaterial mat, GLSLShaderConfig shader)
-        {
-            mat.Shader = shader;
-
-            //Load Active Uniforms to Material
-            for (int i = 0; i < mat.Uniforms.Count; i++)
-            {
-                if (shader.uniformLocations.ContainsKey($"mpCustomPerMaterial.uniforms[{mat.Uniforms[i].ID}]"))
-                {
-                    mat.Uniforms[i].ShaderLocation = shader.uniformLocations[$"mpCustomPerMaterial.uniforms[{mat.Uniforms[i].ID}]"];
-                    mat.ActiveUniforms.Add(mat.Uniforms[i]);
-                }
-            }
-            foreach (NbUniform un in mat.Uniforms)
-            {
-                
-            }
-            
-            foreach (NbSampler s in mat.Samplers)
-            {
-                if (shader.uniformLocations.ContainsKey(s.Name))
-                {
-                    s.ShaderLocation = shader.uniformLocations[s.Name];
-                }
-            }
-            
-        }
-
-        public List<string> GetMaterialShaderDirectives(MeshMaterial mat)
-        {
-            List<string> includes = new();
-
-            for (int i = 0; i < mat.Flags.Count; i++)
-            {
-                if (MeshMaterial.supported_flags.Contains(mat.Flags[i]))
-                    includes.Add(mat.Flags[i].ToString().Split(".")[^1]);
-            }
-
-            return includes;
-        }
-
+        
 
         //This method attaches UBOs to shader binding points
-        public void AttachUBOToShaderBindingPoint(GLSLShaderConfig shader_conf, string var_name, int binding_point)
+        public void AttachUBOToShaderBindingPoint(NbShader shader, string var_name, int binding_point)
         {
-            int shdr_program_id = shader_conf.ProgramID;
+            int shdr_program_id = shader.ProgramID;
             int ubo_index = GL.GetUniformBlockIndex(shdr_program_id, var_name);
             GL.UniformBlockBinding(shdr_program_id, ubo_index, binding_point);
         }
 
-        public void AttachSSBOToShaderBindingPoint(GLSLShaderConfig shader_conf, string var_name, int binding_point)
+        public void AttachSSBOToShaderBindingPoint(NbShader shader, string var_name, int binding_point)
         {
             //Binding Position 0 - Matrices UBO
-            int shdr_program_id = shader_conf.ProgramID;
+            int shdr_program_id = shader.ProgramID;
             int ssbo_index = GL.GetProgramResourceIndex(shdr_program_id, ProgramInterface.ShaderStorageBlock, var_name);
-            GL.ShaderStorageBlockBinding(shader_conf.ProgramID, ssbo_index, binding_point);
+            GL.ShaderStorageBlockBinding(shader.ProgramID, ssbo_index, binding_point);
         }
 
-        public void CompileShaderSource(GLSLShaderConfig shader, NbShaderType type, string append_text = "")
+        public void CompileShaderSource(NbShader shader, GLSLShaderConfig shaderConf, 
+            NbShaderSourceType type, string append_text = "")
         {
-            GLSLShaderSource _source = shader.Sources[type];
+            GLSLShaderSource _source = shaderConf.Sources[type];
 
             if (_source == null)
                 return;
 
             if (!_source.Resolved)
                 _source.Resolve();
-            
-            if (shader.SourceObjects[type] != -1)
-                GL.DeleteShader(shader.SourceObjects[type]);
+
+
+            //TODO: Try to first compile the shader and return if there are problems
+
+            if (shader.SourceObjects.ContainsKey(type))
+                if (shader.SourceObjects[type] != -1)
+                    GL.DeleteShader(shader.SourceObjects[type]);
 
             int shader_object_id;
             string ActualShaderSource;
             shader_object_id = GL.CreateShader(ShaderTypeMap[type]);
-
+            
             //Compile Shader
             GL.ShaderSource(shader_object_id, GLSLShaderConfig.version + "\n" + append_text + "\n" + _source.ResolvedText);
 
@@ -1016,97 +972,88 @@ namespace NbCore.Platform.Graphics.OpenGL
             shader.SourceObjects[type] = shader_object_id;
         }
 
-        public List<string> CombineShaderDirectives(List<string> directives, SHADER_MODE mode)
+        public void CompileShader(MeshMaterial mat)
         {
-            List<string> includes = directives.ToList();
-
-            //General Directives are provided here
-            if ((mode & SHADER_MODE.DEFFERED) == SHADER_MODE.DEFFERED)
-                includes.Add("_D_DEFERRED_RENDERING");
-
-            return includes;
+            NbShader shader = new();
+            CompileShader(ref shader, mat.ShaderConfig, mat);
         }
 
-        public int CalculateShaderHash(List<string> includes)
+        public void CompileShader(ref NbShader shader, GLSLShaderConfig config)
         {
-            //Directive ordering
-            //1: General directives
-            //2: Material directives
-            //3: Source file paths with the following order (vs, fs, gs, tcs, tes)
-            
-            string hash = "";
+            CompileShader(ref shader, config, "");
+        }
 
-            for (int i = 0; i < includes.Count; i++)
-                hash += includes[i].ToString();
+        public void CompileShader(ref NbShader shader, GLSLShaderConfig config, MeshMaterial mat)
+        {
+            string extradirectives = "";
+            for (int i = 0; i < mat.Flags.Count; i++)
+            {
+                if (MeshMaterial.supported_flags.Contains(mat.Flags[i]))
+                    extradirectives += "#define " + mat.Flags[i].ToString().Split(".")[^1] + '\n';
+            }
 
-            if (hash == "")
-                hash = "DEFAULT";
-
-            return hash.GetHashCode();
+            CompileShader(ref shader, config, extradirectives);
         }
 
         //Shader Creation
-        public void CompileShader(GLSLShaderConfig config)
+        public void CompileShader(ref NbShader shader, GLSLShaderConfig config, string extradirectives = "")
         {
-            if (config.ProgramID != -1)
-                GL.DeleteProgram(config.ProgramID);
+            if (shader.ProgramID != -1)
+                GL.DeleteProgram(shader.ProgramID);
 
             bool gsflag = false;
             bool tsflag = false;
 
 
-            gsflag = config.Sources.ContainsKey(NbShaderType.GeometryShader);
+            gsflag = config.Sources.ContainsKey(NbShaderSourceType.GeometryShader);
 
-            tsflag = config.Sources.ContainsKey(NbShaderType.TessControlShader) |
-                     config.Sources.ContainsKey(NbShaderType.TessControlShader);
+            tsflag = config.Sources.ContainsKey(NbShaderSourceType.TessControlShader) |
+                     config.Sources.ContainsKey(NbShaderSourceType.TessControlShader);
 
             //Convert directives array to string
-            List<string> hashDirectives = new();
-            //Add General directives
-            hashDirectives = CombineShaderDirectives(hashDirectives, config.ShaderMode);
             string directivestring = "";
-            //First combine gather all hash directives
-            foreach (string dir in config.directives)
-                hashDirectives.Add(dir);
-            
+            //Add General directives
+            //General Directives are provided here
+            if (config.ShaderMode.HasFlag(NbShaderMode.DEFFERED))
+                directivestring += "#define _D_DEFERRED_RENDERING" + '\n';
+
+            if (config.ShaderMode.HasFlag(NbShaderMode.LIT))
+                directivestring += "#define _D_LIGHTING" + '\n';
+
+            directivestring += extradirectives;
+
             //Generate DirectiveString
-            foreach (string dir in hashDirectives)
+            foreach (string dir in config.directives)
                 directivestring += "#define " + dir + '\n';
 
             foreach (var pair in config.Sources)
-            {
-                CompileShaderSource(config, pair.Key, directivestring);
-                hashDirectives.Add(pair.Value.SourceFilePath);
-            }
-                
+                CompileShaderSource(shader, config, pair.Key, directivestring);
+            
             //Create new program
-            config.ProgramID = GL.CreateProgram();
+            shader.ProgramID = GL.CreateProgram();
 
             //Attach shaders to program
-            foreach (var pair in config.SourceObjects)
-                GL.AttachShader(config.ProgramID, pair.Value);
+            foreach (var pair in shader.SourceObjects)
+                GL.AttachShader(shader.ProgramID, pair.Value);
             
-            GL.LinkProgram(config.ProgramID);
+            GL.LinkProgram(shader.ProgramID);
 
             //Check Linking
-            GL.GetProgramInfoLog(config.ProgramID, out string info);
-            config.CompilationLog += info + "\n";
+            GL.GetProgramInfoLog(shader.ProgramID, out string info);
+            shader.CompilationLog += info + "\n";
 
-            GL.GetProgram(config.ProgramID, GetProgramParameterName.LinkStatus, out int status_code);
+            GL.GetProgram(shader.ProgramID, GetProgramParameterName.LinkStatus, out int status_code);
             if (status_code != 1)
             {
-                Callbacks.Log(config.CompilationLog, LogVerbosityLevel.ERROR);
+                Callbacks.Log(shader.CompilationLog, LogVerbosityLevel.ERROR);
                 Callbacks.Assert(false, "Shader Compilation Error");
             }
             
-            ShaderCompilationLog(config);
-            loadActiveUniforms(config);
-
-            //Calculate Shader Hash
-            config.Hash = CalculateShaderHash(hashDirectives);
+            ShaderCompilationLog(shader);
+            loadActiveUniforms(shader);
         }
 
-        public void ShaderCompilationLog(GLSLShaderConfig conf)
+        public void ShaderCompilationLog(NbShader shader)
         {
             string log_file = "shader_compilation_log.out";
 
@@ -1119,42 +1066,138 @@ namespace NbCore.Platform.Graphics.OpenGL
             };
 
             System.IO.StreamWriter sr = new System.IO.StreamWriter(log_file, true);
-            sr.WriteLine("### COMPILING " + conf.shader_type + "###");
-            sr.Write(conf.CompilationLog);
+            sr.WriteLine("### COMPILING SHADER " + shader.Hash + "###");
+            sr.Write(shader.CompilationLog);
             sr.Close();
             //Console.WriteLine(conf.log);
         }
 
-        private void loadActiveUniforms(GLSLShaderConfig shader_conf)
+        private void loadActiveUniforms(NbShader shader)
         {
-            GL.GetProgram(shader_conf.ProgramID, GetProgramParameterName.ActiveUniforms, out int active_uniforms_count);
+            GL.GetProgram(shader.ProgramID, GetProgramParameterName.ActiveUniforms, out int active_uniforms_count);
 
-            shader_conf.uniformLocations.Clear(); //Reset locataions
-            shader_conf.CompilationLog += "Active Uniforms: " + active_uniforms_count.ToString() + "\n";
+            shader.uniformLocations.Clear(); //Reset locataions
+            shader.CompilationLog += "Active Uniforms: " + active_uniforms_count.ToString() + "\n";
             for (int i = 0; i < active_uniforms_count; i++)
             {
                 int bufSize = 64;
                 int loc;
 
-                GL.GetActiveUniform(shader_conf.ProgramID, i, bufSize, out int size, out int length, out ActiveUniformType type, out string name);
+                GL.GetActiveUniform(shader.ProgramID, i, bufSize, out int size, out int length, out ActiveUniformType type, out string name);
                 string basename = name.Split("[0]")[0];
                 for (int j = 0; j < length; j++)
                 {
                     if (j > 0)
                         name = basename + "[" + j + "]";
-                    loc = GL.GetUniformLocation(shader_conf.ProgramID, name);
-                    shader_conf.uniformLocations[name] = loc; //Store location
+                    
+                    NbUniformFormat fmt = new();
+                    fmt.name = name;
+                    fmt.loc = GL.GetUniformLocation(shader.ProgramID, name);
+                    
+                    switch (type)
+                    {
+                        case ActiveUniformType.Float:
+                            fmt.type = NbUniformType.Float;
+                            break;
+                        case ActiveUniformType.Bool:
+                            fmt.type = NbUniformType.Bool;
+                            break;
+                        case ActiveUniformType.Int:
+                            fmt.type = NbUniformType.Int;
+                            break;
+                        case ActiveUniformType.FloatMat3:
+                            fmt.type = NbUniformType.Matrix3;
+                            break;
+                        case ActiveUniformType.FloatMat4:
+                            fmt.type = NbUniformType.Matrix4;
+                            break;
+                        case ActiveUniformType.FloatVec2:
+                            fmt.type = NbUniformType.Vector2;
+                            break;
+                        case ActiveUniformType.FloatVec3:
+                            fmt.type = NbUniformType.Vector3;
+                            break;
+                        case ActiveUniformType.FloatVec4:
+                            fmt.type = NbUniformType.Vector4;
+                            break;
+                        case ActiveUniformType.Sampler2D:
+                            fmt.type = NbUniformType.Sampler2D;
+                            break;
+                        default:
+                            throw new Exception("Unidentified uniform format. Inform dev");
+                    }
+
+                    fmt.count = 1;
+                    shader.uniformLocations[name] = fmt; //Store location
 
                     if (RenderState.enableShaderCompilationLog)
                     {
-                        string info_string = $"Uniform # {i} Location: {loc} Type: {type.ToString()} Name: {name}";
-                        shader_conf.CompilationLog += info_string + "\n";
+                        string info_string = $"Uniform # {i} Location: {fmt.loc} Type: {type.ToString()} Name: {name}";
+                        shader.CompilationLog += info_string + "\n";
                     }
                 }
-
-
             }
         }
+
+        public static void reportUBOs(NbShader shader)
+        {
+            //Print Debug Information for the UBO
+            // Get named blocks info
+            int test_program = shader.ProgramID;
+            GL.GetProgram(test_program, GetProgramParameterName.ActiveUniformBlocks, out int count);
+
+            for (int i = 0; i < count; ++i)
+            {
+                // Get blocks name
+                GL.GetActiveUniformBlockName(test_program, i, 256, out int length, out string block_name);
+                GL.GetActiveUniformBlock(test_program, i, ActiveUniformBlockParameter.UniformBlockDataSize, out int block_size);
+                Console.WriteLine("Block {0} Data Size {1}", block_name, block_size);
+
+                GL.GetActiveUniformBlock(test_program, i, ActiveUniformBlockParameter.UniformBlockBinding, out int block_bind_index);
+                Console.WriteLine("    Block Binding Point {0}", block_bind_index);
+
+                GL.GetInteger(GetIndexedPName.UniformBufferBinding, block_bind_index, out int info);
+                Console.WriteLine("    Block Bound to Binding Point: {0} {{", info);
+
+                GL.GetActiveUniformBlock(test_program, i, ActiveUniformBlockParameter.UniformBlockActiveUniforms, out int block_active_uniforms);
+                int[] uniform_indices = new int[block_active_uniforms];
+                GL.GetActiveUniformBlock(test_program, i, ActiveUniformBlockParameter.UniformBlockActiveUniformIndices, uniform_indices);
+
+
+                int[] uniform_types = new int[block_active_uniforms];
+                int[] uniform_offsets = new int[block_active_uniforms];
+                int[] uniform_sizes = new int[block_active_uniforms];
+
+                //Fetch Parameters for all active Uniforms
+                GL.GetActiveUniforms(test_program, block_active_uniforms, uniform_indices, ActiveUniformParameter.UniformType, uniform_types);
+                GL.GetActiveUniforms(test_program, block_active_uniforms, uniform_indices, ActiveUniformParameter.UniformOffset, uniform_offsets);
+                GL.GetActiveUniforms(test_program, block_active_uniforms, uniform_indices, ActiveUniformParameter.UniformSize, uniform_sizes);
+
+                for (int k = 0; k < block_active_uniforms; ++k)
+                {
+                    GL.GetActiveUniformName(test_program, uniform_indices[k], 256, out int actual_name_length, out string name);
+                    Console.WriteLine("\t{0}", name);
+
+                    Console.WriteLine("\t\t    type: {0}", uniform_types[k]);
+                    Console.WriteLine("\t\t    offset: {0}", uniform_offsets[k]);
+                    Console.WriteLine("\t\t    size: {0}", uniform_sizes[k]);
+
+                    /*
+                    GL.GetActiveUniforms(test_program, i, ref uniform_indices[k], ActiveUniformParameter.UniformArrayStride, out uniArrayStride);
+                    Console.WriteLine("\t\t    array stride: {0}", uniArrayStride);
+
+                    GL.GetActiveUniforms(test_program, i, ref uniform_indices[k], ActiveUniformParameter.UniformMatrixStride, out uniMatStride);
+                    Console.WriteLine("\t\t    matrix stride: {0}", uniMatStride);
+                    */
+                }
+                Console.WriteLine("}}");
+            }
+
+        }
+
+
+
+
 
 
         public void AddRenderInstance(ref MeshComponent mc, TransformData td)

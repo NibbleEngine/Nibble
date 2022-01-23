@@ -37,7 +37,8 @@ namespace NbCore.UI.ImGui
             List<MeshMaterial> materialList = RenderState.engineRef.renderSys.MaterialMgr.Entities;
             string[] items = new string[materialList.Count];
             for (int i = 0; i < items.Length; i++)
-                items[i] = materialList[i].Name == "" ? "Material_" + i : materialList[i].Name; 
+                items[i] = materialList[i].Name == "" ? "Material_" + i : materialList[i].Name;
+
 
             if (ImGuiNET.ImGui.Combo("##1", ref _SelectedId, items, items.Length))
                 _ActiveMaterial = materialList[_SelectedId];
@@ -53,122 +54,338 @@ namespace NbCore.UI.ImGui
             {
                 Console.WriteLine("Todo Delete Material");
             }
+
             if (_ActiveMaterial is null)
             {
                 ImGuiNET.ImGui.Text("NULL");
                 return;
             }
 
-            ImGuiNET.ImGui.Columns(2);
-            ImGuiNET.ImGui.Text("Name");
-            ImGuiNET.ImGui.Text("Class");
-            ImGuiNET.ImGui.Text("Flags");
-            ImGuiNET.ImGui.NextColumn();
-            ImGuiNET.ImGui.InputText("", ref _ActiveMaterial.Name, 30);
-            ImGuiNET.ImGui.Text(_ActiveMaterial.Class);
-            
-            //Flags
-            //Create string list of flags
-            List<string> flags = new();
-            for (int i = 0;i<_ActiveMaterial.Flags.Count;i++)
-                flags.Add(_ActiveMaterial.Flags[i].ToString());
-                
-            //TODO Add combobox here with all the available flags that can be selected and added to the material
-            if (ImGuiNET.ImGui.Button("+"))
+            if (ImGuiNET.ImGui.TreeNode("Material Info"))
             {
-                Console.WriteLine("Add Flag");
-            }
-
-            float lineheight = ImGuiNET.ImGui.GetTextLineHeight();
-            if (ImGuiNET.ImGui.BeginListBox("##FlagsListBox", new Vector2(0, (lineheight + 5) * flags.Count)))
-            {
-                foreach (string flag in flags)
+                if (ImGuiNET.ImGui.BeginTable("##MatInfo", 2, ImGuiTableFlags.Resizable))
                 {
-                    ImGuiNET.ImGui.Selectable(flag);
+                    ImGuiNET.ImGui.TableNextRow();
+                    ImGuiNET.ImGui.TableSetColumnIndex(0);
+                    ImGuiNET.ImGui.Text("Name");
+                    ImGuiNET.ImGui.TableSetColumnIndex(1);
+                    ImGuiNET.ImGui.SetNextItemWidth(-1);
+                    ImGuiNET.ImGui.InputText("", ref _ActiveMaterial.Name, 30);
+                    
+                    ImGuiNET.ImGui.TableNextRow();
+                    ImGuiNET.ImGui.TableSetColumnIndex(0);
+                    ImGuiNET.ImGui.Text("Class");
+                    ImGuiNET.ImGui.TableSetColumnIndex(1);
+                    ImGuiNET.ImGui.SetNextItemWidth(-1);
+                    ImGuiNET.ImGui.Text(_ActiveMaterial.Class);
 
-                    if (ImGuiNET.ImGui.BeginPopupContextItem(flag, ImGuiPopupFlags.MouseButtonRight))
-                    {
-                        if (ImGuiNET.ImGui.MenuItem("Delete ##flag"))
-                        {
-                            Console.WriteLine("Delete Flag");
-                        }
-                        ImGuiNET.ImGui.EndPopup();
-                    }
-                }
 
-                ImGuiNET.ImGui.EndListBox();
-            }
+                    ImGuiNET.ImGui.TableNextRow();
+                    ImGuiNET.ImGui.TableSetColumnIndex(0);
+                    ImGuiNET.ImGui.Text("Flags");
+                    ImGuiNET.ImGui.TableSetColumnIndex(1);
 
-            //if (ImGuiNET.ImGui.ListBox("", ref current_material_flag, flags.ToArray(), flags.Count, System.Math.Min(flags.Count, 5)))
-            //{
-            //    if (ImGuiNET.ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-            //    {
-            //        Console.WriteLine("ListBox event1");
-            //    }
-            //}
-            
-            ImGuiNET.ImGui.NextColumn();
-            ImGuiNET.ImGui.Text("Samplers");
-            ImGuiNET.ImGui.NextColumn();
-            if (ImGuiNET.ImGui.Button("+"))
-            {
-                Console.WriteLine("Adding Sampler");
-            }
-            
-            int samplerlineheight = 64 + 5;
+                    //Flags
+                    //Create string list of flags
+                    List<string> flags = new();
+                    for (int i = 0; i < _ActiveMaterial.Flags.Count; i++)
+                        flags.Add(_ActiveMaterial.Flags[i].ToString());
 
-            for (int i = 0; i < _ActiveMaterial.Samplers.Count; i++)
-            {
-                NbSampler current_sampler = _ActiveMaterial.Samplers[i];
-                if (current_sampler.Tex.target != NbTextureTarget.Texture2DArray)
-                    ImGuiNET.ImGui.Image((IntPtr)current_sampler.Tex.texID, new Vector2(64, 64));
-                else
-                    ImGuiNET.ImGui.Text("Null");
-
-                if (ImGuiNET.ImGui.IsItemHovered())
-                {
-                    ImGuiNET.ImGui.BeginTooltip();
-                    if (current_sampler.Tex.target != NbTextureTarget.Texture2DArray)
-                        ImGuiNET.ImGui.Image((IntPtr)current_sampler.Tex.texID, new Vector2(512, 512));
-                    ImGuiNET.ImGui.Text(current_sampler.Name);
-                    ImGuiNET.ImGui.Text(current_sampler.Map);
-                    ImGuiNET.ImGui.EndTooltip();
-                }
-
-                if (i != _ActiveMaterial.Samplers.Count - 1)
+                    string[] allflags = Enum.GetNames(typeof(MaterialFlagEnum));
+                    
+                    //ImGuiNET.ImGui.SetNextItemWidth(-1);
+                    ImGuiNET.ImGui.Combo("##FlagSelector", ref current_material_flag, allflags, allflags.Length);
                     ImGuiNET.ImGui.SameLine();
 
-                //ImGuiNET.ImGui.Text(current_sampler.Name.Split('.')[1]);
-                //ImGuiNET.ImGui.SameLine();
-                //ImGuiNET.ImGui.Text(current_sampler.Map);
+                    //TODO Add combobox here with all the available flags that can be selected and added to the material
+                    if (ImGuiNET.ImGui.Button("Add"))
+                    {
+                        MaterialFlagEnum new_flag = (MaterialFlagEnum) current_material_flag;
+                        if (!_ActiveMaterial.Flags.Contains(new_flag))
+                            _ActiveMaterial.Flags.Add(new_flag);
+                    }
+
+                    ImGuiNET.ImGui.SetNextItemWidth(-1);
+                    if (ImGuiNET.ImGui.BeginListBox("##FlagsListBox"))
+                    {
+                        foreach (string flag in flags)
+                        {
+                            ImGuiNET.ImGui.Selectable(flag);
+
+                            if (ImGuiNET.ImGui.BeginPopupContextItem(flag, ImGuiPopupFlags.MouseButtonRight))
+                            {
+                                if (ImGuiNET.ImGui.MenuItem("Remove ##flag"))
+                                {
+                                    _ActiveMaterial.Flags.Remove((MaterialFlagEnum) Enum.Parse(typeof(MaterialFlagEnum), flag));
+                                }
+                                ImGuiNET.ImGui.EndPopup();
+                            }
+                        }
+
+                        ImGuiNET.ImGui.EndListBox();
+                    }
+
+
+                    ImGuiNET.ImGui.EndTable();
+                }
+
+                ImGuiNET.ImGui.TreePop();
             }
 
-            //Uniforms
-            ImGuiNET.ImGui.NextColumn();
-            ImGuiNET.ImGui.Text("Uniforms");
-            ImGuiNET.ImGui.NextColumn();
-            ImGuiNET.ImGui.NextColumn();
-            List<string> uniforms = new();
-            for (int i = 0; i < _ActiveMaterial.Uniforms.Count; i++)
+            if (ImGuiNET.ImGui.TreeNode("Material Samplers"))
             {
-                NbUniform un = _ActiveMaterial.Uniforms[i];
-                ImGuiNET.ImGui.Text(un.Name);
-                ImGuiNET.ImGui.NextColumn();
-                Vector4 val = new Vector4();
-                val.X = un.Values.X;
-                val.Y = un.Values.Y;
-                val.Z = un.Values.Z;
-                val.W = un.Values.W;
-                if (ImGuiNET.ImGui.InputFloat4("##" + un.Name, ref val))
+                if (ImGuiNET.ImGui.BeginPopupContextItem("SamplerTableCTX", ImGuiPopupFlags.MouseButtonRight))
                 {
-                    un.Values.X = val.X;
-                    un.Values.Y = val.Y;
-                    un.Values.Z = val.Z;
-                    un.Values.W = val.W;
+                    if (ImGuiNET.ImGui.MenuItem("Add Sampler ##flag"))
+                    {
+                        Console.WriteLine($"Creating New sampler");
+                        NbSampler new_sampler = new();
+                        _ActiveMaterial.Samplers.Add(new_sampler);
+                    }
+                    ImGuiNET.ImGui.EndPopup();
                 }
-                ImGuiNET.ImGui.NextColumn();
+
+                for (int i = 0; i < _ActiveMaterial.Samplers.Count; i++)
+                {
+                    NbSampler current_sampler = _ActiveMaterial.Samplers[i];
+
+                    if (ImGuiNET.ImGui.TreeNode("Sampler " + i))
+                    {
+                        if (ImGuiNET.ImGui.BeginTable("##SamplerTable"+i, 2))
+                        {
+                            ImGuiNET.ImGui.TableSetupColumn("Info", ImGuiTableColumnFlags.WidthFixed, 120.0f);
+                            ImGuiNET.ImGui.TableSetupColumn("Data");
+                            //ImGuiNET.ImGui.TableSetColumnWidth(1, -1);
+
+                            //Sampler Name
+                            ImGuiNET.ImGui.TableNextRow();
+                            ImGuiNET.ImGui.TableSetColumnIndex(0);
+                            ImGuiNET.ImGui.Text("Name");
+                            ImGuiNET.ImGui.TableSetColumnIndex(1);
+                            ImGuiNET.ImGui.SetNextItemWidth(-1);
+                            ImGuiNET.ImGui.InputText("##SamplerName" + i, ref current_sampler.Name, 30);
+
+                            //Image Preview
+                            ImGuiNET.ImGui.TableNextRow();
+                            ImGuiNET.ImGui.TableSetColumnIndex(0);
+                            ImGuiNET.ImGui.Text("Preview");
+                            ImGuiNET.ImGui.TableSetColumnIndex(1);
+                            Texture samplerTex = current_sampler.GetTexture();
+                            if (samplerTex is not null && samplerTex.target != NbTextureTarget.Texture2DArray)
+                            {
+                                ImGuiNET.ImGui.Image((IntPtr)samplerTex.texID, new Vector2(64, 64));
+
+                                if (ImGuiNET.ImGui.IsItemHovered())
+                                {
+                                    ImGuiNET.ImGui.BeginTooltip();
+                                    if (samplerTex.target != NbTextureTarget.Texture2DArray)
+                                        ImGuiNET.ImGui.Image((IntPtr)samplerTex.texID, new Vector2(512, 512));
+                                    ImGuiNET.ImGui.Text(current_sampler.Name);
+                                    ImGuiNET.ImGui.Text(current_sampler.Map);
+                                    ImGuiNET.ImGui.EndTooltip();
+                                }
+                            }
+
+                            //Sampler ID
+                            ImGuiNET.ImGui.TableNextRow();
+                            ImGuiNET.ImGui.TableSetColumnIndex(0);
+                            ImGuiNET.ImGui.Text("Sampler ID");
+                            ImGuiNET.ImGui.TableSetColumnIndex(1);
+                            ImGuiNET.ImGui.SetNextItemWidth(-1);
+                            ImGuiNET.ImGui.Combo("##SamplerID" + i, ref current_sampler.State.SamplerID,
+                                new string[] { "0", "1", "2", "3", "4", "5", "6", "7" }, 8);
+
+
+                            //Texture Selector
+                            //Get All Textures
+                            List<Texture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
+                            string[] textureItems = new string[textureList.Count];
+                            for (int j = 0; j < textureItems.Length; j++)
+                                textureItems[j] = textureList[j].Path == "" ? "Texture_" + j : textureList[j].Path;
+
+                            int currentTexImageID = textureList.IndexOf(samplerTex);
+                            ImGuiNET.ImGui.TableNextRow();
+                            ImGuiNET.ImGui.TableSetColumnIndex(0);
+                            ImGuiNET.ImGui.Text("Sampler Texture");
+                            ImGuiNET.ImGui.TableSetColumnIndex(1);
+                            ImGuiNET.ImGui.SetNextItemWidth(-1);
+                            if (ImGuiNET.ImGui.Combo("##SamplerTexture" + i, ref currentTexImageID, textureItems, textureItems.Length))
+                            {
+                                current_sampler.SetTexture(textureList[currentTexImageID]);
+                            }
+
+                            //Sampler Shader Binding
+                            List<string> compatibleShaderBindings = new();
+                            foreach (var pair in _ActiveMaterial.Shader.uniformLocations)
+                            {
+                                if (pair.Value.type == NbUniformType.Sampler2D)
+                                    compatibleShaderBindings.Add(pair.Key);
+                            }
+
+                            int currentShaderBinding = compatibleShaderBindings.IndexOf(current_sampler.State.ShaderBinding);
+                            ImGuiNET.ImGui.TableNextRow();
+                            ImGuiNET.ImGui.TableSetColumnIndex(0);
+                            ImGuiNET.ImGui.Text("Shader Binding");
+                            ImGuiNET.ImGui.TableSetColumnIndex(1);
+                            ImGuiNET.ImGui.SetNextItemWidth(-1);
+                            if (ImGuiNET.ImGui.Combo("##SamplerBinding", ref currentShaderBinding, compatibleShaderBindings.ToArray(),
+                                compatibleShaderBindings.Count))
+                            {
+                                Console.WriteLine("Change sampler shader binding");
+                                current_sampler.State.ShaderBinding = compatibleShaderBindings[currentShaderBinding];
+                                current_sampler.State.ShaderLocation = _ActiveMaterial.Shader.uniformLocations[compatibleShaderBindings[currentShaderBinding]].loc;
+                            }
+
+
+                            ImGuiNET.ImGui.EndTable();
+                        }
+
+                        
+
+                        ImGuiNET.ImGui.TreePop();
+                    }
+                    
+                }
+
+                ImGuiNET.ImGui.TreePop();
             }
-            ImGuiNET.ImGui.Columns(1);
+
+            if (ImGuiNET.ImGui.TreeNode("Material Uniforms"))
+            {
+                if (ImGuiNET.ImGui.BeginPopupContextItem("UniformTableCTX", ImGuiPopupFlags.MouseButtonRight))
+                {
+                    if (ImGuiNET.ImGui.MenuItem("Add Uniform ##flag"))
+                    {
+                        Console.WriteLine($"Creating New uniform");
+                        NbUniform new_uniform = new();
+                        _ActiveMaterial.Uniforms.Add(new_uniform);
+                    }
+                    ImGuiNET.ImGui.EndPopup();
+                }
+
+                for (int i = 0; i < _ActiveMaterial.Uniforms.Count; i++)
+                {
+                    NbUniform current_uf = _ActiveMaterial.Uniforms[i];
+
+                    if (ImGuiNET.ImGui.TreeNode("Uniform " + i))
+                    {
+                        if (ImGuiNET.ImGui.BeginTable("##SamplerTable" + i, 2))
+                        {
+                            ImGuiNET.ImGui.TableSetupColumn("Info", ImGuiTableColumnFlags.WidthFixed, 120.0f);
+                            ImGuiNET.ImGui.TableSetupColumn("Data");
+                            //ImGuiNET.ImGui.TableSetColumnWidth(1, -1);
+
+                            //Name
+                            ImGuiNET.ImGui.TableNextRow();
+                            ImGuiNET.ImGui.TableSetColumnIndex(0);
+                            ImGuiNET.ImGui.Text("Name");
+                            ImGuiNET.ImGui.TableSetColumnIndex(1);
+                            ImGuiNET.ImGui.SetNextItemWidth(-1);
+                            ImGuiNET.ImGui.InputText("UniformName" + i, ref current_uf.Name, 30);
+                            
+                            //Format
+                            ImGuiNET.ImGui.TableNextRow();
+                            ImGuiNET.ImGui.TableSetColumnIndex(0);
+                            ImGuiNET.ImGui.Text("Format");
+                            ImGuiNET.ImGui.TableSetColumnIndex(1);
+                            ImGuiNET.ImGui.SetNextItemWidth(-1);
+
+                            List<string> formats = Enum.GetNames(typeof(NbUniformType)).ToList();
+                            int currentFormat = formats.IndexOf(current_uf.Format.type.ToString());
+                            if (ImGuiNET.ImGui.Combo("##UniformFormat" + i, ref currentFormat, formats.ToArray(), formats.Count))
+                            {
+                                current_uf.Format.type = (NbUniformType)currentFormat;
+                                current_uf.Format.name = "";
+                                current_uf.Format.loc = -1;
+                                _ActiveMaterial.ActiveUniforms.Remove(current_uf);
+                            }
+
+                            //Values
+                            ImGuiNET.ImGui.TableNextRow();
+                            ImGuiNET.ImGui.TableSetColumnIndex(0);
+                            ImGuiNET.ImGui.Text("Values");
+                            ImGuiNET.ImGui.TableSetColumnIndex(1);
+                            ImGuiNET.ImGui.SetNextItemWidth(-1);
+
+                            NbCore.Math.NbVector4 vec = new(current_uf.Values);
+                            switch (current_uf.Format.type)
+                            {
+                                case NbUniformType.Float:
+                                    {
+                                        float val = vec.X;
+                                        if (ImGuiNET.ImGui.InputFloat("##UniformValues" + i, ref val))
+                                            vec.X = val;
+                                        break;
+                                    }
+                                case NbUniformType.Vector2:
+                                    {
+                                        Vector2 val = new(vec.X, vec.Y);
+                                        if (ImGuiNET.ImGui.InputFloat2("##UniformValues" + i, ref val))
+                                        {
+                                            vec.X = val.X;
+                                            vec.Y = val.Y;
+                                        }
+                                        break;
+                                    }
+                                case NbUniformType.Vector3:
+                                    {
+                                        Vector3 val = new(vec.X, vec.Y, vec.Z);
+                                        if (ImGuiNET.ImGui.InputFloat3("##UniformValues" + i, ref val))
+                                        {
+                                            vec.X = val.X;
+                                            vec.Y = val.Y;
+                                            vec.Z = val.Z;
+                                        }
+                                        break;
+                                    }
+                                case NbUniformType.Vector4:
+                                    {
+                                        Vector4 val = new(vec.X, vec.Y, vec.Z, vec.W);
+                                        if (ImGuiNET.ImGui.InputFloat4("##UniformValues" + i, ref val))
+                                        {
+                                            vec.X = val.X;
+                                            vec.Y = val.Y;
+                                            vec.Z = val.Z;
+                                            vec.W = val.W;
+                                        }
+                                        break;
+                                    }
+                            }
+
+                            current_uf.Values = vec;
+
+
+                            //Sampler Shader Binding
+                            List<string> compatibleShaderBindings = new();
+                            foreach (var pair in _ActiveMaterial.Shader.uniformLocations)
+                            {
+                                if (pair.Value.type == current_uf.Format.type)
+                                    compatibleShaderBindings.Add(pair.Key);
+                            }
+
+                            int currentShaderBinding = compatibleShaderBindings.IndexOf(current_uf.Format.name);
+                            ImGuiNET.ImGui.TableNextRow();
+                            ImGuiNET.ImGui.TableSetColumnIndex(0);
+                            ImGuiNET.ImGui.Text("Shader Binding");
+                            ImGuiNET.ImGui.TableSetColumnIndex(1);
+                            ImGuiNET.ImGui.SetNextItemWidth(-1);
+                            if (ImGuiNET.ImGui.Combo("##SamplerBinding", ref currentShaderBinding, compatibleShaderBindings.ToArray(),
+                                compatibleShaderBindings.Count))
+                            {
+                                current_uf.Format.name = compatibleShaderBindings[currentShaderBinding];
+                                current_uf.Format.loc = _ActiveMaterial.Shader.uniformLocations[compatibleShaderBindings[currentShaderBinding]].loc;
+                                if (!_ActiveMaterial.ActiveUniforms.Contains(current_uf))
+                                    _ActiveMaterial.ActiveUniforms.Add(current_uf);
+                            }
+
+                            ImGuiNET.ImGui.EndTable();
+                        }
+                        
+                        ImGuiNET.ImGui.TreePop();
+                    }
+                }
+                ImGuiNET.ImGui.TreePop();
+            }
         }
 
         public void SetMaterial(MeshMaterial mat)

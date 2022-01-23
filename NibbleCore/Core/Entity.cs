@@ -26,6 +26,7 @@ namespace NbCore
         Script,
         Asset,
         ShaderSource,
+        ShaderConfig,
         Shader,
         Mesh,
         Animation,

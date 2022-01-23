@@ -21,49 +21,30 @@ namespace SimpleTextureRenderer
         private float _scale = 1.0f;
         private int depth_id = 0;
         private int mipmap_id = 0;
-        private GLSLShaderConfig _shaderArray;
-        private GLSLShaderConfig _shaderSingle;
+        private NbShader _shaderArray;
+        private NbShader _shaderSingle;
         private bool _captureInput = true;
 
         public RenderLayer(Engine engine) : base(engine)
         {
             //Compile Necessary Shaders
-            
-            string vs_path = "Shaders/texture_shader_vs.glsl";
-            vs_path = Path.GetFullPath(vs_path);
-            vs_path = Path.GetRelativePath(AppDomain.CurrentDomain.BaseDirectory, vs_path);
-
-            string fs_path = "Shaders/texture_shader_fs.glsl";
-            fs_path = Path.GetFullPath(fs_path);
-            fs_path = Path.GetRelativePath(AppDomain.CurrentDomain.BaseDirectory, fs_path);
-
-            GLSLShaderSource vs = EngineRef.GetShaderSourceByFilePath(vs_path);
-            GLSLShaderSource fs = EngineRef.GetShaderSourceByFilePath(fs_path);
+            GLSLShaderConfig conf = EngineRef.CreateShaderConfig(
+                EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_vs.glsl"),
+                EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_fs.glsl"),
+                null, null, null, new() { }, NbShaderMode.DEFAULT, "Texture");
 
 
-            _shaderArray = new()
-            {
-                ShaderMode = SHADER_MODE.DEFAULT,
-                shader_type = SHADER_TYPE.MATERIAL_SHADER,
-                directives = new() { "_F55_MULTITEXTURE" },
-            };
+            GLSLShaderConfig conf_multitex = EngineRef.CreateShaderConfig(
+                EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_vs.glsl"),
+                EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_fs.glsl"),
+                null, null, null, new() { "_F55_MULTITEXTURE" }, 
+                NbShaderMode.DEFAULT, "MultiTexTexture");
 
-            _shaderArray.AddSource(NbShaderType.VertexShader, vs);
-            _shaderArray.AddSource(NbShaderType.FragmentShader, fs);
+            _shaderArray = new();
+            EngineRef.renderSys.Renderer.CompileShader(ref _shaderArray, conf_multitex);
 
-            EngineRef.renderSys.Renderer.CompileShader(_shaderArray);
-
-
-            _shaderSingle = new()
-            {
-                ShaderMode = SHADER_MODE.DEFAULT,
-                shader_type = SHADER_TYPE.MATERIAL_SHADER,
-            };
-
-            _shaderSingle.AddSource(NbShaderType.VertexShader, vs);
-            _shaderSingle.AddSource(NbShaderType.FragmentShader, fs);
-
-            EngineRef.renderSys.Renderer.CompileShader(_shaderSingle);
+            _shaderSingle = new();
+            EngineRef.renderSys.Renderer.CompileShader(ref _shaderSingle, conf);
 
         }
 
@@ -135,7 +116,7 @@ namespace SimpleTextureRenderer
             while (EngineRef.renderSys.ShaderMgr.CompilationQueue.Count > 0)
             {
                 GLSLShaderConfig shader = EngineRef.renderSys.ShaderMgr.CompilationQueue.Dequeue();
-                EngineRef.renderSys.Renderer.CompileShader(shader);
+                //EngineRef.renderSys.Renderer.CompileShader(shader);
             }
 
             renderer.EnableBlend();
@@ -147,7 +128,7 @@ namespace SimpleTextureRenderer
 
             if (_texture != null)
             {
-                GLSLShaderConfig _shader;
+                NbShader _shader;
                 if (_texture.target == NbTextureTarget.Texture2D)
                     _shader = _shaderSingle;
                 else

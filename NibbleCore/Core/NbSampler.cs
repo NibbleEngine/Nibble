@@ -11,14 +11,12 @@ namespace NbCore
     {
         public string Name = "";
         public string Map = "";
-        public Texture Tex = null;
+        private Texture Tex = null;
         public bool IsCube = false;
         public bool IsSRGB = true;
         public bool UseCompression = false;
         public bool UseMipMaps = false;
-        public TextureUnit texUnit;
-        public int SamplerID; // Shader sampler ID
-        public int ShaderLocation = -1;
+        public NbSamplerState State;
         public bool isProcGen = false; //TODO : to be removed once we are done with the stupid proc gen texture parsing
 
         //Override Properties
@@ -38,10 +36,22 @@ namespace NbCore
                 UseCompression = UseCompression,
                 UseMipMaps = UseMipMaps,
                 Tex = Tex,
-                texUnit = texUnit
+                State = State
             };
 
             return newsampler;
+        }
+
+        public void SetTexture(Texture tex)
+        {
+            Tex = tex;
+            State.TextureID = tex.texID;
+            State.Target = tex.target;
+        }
+
+        public Texture GetTexture()
+        {
+            return Tex;
         }
         
     }

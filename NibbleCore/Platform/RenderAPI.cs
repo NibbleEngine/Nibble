@@ -25,14 +25,13 @@ namespace NbCore.Platform.Graphics
 
         //Shader Compilation
         public void EnableMaterialProgram(MeshMaterial mat);
-        public void EnableShaderProgram(GLSLShaderConfig shader);
-        public void CompileShader(GLSLShaderConfig shader);
-        public void AttachUBOToShaderBindingPoint(GLSLShaderConfig shader_conf, string block_name, int binding_point);
-        public void AttachSSBOToShaderBindingPoint(GLSLShaderConfig shader_conf, string block_name, int binding_point);
-        public void AttachShaderToMaterial(MeshMaterial mat, GLSLShaderConfig shader);
-        public List<string> GetMaterialShaderDirectives(MeshMaterial mat);
-        public List<string> CombineShaderDirectives(List<string> directives, SHADER_MODE mode);
-        public int CalculateShaderHash(List<string> directives);
+        public void EnableShaderProgram(NbShader shader);
+        public void CompileShader(ref NbShader shader, GLSLShaderConfig config, MeshMaterial mat);
+        public void CompileShader(ref NbShader shader, GLSLShaderConfig config);
+        public void CompileShader(MeshMaterial mat);
+        public void AttachUBOToShaderBindingPoint(NbShader shader_conf, string block_name, int binding_point);
+        public void AttachSSBOToShaderBindingPoint(NbShader shader_conf, string block_name, int binding_point);
+        
         
         //Mesh Buffer Methods
         public void PrepareMeshBuffers();
@@ -51,7 +50,7 @@ namespace NbCore.Platform.Graphics
         public NbVector4 GetInstanceUniform4(NbMesh mesh, int instanceID, int uniformID);
 
         //Rendering Methods
-        public void RenderQuad(NbMesh quadMesh, GLSLShaderConfig shaderConf, GLSLShaderState state);
+        public void RenderQuad(NbMesh quadMesh, NbShader shader, NbShaderState state);
         public void RenderMesh(NbMesh mesh); //Direct mesh rendering, without any shader, uniform uploads
         public void RenderMesh(NbMesh mesh, MeshMaterial mat);
         public void RenderLocator(NbMesh mesh, MeshMaterial mat);

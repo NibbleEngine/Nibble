@@ -33,9 +33,9 @@ namespace NbCore
 
         public bool AddTexture(Texture t)
         {
-            if (!HasTexture(t.Name))
+            if (!HasTexture(t.Path))
             {
-                TextureMap[t.Name] = t;
+                TextureMap[t.Path] = t;
                 return Add(t);
             }
             else

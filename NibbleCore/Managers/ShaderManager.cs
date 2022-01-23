@@ -6,52 +6,27 @@ using OpenTK.Graphics.OpenGL;
 
 namespace NbCore.Managers
 {
-    public class ShaderManager: EntityManager<GLSLShaderConfig>
+    public class ShaderManager: EntityManager<NbShader>
     {
-        public readonly List<GLSLShaderConfig> GLDeferredShaders = new();
-        public readonly List<GLSLShaderConfig> GLForwardTransparentShaders = new();
-        public readonly List<GLSLShaderConfig> GLDeferredDecalShaders = new();
+        //public readonly List<GLSLShaderConfig> GLDeferredShaders = new();
+        //public readonly List<GLSLShaderConfig> GLForwardTransparentShaders = new();
+        //public readonly List<GLSLShaderConfig> GLDeferredDecalShaders = new();
         public readonly Queue<GLSLShaderConfig> CompilationQueue = new();
 
-        private readonly Dictionary<SHADER_TYPE, GLSLShaderConfig> GenericShaders = new(); //Generic Shader Map
-        private readonly Dictionary<long, GLSLShaderConfig> ShaderHashMap = new();
+        private readonly Dictionary<long, NbShader> ShaderHashMap = new();
         private readonly Dictionary<long, List<MeshMaterial>> ShaderMaterialMap = new();
 
-
-        public bool AddShader(GLSLShaderConfig shader)
+        public bool AddShader(NbShader shader)
         {
             if (Add(shader))
             {
                 GUIDComponent gc = shader.GetComponent<GUIDComponent>() as GUIDComponent;
                 ShaderHashMap[shader.Hash] = shader;
                 ShaderMaterialMap[gc.ID] = new();
-
-                //Add Shader to the corresponding list
-                if ((shader.ShaderMode & SHADER_MODE.FORWARD) == SHADER_MODE.FORWARD)
-                    GLForwardTransparentShaders.Add(shader);
-                else if ((shader.ShaderMode & SHADER_MODE.DECAL) == SHADER_MODE.DECAL)
-                    GLDeferredDecalShaders.Add(shader);
-                else
-                    GLDeferredShaders.Add(shader);
-
+                
                 return true;
             }
             return false;
-        }
-
-        public bool AddGenericShader(GLSLShaderConfig shader)
-        {
-            if (AddShader(shader))
-            {
-                GenericShaders[shader.shader_type] = shader;
-                return true;
-            }
-            return false;
-        }
-
-        public GLSLShaderConfig GetGenericShader(SHADER_TYPE stype)
-        {
-            return GenericShaders[stype];
         }
 
         public void AddShaderForCompilation(GLSLShaderConfig shader)
@@ -59,14 +34,19 @@ namespace NbCore.Managers
             CompilationQueue.Enqueue(shader);
         }
 
-        public GLSLShaderConfig GetShaderByHash(long hash)
+        public NbShader GetShaderByHash(long hash)
         {
             return ShaderHashMap[hash];
         }
 
-        public GLSLShaderConfig GetShaderByID(long id)
+        public NbShader GetShaderByType(NbShaderType type)
         {
-            return Get(id) as GLSLShaderConfig;
+            return Entities.Find(x=>x.Type == type);
+        }
+
+        public NbShader GetShaderByID(long id)
+        {
+            return Get(id);
         }
 
         public bool ShaderHashExists(long hash)
@@ -84,12 +64,12 @@ namespace NbCore.Managers
             ShaderMaterialMap[mat.Shader.GetID()].Add(mat);
         }
 
-        public bool ShaderContainsMaterial(GLSLShaderConfig shader, MeshMaterial mat)
+        public bool ShaderContainsMaterial(NbShader shader, MeshMaterial mat)
         {
             return ShaderMaterialMap[shader.GetID()].Contains(mat);
         }
 
-        public List<MeshMaterial> GetShaderMaterials(GLSLShaderConfig shader)
+        public List<MeshMaterial> GetShaderMaterials(NbShader shader)
         {
             return ShaderMaterialMap[shader.GetID()];
         }
@@ -99,10 +79,7 @@ namespace NbCore.Managers
             //Shader Cleanup
             ShaderMaterialMap.Clear();
             ShaderHashMap.Clear();
-            GLDeferredShaders.Clear();
-            GLForwardTransparentShaders.Clear();
-            GLDeferredDecalShaders.Clear();
-
+            
             base.CleanUp();
         }
         
