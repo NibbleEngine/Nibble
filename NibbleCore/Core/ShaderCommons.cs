@@ -155,5 +155,11 @@ namespace NbCore
         public int count;
     }
 
+    public class NbShaderCompilationRequest
+    {
+        public MeshMaterial mat;
+        public NbShader shader;
+        public GLSLShaderConfig config;
+    }
 
 }

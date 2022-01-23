@@ -90,22 +90,24 @@ void main()
     //finalColor = mix(finalColor, albedoColor, lfGlow);
 	vec4 ambient = vec4(vec3(0.03) * albedoColor.rgb, 0.0);
 
-#ifdef _D_LIGHTING
-    Light light;
-    light.position = lightPos;
-    light.direction = lightDirection;
-    light.color = lightColor;
-    light.parameters = lightParameters;
-    
-    finalColor.rgb = calcLighting(light, fragPos, fragNormal.xyz, 
-			mpCommonPerFrame.cameraPosition.xyz, mpCommonPerFrame.cameraDirection.xyz, albedoColor.rgb, lfMetallic, lfRoughness, ao);
-    
-	//finalColor.rgb = vec3(0.0, 1.0, 0.0);
 
-	finalColor.a = albedoColor.a;
-#else
-    finalColor = albedoColor;
-#endif
+	if (isLit > 0.0)
+	{
+		Light light;
+		light.position = lightPos;
+		light.direction = lightDirection;
+		light.color = lightColor;
+		light.parameters = lightParameters;
+		
+		finalColor.rgb = calcLighting(light, fragPos, fragNormal.xyz, 
+				mpCommonPerFrame.cameraPosition.xyz, mpCommonPerFrame.cameraDirection.xyz, albedoColor.rgb, lfMetallic, lfRoughness, ao);
+		
+		//finalColor.rgb = vec3(0.0, 1.0, 0.0);
 
-    fragColor = finalColor;
+		finalColor.a = albedoColor.a;
+	} else {
+		finalColor = albedoColor;	
+	}
+	
+	fragColor = finalColor;
 }

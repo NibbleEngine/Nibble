@@ -15,6 +15,9 @@ namespace NbCore
         public Dictionary<NbShaderSourceType, int> SourceObjects = new();
         public new NbShaderType Type;
 
+        public MeshMaterial RefMaterial;
+        public GLSLShaderConfig RefConfig;
+        
         //Shader Compilation log
         public string CompilationLog = "";
 

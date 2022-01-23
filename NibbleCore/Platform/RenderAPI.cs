@@ -26,9 +26,9 @@ namespace NbCore.Platform.Graphics
         //Shader Compilation
         public void EnableMaterialProgram(MeshMaterial mat);
         public void EnableShaderProgram(NbShader shader);
-        public void CompileShader(ref NbShader shader, GLSLShaderConfig config, MeshMaterial mat);
-        public void CompileShader(ref NbShader shader, GLSLShaderConfig config);
-        public void CompileShader(MeshMaterial mat);
+        public bool CompileShader(ref NbShader shader, GLSLShaderConfig config, MeshMaterial mat);
+        public bool CompileShader(ref NbShader shader, GLSLShaderConfig config);
+        public bool CompileShader(MeshMaterial mat);
         public void AttachUBOToShaderBindingPoint(NbShader shader_conf, string block_name, int binding_point);
         public void AttachSSBOToShaderBindingPoint(NbShader shader_conf, string block_name, int binding_point);
         

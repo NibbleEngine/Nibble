@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using OpenTK.Graphics.OpenGL4;
 using NbCore.Common;
 using System.Reflection;
 
 
-namespace NbCore.Platform.Graphics.OpenGL
+namespace NbCore
 {
     public class GLSLShaderSource : Entity
     {
@@ -23,9 +22,9 @@ namespace NbCore.Platform.Graphics.OpenGL
         public bool Processed = false;
         public bool Resolved = false;
         
-        public List<GLSLShaderSource> ReferencedSources = new(); //Keep source texts that the current text refers to
-        public List<GLSLShaderSource> ReferencedBySources = new(); //Keep source texts that reference this source
-        public List<GLSLShaderConfig> ReferencedByShaders = new(); //Keeps track of all the Shaders that the current source is used by
+        public HashSet<GLSLShaderSource> ReferencedSources = new(); //Keep source texts that the current text refers to
+        public HashSet<GLSLShaderSource> ReferencedBySources = new(); //Keep source texts that reference this source
+        public HashSet<GLSLShaderConfig> ReferencedByConfigs = new(); //Keeps track of all the Shaders that the current source is used by
         
         //Static random generator used in temp file name generation
         private static readonly Random rand_gen = new(999991);
@@ -44,6 +43,12 @@ namespace NbCore.Platform.Graphics.OpenGL
             RenderState.engineRef.RegisterEntity(this);
         }
 
+        public void SetConfigReference(GLSLShaderConfig conf)
+        {
+            if (!ReferencedByConfigs.Contains(conf))
+                ReferencedByConfigs.Add(conf);
+        }
+        
         public GLSLShaderSource(string filepath, bool watchFile) : base(EntityType.ShaderSource)
         {
             SourceType = NbShaderTextType.Dynamic;
@@ -210,7 +215,7 @@ namespace NbCore.Platform.Graphics.OpenGL
                         Console.WriteLine($"Same Source, nothing to do...");
                     else
                     {
-                        Console.WriteLine($"Reloading {path} Change: {e.ChangeType.ToString()}");
+                        Console.WriteLine($"Reloading {path} Change: {e.ChangeType}");
                         SourceText = NewSourceText;
                         Console.WriteLine(NewSourceText);
                         Process();
@@ -223,16 +228,23 @@ namespace NbCore.Platform.Graphics.OpenGL
                             ps.Resolve();
 
                             //Recompile shader referenced by the parent sources
-                            foreach (GLSLShaderConfig sc in ps.ReferencedByShaders)
+                            foreach (GLSLShaderConfig sc in ps.ReferencedByConfigs)
                             {
-                                RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(sc);
+                                foreach (NbShader ns in sc.ReferencedByShaders)
+                                {
+                                    RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(ns);
+                                }
+                                
                             }
                         };
 
                         //Recompile immediate referenced shaders
-                        foreach (GLSLShaderConfig sc in ReferencedByShaders)
+                        foreach (GLSLShaderConfig sc in ReferencedByConfigs)
                         {
-                            RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(sc);
+                            foreach (NbShader ns in sc.ReferencedByShaders)
+                            {
+                                RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(ns);
+                            }
                         }
 
                     }
