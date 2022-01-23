@@ -253,6 +253,31 @@ namespace NbCore.UI.ImGui
                         entity_added = true;
                         Callbacks.Log("Creating Quad Mesh Node", LogVerbosityLevel.INFO);
                     }
+
+                    if (ImGuiCore.MenuItem("Add Render Quad"))
+                    {
+                        //Box Requires No parameters create it immediately
+
+                        //Create Mesh
+                        Primitives.Quad q = new();
+
+                        NbMeshData md = q.geom.GetData();
+                        NbMeshMetaData mmd = q.geom.GetMetaData();
+                        q.Dispose();
+
+                        NbMesh nm = new()
+                        {
+                            Hash = (ulong)mmd.GetHashCode(),
+                            MetaData = mmd,
+                            Data = md,
+                            Material = _manager.EngineRef.GetMaterialByName("defaultMat")
+                        };
+
+                        //Create and register locator node
+                        new_node = _manager.EngineRef.CreateMeshNode("RenderQuad#1", nm);
+                        entity_added = true;
+                        Callbacks.Log("Creating Render Quad Mesh Node", LogVerbosityLevel.INFO);
+                    }
                     ImGuiCore.EndMenu();
                 }
 

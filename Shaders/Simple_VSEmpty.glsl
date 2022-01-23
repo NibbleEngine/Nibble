@@ -2,85 +2,62 @@
  *  Copies incoming vertex color without change.
  *  Applies the transformation matrix to vertex position.
  */
+
  
+//Imports
+#include "common.glsl"
+#include "common_structs.glsl"
+
+//Mesh Attributes
 layout(location=0) in vec4 vPosition;
-layout(location=1) in vec2 uvPosition0;
+layout(location=1) in vec4 uvPosition0;
 layout(location=2) in vec4 nPosition; //normals
 layout(location=3) in vec4 tPosition; //tangents
-layout(location=4) in vec4 bPosition; //bitangents
+layout(location=4) in vec4 bPosition; //bitangents/ vertex color
 layout(location=5) in vec4 blendIndices;
 layout(location=6) in vec4 blendWeights;
 
-layout(location=7) uniform mat4 mvp;
-layout(location=8) uniform mat4 nMat;
-layout(location=9) uniform mat4 rotMat;
-layout(location=10) uniform mat4 worldMat;
 
-uniform vec3 theta, pan, light;
+uniform CustomPerMaterialUniforms mpCustomPerMaterial;
+uniform CommonPerSceneUniforms mpCommonPerScene;
 
-layout(location=11) uniform bool matflags[64];
-layout(location=78) uniform mat4 skinMats[128];
+//Uniform Blocks
+layout (std140, binding=0) uniform _COMMON_PER_FRAME
+{
+    CommonPerFrameUniforms mpCommonPerFrame;
+};
+
+layout (std430, binding=1) buffer _COMMON_PER_MESH
+{
+    MeshInstance instanceData[512];
+};
+
+layout (std430, binding=2) buffer _COMMON_PER_MESHGROUP
+{
+    mat4 boneMatricesTBO[256];
+    int BoneIndicesRemap[128];
+};
 
 //Outputs
-
-//Output for geometry shader
-
-out Vertex
-{
-  vec3 normal;
-  vec3 tangent;
-  vec3 bitangent;
-  vec4 color;
-} vertex;
-
+out vec4 fragPos; 
+out vec4 screenPos;
+out vec4 vertColor;
+out vec4 uv;
 
 void main()
 {
-	mat4 mviewMat = rotMat;
-    mat4 nMat;
-    //Check F02_SKINNED
-    if (matflags[1]){
-    	vec4 wPos=vec4(0.0, 0.0, 0.0, 0.0);
-	    ivec4 index;
+    //Pass uv to fragment shader
+    uv = uvPosition0;
+    vertColor = bPosition;
 
-	    index.x = int(blendIndices.x);
-        index.y = int(blendIndices.y);
-        index.z = int(blendIndices.z);
-        index.w = int(blendIndices.w);
-
-        wPos =  blendWeights.x * skinMats[index.x] * vPosition;
-        wPos += blendWeights.y * skinMats[index.y] * vPosition;
-        wPos += blendWeights.z * skinMats[index.z] * vPosition;
-        wPos += blendWeights.w * skinMats[index.w] * vPosition;
-
-		//wPos = BMs[int(tempI.x)]*vPosition;
-		//gl_PointSize = 10.0;
-	    
-        gl_Position = wPos;
-        
-    } else{
-    	gl_Position = vPosition.xyzw;
-    }
-
-    //Construct TBN matrix
-    //Nullify w components
-    vec3 lLocalTangentVec3 = tPosition.xyz;
-    vec3 lLocalBitangentVec3 = bPosition.xyz;
-    vec3 lLocalNormalVec3 = normalize(nPosition.xyz);
+    //Load Per Instance data
+    mat4 lWorldMat = instanceData[gl_InstanceID].worldMat;
+    vec4 wPos = vPosition;
     
-    vec3 lWorldTangentVec3 = (vec4(lLocalTangentVec3, 1.0)).xyz;
-    vec3 lWorldNormalVec3 =  (vec4(lLocalNormalVec3, 1.0)).xyz;
-    vec3 lWorldBitangentVec3 = cross(lWorldNormalVec3, lWorldTangentVec3);
-
-    //Handle Geometry Shader outputs
-    //Normalized proper vectors
-    vertex.color = vec4(1.0, 0.0, 0.0, 1.0);
-    vertex.normal = normalize(lWorldNormalVec3);
-    vertex.tangent = normalize(lWorldTangentVec3);
-    vertex.bitangent = normalize(lWorldBitangentVec3);
-    
-    //Raw vectors
-    //vertex.normal = nPosition.xyz;
-    //vertex.tangent = tPosition.xyz;
-    //vertex.bitangent = normalize(cross(nPosition.xyz, tPosition.xyz));
+    wPos = lWorldMat * vPosition; //Calculate world Position
+    fragPos = wPos; //Export world position to the fragment shader
+    screenPos = mpCommonPerFrame.mvp * mpCommonPerFrame.rotMat * fragPos;
+    gl_Position = screenPos;
 }
+
+

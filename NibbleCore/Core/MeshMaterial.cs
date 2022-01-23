@@ -102,6 +102,7 @@ namespace NbCore
             MaterialFlagEnum._F16_DIFFUSE2MAP,
             MaterialFlagEnum._F17_MULTIPLYDIFFUSE2MAP,
             MaterialFlagEnum._F21_VERTEXCOLOUR,
+            MaterialFlagEnum._F25_ROUGHNESS_MASK,
             MaterialFlagEnum._F24_AOMAP,
             MaterialFlagEnum._F34_GLOW,
             MaterialFlagEnum._F35_GLOW_MASK,

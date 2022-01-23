@@ -8,10 +8,7 @@ namespace NbCore.Managers
 {
     public class ShaderManager: EntityManager<NbShader>
     {
-        //public readonly List<GLSLShaderConfig> GLDeferredShaders = new();
-        //public readonly List<GLSLShaderConfig> GLForwardTransparentShaders = new();
-        //public readonly List<GLSLShaderConfig> GLDeferredDecalShaders = new();
-        public readonly Queue<GLSLShaderConfig> CompilationQueue = new();
+        public readonly Queue<NbShader> CompilationQueue = new();
 
         private readonly Dictionary<long, NbShader> ShaderHashMap = new();
         private readonly Dictionary<long, List<MeshMaterial>> ShaderMaterialMap = new();
@@ -29,9 +26,9 @@ namespace NbCore.Managers
             return false;
         }
 
-        public void AddShaderForCompilation(GLSLShaderConfig shader)
+        public void AddShaderForCompilation(NbShader req)
         {
-            CompilationQueue.Enqueue(shader);
+            CompilationQueue.Enqueue(req);
         }
 
         public NbShader GetShaderByHash(long hash)

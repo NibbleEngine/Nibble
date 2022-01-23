@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace NbCore.Platform.Graphics.OpenGL
+namespace NbCore
 {
     public class GLSLShaderConfig : Entity
     {
@@ -11,6 +11,8 @@ namespace NbCore.Platform.Graphics.OpenGL
         public Dictionary<NbShaderSourceType, GLSLShaderSource> Sources = new();
         public List<string> directives = new();
 
+        public HashSet<NbShader> ReferencedByShaders = new();
+        
         //Store the raw shader text temporarily
         public NbShaderMode ShaderMode = NbShaderMode.DEFAULT;
         
@@ -41,7 +43,6 @@ namespace NbCore.Platform.Graphics.OpenGL
                 
             foreach (string d in directives)
                 this.directives.Add(d);
-
         }
 
         public void AddSource(NbShaderSourceType t, GLSLShaderSource s)
@@ -49,13 +50,14 @@ namespace NbCore.Platform.Graphics.OpenGL
             if (s == null)
                 return;
             Sources[t] = s;
-            
-            //Add shader reference to source object
-            if (!s.ReferencedByShaders.Contains(this))
-                s.ReferencedByShaders.Add(this);
-        }
 
+            //Add shader reference to source object
+            s.SetConfigReference(this);
+            
+        }
         
+
+
         public override GLSLShaderConfig Clone()
         {
             throw new NotImplementedException();

@@ -179,18 +179,19 @@ namespace NbCore
 
         public NbMeshMetaData GetMetaData()
         {
-            //Warning: For now this method assumes int indices
+            
             int indicesLength = 0x4;
             if (indicesType == NbPrimitiveDataType.UnsignedShort)
                 indicesLength = 0x2;
 
+            //Warning: For now this method assumes 
             return new NbMeshMetaData()
             {
                 BatchCount = ibuffer.Length / indicesLength,
                 FirstSkinMat = 0,
                 LastSkinMat = 0,
-                VertrEndGraphics = vbuffer.Length / (0x3 * sizeof(float)) - 1,
-                VertrEndPhysics = vbuffer.Length / (0x3 * sizeof(float))
+                VertrEndGraphics = vbuffer.Length / ((int) vx_size) - 1,
+                VertrEndPhysics = vbuffer.Length / ((int) vx_size)
             };
         }
 

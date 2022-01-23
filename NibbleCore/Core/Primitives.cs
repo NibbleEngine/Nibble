@@ -681,7 +681,6 @@ namespace NbCore.Primitives
             //geom.bufInfo[2] = new bufInfo(2, VertexAttribPointerType.Float, 3, 12, geom.vertCount * 12, "nPosition", false);
             //geom.bufInfo[4] = new bufInfo(4, VertexAttribPointerType.Float, 3, 12, 2 * geom.vertCount * 12, "bPosition", false);
 
-
             //Set Buffers
             geom.ibuffer = new byte[indicesLength * indices.Length];
             if (geom.indicesType == NbPrimitiveDataType.UnsignedShort)
@@ -1039,6 +1038,14 @@ namespace NbCore.Primitives
                 0.0f, 1.0f, 0.0f,
                 0.0f, 1.0f, 0.0f };
 
+            uvs = new float[6 * 2] {
+                0.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f};
+
             float[] quadcolors = new float[6 * 3]
             {
                 1.0f, 0.0f, 0.0f,
@@ -1050,7 +1057,7 @@ namespace NbCore.Primitives
             };
 
             //Indices
-            indices = new Int32[2 * 3] { 0, 1, 2, 3, 4, 5 };
+            indices = new Int32[2 * 3] { 0, 2, 1, 3, 5, 4 };
 
             geom = getGeom("Quad");
         }
@@ -1076,12 +1083,113 @@ namespace NbCore.Primitives
                 0.0f, 0.0f, 1.0f,
                 0.0f, 0.0f, 1.0f };
 
+            uvs = new float[6 * 2] {
+                0.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f};
+
             //Indices
             indices = new Int32[2 * 3] { 0, 1, 2, 3, 4, 5 };
 
-            geom = getGeom();
+            geom = getGeom("Quad");
         }
-    
+
+        public override GeomObject getGeom(string name)
+        {
+            GeomObject geom = new();
+            geom.Name = name;
+
+            //Set main Geometry Info
+            geom.vertCount = verts.Length / 0x3;
+            geom.indicesCount = indices.Length;
+
+            geom.indicesType = NbPrimitiveDataType.UnsignedShort;
+            int indicesLength = 0x2;
+            if (geom.vertCount > 0xFFFF)
+            {
+                geom.indicesType = NbPrimitiveDataType.Int;
+                indicesLength = 0x4;
+            }
+
+            //Set Strides
+            geom.vx_size = (3 + 2 + 3) * 4; //Positions, Uvs, Normals
+
+            //Set Buffer Offsets
+            geom.mesh_descr = "vun";
+
+            bufInfo buf = new bufInfo()
+            {
+                count = 3,
+                normalize = false,
+                offset = 0,
+                sem_text = "vPosition",
+                semantic = 0,
+                stride = geom.vx_size,
+                type = NbPrimitiveDataType.Float
+            };
+            geom.bufInfo.Add(buf);
+
+            buf = new bufInfo()
+            {
+                count = 2,
+                normalize = false,
+                offset = 12, //Skipping position data
+                sem_text = "uvPosition0",
+                semantic = 1,
+                stride = geom.vx_size,
+                type = NbPrimitiveDataType.Float
+            };
+            geom.bufInfo.Add(buf);
+
+            buf = new bufInfo()
+            {
+                count = 3,
+                normalize = false,
+                offset = 20, //Skipping position data
+                sem_text = "nPosition",
+                semantic = 2,
+                stride = geom.vx_size, 
+                type = NbPrimitiveDataType.Float
+            };
+            geom.bufInfo.Add(buf);
+
+            //Set Buffers
+            geom.ibuffer = new byte[indicesLength * indices.Length];
+            if (geom.indicesType == NbPrimitiveDataType.UnsignedShort)
+            {
+                short[] sindices = new short[indices.Length];
+                for (int i = 0; i < indices.Length; i++)
+                    sindices[i] = (short)indices[i];
+
+                System.Buffer.BlockCopy(sindices, 0, geom.ibuffer, 0, geom.ibuffer.Length);
+            }
+            else
+                System.Buffer.BlockCopy(indices, 0, geom.ibuffer, 0, geom.ibuffer.Length);
+
+            //Create Interleaved Vertex buffer
+            float[] data = new float[verts.Length + normals.Length + uvs.Length];
+            for (int i=0;i<geom.vertCount; i++)
+            {
+                data[8 * i + 0] = verts[3 * i + 0];
+                data[8 * i + 1] = verts[3 * i + 1];
+                data[8 * i + 2] = verts[3 * i + 2];
+                data[8 * i + 3] = uvs[2 * i + 0];
+                data[8 * i + 4] = uvs[2 * i + 1];
+                data[8 * i + 5] = normals[3 * i + 0];
+                data[8 * i + 6] = normals[3 * i + 1];
+                data[8 * i + 7] = normals[3 * i + 2];
+
+            }
+
+            geom.vbuffer = new byte[4 * data.Length];
+            System.Buffer.BlockCopy(data, 0, geom.vbuffer, 0, 4 * data.Length); 
+
+            return geom;
+        }
+
     }
 
     public class LineCross : Primitive

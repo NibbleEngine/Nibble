@@ -241,7 +241,8 @@ namespace NibbleOBJPlugin
                 Values = new(0.0f, 1.0f, 1.0f, 1.0f)
             };
             mat.Uniforms.Add(uf);
-            mat.Shader = EngineRef.renderSys.GetMaterialShader(mat, NbShaderMode.DEFFERED);
+            mat.ShaderConfig = EngineRef.GetShaderConfigByName("UberShader_Deferred_Lit");
+            mat.Shader = EngineRef.renderSys.GetMaterialShader(mat);
 
             mesh.Material = mat;
 

@@ -195,15 +195,6 @@ namespace NbCore.Systems
 
             //Light Pass Shaders
 
-            //UNLIT
-            shader_conf = EngineRef.GetShaderConfigByName("LightPass_Unlit_Forward");
-            shader = new()
-            {
-                Type = NbShaderType.LIGHT_PASS_UNLIT_SHADER
-            };
-            Renderer.CompileShader(ref shader, shader_conf);
-            EngineRef.RegisterEntity(shader);
-
             //LIT
             shader_conf = EngineRef.GetShaderConfigByName("LightPass_Lit_Forward");
             shader = new()
@@ -300,7 +291,8 @@ namespace NbCore.Systems
         {
             //Cross Material
             MeshMaterial mat;
-            GLSLShaderConfig config;
+            GLSLShaderConfig config_deferred = EngineRef.GetShaderConfigByName("UberShader_Deferred");
+            GLSLShaderConfig config_deferred_lit = EngineRef.GetShaderConfigByName("UberShader_Deferred_Lit");
             NbShader shader;
 
             mat = new();
@@ -314,9 +306,9 @@ namespace NbCore.Systems
                 Values = new(1.0f, 1.0f, 1.0f, 1.0f)
             };
             mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
-            EngineRef.AttachShaderToMaterial(mat, shader);
-
+            mat.ShaderConfig = config_deferred;
+            shader = EngineRef.CompileMaterialShader(mat);
+            
 #if DEBUG
             //Report UBOs
             GraphicsAPI.reportUBOs(shader);
@@ -341,9 +333,9 @@ namespace NbCore.Systems
             };
 
             mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
-            EngineRef.AttachShaderToMaterial(mat, shader);
-
+            mat.ShaderConfig = config_deferred;
+            shader = EngineRef.CompileMaterialShader(mat);
+            
             EngineRef.RegisterEntity(mat.Shader); //Register Shader
             EngineRef.RegisterEntity(mat);
             MaterialMgr.AddMaterial(mat);
@@ -363,9 +355,9 @@ namespace NbCore.Systems
             };
 
             mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
-            EngineRef.AttachShaderToMaterial(mat, shader);
-
+            mat.ShaderConfig = config_deferred;
+            shader = EngineRef.CompileMaterialShader(mat);
+            
             EngineRef.RegisterEntity(mat.Shader); //Register Shader
             EngineRef.RegisterEntity(mat);
             MaterialMgr.AddMaterial(mat);
@@ -386,9 +378,9 @@ namespace NbCore.Systems
             };
 
             mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
-            EngineRef.AttachShaderToMaterial(mat, shader);
-
+            mat.ShaderConfig = config_deferred;
+            shader = EngineRef.CompileMaterialShader(mat);
+            
             EngineRef.RegisterEntity(mat.Shader); //Register Shader
             EngineRef.RegisterEntity(mat);
             MaterialMgr.AddMaterial(mat);
@@ -407,9 +399,9 @@ namespace NbCore.Systems
             };
 
             mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED | NbShaderMode.LIT);
-            EngineRef.AttachShaderToMaterial(mat, shader);
-
+            mat.ShaderConfig = config_deferred_lit;
+            shader = EngineRef.CompileMaterialShader(mat);
+            
             EngineRef.RegisterEntity(mat.Shader); //Register Shader
             EngineRef.RegisterEntity(mat);
             MaterialMgr.AddMaterial(mat);
@@ -427,9 +419,9 @@ namespace NbCore.Systems
             };
 
             mat.Uniforms.Add(uf);
-            shader = EngineRef.CompileMaterialShader(mat, NbShaderMode.DEFFERED);
-            EngineRef.AttachShaderToMaterial(mat, shader);
-
+            mat.ShaderConfig = config_deferred;
+            shader = EngineRef.CompileMaterialShader(mat);
+            
             EngineRef.RegisterEntity(mat.Shader); //Register Shader
             EngineRef.RegisterEntity(mat);
             MaterialMgr.AddMaterial(mat);
@@ -614,11 +606,11 @@ namespace NbCore.Systems
 
         }
 
-        public NbShader GetMaterialShader(MeshMaterial mat, NbShaderMode mode)
+        public NbShader GetMaterialShader(MeshMaterial mat)
         {
             //Calculate Shader hash
             List<string> directives = new();
-            directives = EngineRef.CombineShaderDirectives(directives, mode);
+            directives = EngineRef.CombineShaderDirectives(directives, mat.ShaderConfig.ShaderMode);
             directives.AddRange(EngineRef.GetMaterialShaderDirectives(mat));
             int shader_hash = EngineRef.CalculateShaderHash(directives);
 
@@ -630,7 +622,7 @@ namespace NbCore.Systems
             } else
             {
                 //Compile Material Shader
-                shader =  EngineRef.CompileMaterialShader(mat, mode);
+                shader =  EngineRef.CompileMaterialShader(mat);
             }
 
             EngineRef.AttachShaderToMaterial(mat, shader);
@@ -1729,13 +1721,16 @@ namespace NbCore.Systems
             //Re-upload meshgroup buffers
             foreach(NbMeshGroup mg in MeshGroups)
                 UpdateMeshGroupData(mg);
-                
+            
             //Re-Compile requested shaders
             while (ShaderMgr.CompilationQueue.Count > 0)
             {
-                GLSLShaderConfig shader = ShaderMgr.CompilationQueue.Dequeue();
+                NbShader shader = ShaderMgr.CompilationQueue.Dequeue();
                 //TODO: FIX
-                //Renderer.CompileShader(shader);
+                if (shader.RefMaterial is null)
+                    Renderer.CompileShader(ref shader, shader.RefConfig);
+                else
+                    Renderer.CompileShader(ref shader, shader.RefConfig, shader.RefMaterial);
             }
             
             //Render Scene

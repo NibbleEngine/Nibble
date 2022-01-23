@@ -115,8 +115,8 @@ namespace SimpleTextureRenderer
             //Compile updated shaders
             while (EngineRef.renderSys.ShaderMgr.CompilationQueue.Count > 0)
             {
-                GLSLShaderConfig shader = EngineRef.renderSys.ShaderMgr.CompilationQueue.Dequeue();
-                //EngineRef.renderSys.Renderer.CompileShader(shader);
+                NbShader shader = EngineRef.renderSys.ShaderMgr.CompilationQueue.Dequeue();
+                //TODO: Recompile shader
             }
 
             renderer.EnableBlend();

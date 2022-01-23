@@ -914,7 +914,8 @@ namespace NbCore.Platform.Graphics.OpenGL
         {
             int shdr_program_id = shader.ProgramID;
             int ubo_index = GL.GetUniformBlockIndex(shdr_program_id, var_name);
-            GL.UniformBlockBinding(shdr_program_id, ubo_index, binding_point);
+            if (ubo_index != -1)
+                GL.UniformBlockBinding(shdr_program_id, ubo_index, binding_point);
         }
 
         public void AttachSSBOToShaderBindingPoint(NbShader shader, string var_name, int binding_point)
@@ -922,26 +923,21 @@ namespace NbCore.Platform.Graphics.OpenGL
             //Binding Position 0 - Matrices UBO
             int shdr_program_id = shader.ProgramID;
             int ssbo_index = GL.GetProgramResourceIndex(shdr_program_id, ProgramInterface.ShaderStorageBlock, var_name);
-            GL.ShaderStorageBlockBinding(shader.ProgramID, ssbo_index, binding_point);
+            if (ssbo_index != -1)
+                GL.ShaderStorageBlockBinding(shader.ProgramID, ssbo_index, binding_point);
         }
 
-        public void CompileShaderSource(NbShader shader, GLSLShaderConfig shaderConf, 
-            NbShaderSourceType type, string append_text = "")
+        public bool CompileShaderSource(NbShader shader, GLSLShaderConfig shaderConf, 
+            NbShaderSourceType type, ref int object_id, ref string temp_log, string append_text = "")
         {
             GLSLShaderSource _source = shaderConf.Sources[type];
 
             if (_source == null)
-                return;
+                return false;
 
             if (!_source.Resolved)
                 _source.Resolve();
 
-
-            //TODO: Try to first compile the shader and return if there are problems
-
-            if (shader.SourceObjects.ContainsKey(type))
-                if (shader.SourceObjects[type] != -1)
-                    GL.DeleteShader(shader.SourceObjects[type]);
 
             int shader_object_id;
             string ActualShaderSource;
@@ -956,34 +952,33 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.CompileShader(shader_object_id);
             GL.GetShaderInfoLog(shader_object_id, out string info);
 
-            shader.CompilationLog += GLShaderHelper.NumberLines(ActualShaderSource) + "\n";
-            shader.CompilationLog += info + "\n";
-
             GL.GetShader(shader_object_id, ShaderParameter.CompileStatus, out int status_code);
+
+            temp_log += GLShaderHelper.NumberLines(ActualShaderSource) + "\n";
+            temp_log += info + "\n";
+
             if (status_code != 1)
             {
-                Log(GLShaderHelper.NumberLines(ActualShaderSource), LogVerbosityLevel.ERROR);
-
-                Log("Failed to compile shader for the model. Contact Dev",
-                    LogVerbosityLevel.ERROR);
-                Callbacks.Assert(status_code == 1, "Shader Compilation Error");
+                object_id = -1;
+                return false;
             }
-
-            shader.SourceObjects[type] = shader_object_id;
+            
+            object_id = shader_object_id;
+            return true;
         }
 
-        public void CompileShader(MeshMaterial mat)
+        public bool CompileShader(MeshMaterial mat)
         {
             NbShader shader = new();
-            CompileShader(ref shader, mat.ShaderConfig, mat);
+            return CompileShader(ref shader, mat.ShaderConfig, mat);
         }
 
-        public void CompileShader(ref NbShader shader, GLSLShaderConfig config)
+        public bool CompileShader(ref NbShader shader, GLSLShaderConfig config)
         {
-            CompileShader(ref shader, config, "");
+            return CompileShader(ref shader, config, "");
         }
 
-        public void CompileShader(ref NbShader shader, GLSLShaderConfig config, MeshMaterial mat)
+        public bool CompileShader(ref NbShader shader, GLSLShaderConfig config, MeshMaterial mat)
         {
             string extradirectives = "";
             for (int i = 0; i < mat.Flags.Count; i++)
@@ -992,43 +987,57 @@ namespace NbCore.Platform.Graphics.OpenGL
                     extradirectives += "#define " + mat.Flags[i].ToString().Split(".")[^1] + '\n';
             }
 
-            CompileShader(ref shader, config, extradirectives);
+            return CompileShader(ref shader, config, extradirectives);
         }
 
         //Shader Creation
-        public void CompileShader(ref NbShader shader, GLSLShaderConfig config, string extradirectives = "")
+        public bool CompileShader(ref NbShader shader, GLSLShaderConfig config, string extradirectives = "")
         {
+            bool gsflag = config.Sources.ContainsKey(NbShaderSourceType.GeometryShader);
+
+            bool tsflag = config.Sources.ContainsKey(NbShaderSourceType.TessControlShader) |
+                     config.Sources.ContainsKey(NbShaderSourceType.TessControlShader);
+
+            string directivestring = "";
+            directivestring += extradirectives; //Material Directives
+            
+            //Generate DirectiveString
+            foreach (string dir in config.directives)
+                directivestring += "#define " + dir + '\n'; //Configuration Directives (through the mode)
+
+            //Try to compile all attachments
+            Dictionary<NbShaderSourceType, int> temp_objects = new();
+            string temp_log = "";
+            foreach (var pair in config.Sources)
+            {
+                int object_id = -1;
+                bool status = CompileShaderSource(shader, config, pair.Key, ref object_id, ref temp_log, directivestring);
+                if (!status)
+                {
+                    Callbacks.Log("Error During Shader Compilation", LogVerbosityLevel.ERROR);
+                    Callbacks.Log(temp_log, LogVerbosityLevel.ERROR);
+                    return false;
+                }
+                
+                temp_objects[pair.Key] = object_id;
+            }
+
+            shader.CompilationLog = temp_log;
+            
+            //Save Objects to shader
+            foreach (var pair in config.Sources)
+            {
+                //TODO: Try to first compile the shader and return if there are problems
+                if (shader.SourceObjects.ContainsKey(pair.Key))
+                    if (shader.SourceObjects[pair.Key] != -1)
+                        GL.DeleteShader(shader.SourceObjects[pair.Key]);
+
+                shader.SourceObjects[pair.Key] = temp_objects[pair.Key];
+            }
+
             if (shader.ProgramID != -1)
                 GL.DeleteProgram(shader.ProgramID);
 
-            bool gsflag = false;
-            bool tsflag = false;
-
-
-            gsflag = config.Sources.ContainsKey(NbShaderSourceType.GeometryShader);
-
-            tsflag = config.Sources.ContainsKey(NbShaderSourceType.TessControlShader) |
-                     config.Sources.ContainsKey(NbShaderSourceType.TessControlShader);
-
-            //Convert directives array to string
-            string directivestring = "";
-            //Add General directives
-            //General Directives are provided here
-            if (config.ShaderMode.HasFlag(NbShaderMode.DEFFERED))
-                directivestring += "#define _D_DEFERRED_RENDERING" + '\n';
-
-            if (config.ShaderMode.HasFlag(NbShaderMode.LIT))
-                directivestring += "#define _D_LIGHTING" + '\n';
-
-            directivestring += extradirectives;
-
-            //Generate DirectiveString
-            foreach (string dir in config.directives)
-                directivestring += "#define " + dir + '\n';
-
-            foreach (var pair in config.Sources)
-                CompileShaderSource(shader, config, pair.Key, directivestring);
-            
             //Create new program
             shader.ProgramID = GL.CreateProgram();
 
@@ -1051,6 +1060,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             
             ShaderCompilationLog(shader);
             loadActiveUniforms(shader);
+            return true;
         }
 
         public void ShaderCompilationLog(NbShader shader)

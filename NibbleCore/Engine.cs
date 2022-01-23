@@ -515,11 +515,25 @@ namespace NbCore
                                       new() { }, NbShaderMode.DEFFERED, "Debug");
             RegisterEntity(conf);
 
+            //Test Shader
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VSEmpty.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/Test_fs.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.DEFFERED, "Test");
+            RegisterEntity(conf);
+
             //UberShader Shader
             conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VS.glsl"),
                                       GetShaderSourceByFilePath("Shaders/Simple_FS.glsl"),
                                       null, null, null,
-                                      new() { }, NbShaderMode.DEFFERED, "UberShader");
+                                      new() { }, NbShaderMode.DEFFERED, "UberShader_Deferred");
+            RegisterEntity(conf);
+
+            //UberShader Lit Shader
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/Simple_FS.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.DEFFERED | NbShaderMode.LIT, "UberShader_Deferred_Lit");
             RegisterEntity(conf);
 
             //UNLIT
@@ -843,7 +857,8 @@ namespace NbCore
             //x: roughness
             //z: metallic
             mat.Uniforms.Add(uf);
-            shader = CompileMaterialShader(mat, NbShaderMode.DEFFERED);
+            mat.ShaderConfig = GetShaderConfigByName("UberShader");
+            shader = CompileMaterialShader(mat);
             AttachShaderToMaterial(mat, shader);
 
             RegisterEntity(mat);
@@ -1087,6 +1102,14 @@ namespace NbCore
         public void AttachShaderToMaterial(MeshMaterial mat, NbShader shader)
         {
             mat.Shader = shader;
+            //Set Shader References
+            shader.RefMaterial = mat;
+            shader.RefConfig = mat.ShaderConfig;
+            shader.RefConfig.ReferencedByShaders.Add(shader);
+            
+            //Clear active uniforms and samplers from material
+            mat.ActiveSamplers.Clear();
+            mat.ActiveUniforms.Clear();
 
             //Load Active Uniforms to Material
             for (int i = 0; i < mat.Uniforms.Count; i++)
@@ -1129,8 +1152,11 @@ namespace NbCore
             List<string> includes = directives.ToList();
 
             //General Directives are provided here
-            if ((mode & NbShaderMode.DEFFERED) == NbShaderMode.DEFFERED)
+            if (mode.HasFlag(NbShaderMode.DEFFERED))
                 includes.Add("_D_DEFERRED_RENDERING");
+
+            if (mode.HasFlag(NbShaderMode.LIT))
+                includes.Add("_D_LIGHTING");
 
             return includes;
         }
@@ -1165,20 +1191,22 @@ namespace NbCore
             return shader_conf;
         }
 
-        public NbShader CompileMaterialShader(MeshMaterial mat, NbShaderMode mode)
+        public NbShader CompileMaterialShader(MeshMaterial mat)
         {
+            if (mat.ShaderConfig == null)
+            {
+                Log("Missing Shader Configuration on Material. Nothing to compile",
+                    LogVerbosityLevel.WARNING);
+                return null;
+            }
+
             List<string> matdirectives = GetMaterialShaderDirectives(mat);
             List<string> hashdirectives = new();
-            hashdirectives = CombineShaderDirectives(hashdirectives, mode);
+            hashdirectives = CombineShaderDirectives(hashdirectives, mat.ShaderConfig.ShaderMode);
             hashdirectives.AddRange(matdirectives);
-            hashdirectives.Add("UberShader");
 
-            //Check if a config exists
-            GLSLShaderConfig conf = GetShaderConfigByName("UberShader");
-            Callbacks.Assert(conf != null, "UberShader Config Missing");
-
+            hashdirectives.Add(mat.ShaderConfig.Name);
             int hash = CalculateShaderHash(hashdirectives);
-
             NbShader shader = GetShaderByHash(hash);
 
             //Create New Shader if it doesn't exist
@@ -1186,16 +1214,21 @@ namespace NbCore
             {
                 shader = new();
                 
-                renderSys.Renderer.CompileShader(ref shader, conf, mat);
+                if (!renderSys.Renderer.CompileShader(ref shader, mat.ShaderConfig, mat))
+                    return null;
                 //Attach UBO binding Points
                 renderSys.Renderer.AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_FRAME", 0);
                 renderSys.Renderer.AttachSSBOToShaderBindingPoint(shader, "_COMMON_PER_MESH", 1);
                 renderSys.Renderer.AttachSSBOToShaderBindingPoint(shader, "_COMMON_PER_MESHGROUP", 2);
 
-                //Attach Shader to material
-                AttachShaderToMaterial(mat, shader);
                 shader.Hash = hash;
+
+                //Register New Shader
+                RegisterEntity(shader);
             }
+
+            //Attach Shader to material
+            AttachShaderToMaterial(mat, shader);
 
             return shader;
         }
@@ -1207,6 +1240,9 @@ namespace NbCore
 
         public void DisposeSceneGraphNode(SceneGraphNode node)
         {
+            //Remove from SceneGraph
+            sceneMgmtSys.ActiveSceneGraph.RemoveNode(node);
+            
             DestroyEntity(node);
             
             //Mesh Node Disposal

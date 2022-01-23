@@ -79,6 +79,44 @@ namespace NbCore.UI.ImGui
                     ImGuiNET.ImGui.SetNextItemWidth(-1);
                     ImGuiNET.ImGui.Text(_ActiveMaterial.Class);
 
+                    ImGuiNET.ImGui.TableNextRow();
+                    ImGuiNET.ImGui.TableSetColumnIndex(0);
+                    ImGuiNET.ImGui.Text("Shader");
+                    ImGuiNET.ImGui.TableSetColumnIndex(1);
+                    ImGuiNET.ImGui.SetNextItemWidth(-1);
+
+                    List<Entity> shaderconfs = RenderState.engineRef.GetEntityTypeList(EntityType.ShaderConfig);
+                    string[] shaderconfItems = new string[shaderconfs.Count];
+                    for (int i = 0; i < shaderconfs.Count; i++)
+                    {
+                        shaderconfItems[i] = ((GLSLShaderConfig)shaderconfs[i]).Name;
+                    }
+                    int currentShaderConfigId = shaderconfs.IndexOf(_ActiveMaterial.ShaderConfig);
+                    if (ImGuiNET.ImGui.Combo("##MaterialShader", ref currentShaderConfigId, shaderconfItems, shaderconfs.Count))
+                    {
+                        GLSLShaderConfig old = _ActiveMaterial.ShaderConfig;
+                        _ActiveMaterial.ShaderConfig = shaderconfs[currentShaderConfigId] as GLSLShaderConfig;
+                        NbShader new_shader = RenderState.engineRef.CompileMaterialShader(_ActiveMaterial);
+
+                        if (new_shader == null)
+                        {
+                            Console.WriteLine("Unable to compile shader for material");
+                            _ActiveMaterial.ShaderConfig = old;
+                        }
+                    }
+
+                    ImGuiNET.ImGui.TableNextRow();
+                    ImGuiNET.ImGui.TableSetColumnIndex(0);
+                    ImGuiNET.ImGui.Text("Shader Hash");
+                    ImGuiNET.ImGui.TableSetColumnIndex(1);
+                    ImGuiNET.ImGui.SetNextItemWidth(-1);
+                    ImGuiNET.ImGui.Text((_ActiveMaterial.Shader != null) ? 
+                                         _ActiveMaterial.Shader.Hash.ToString() : "-1");
+                    ImGuiNET.ImGui.SameLine();
+                    if (ImGuiNET.ImGui.Button("Reload"))
+                    {
+                        Console.WriteLine("Recompile Shader Here");
+                    }
 
                     ImGuiNET.ImGui.TableNextRow();
                     ImGuiNET.ImGui.TableSetColumnIndex(0);
