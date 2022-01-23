@@ -11,6 +11,7 @@ namespace NbCore.UI.ImGui
     public class ImGuiShaderSourceEditor
     {
         private GLSLShaderSource ActiveShaderSource = null;
+        private string SourceText = "";
         private int selectedId = -1;
 
         public ImGuiShaderSourceEditor()
@@ -32,8 +33,10 @@ namespace NbCore.UI.ImGui
             }
                 
             if (ImGuiCore.Combo("##1", ref selectedId, items, items.Length))
-                ActiveShaderSource = (GLSLShaderSource) shaderSourceList[selectedId];
-
+            {
+                SetShader((GLSLShaderSource)shaderSourceList[selectedId]);
+            }
+                
             ImGuiCore.SameLine();
 
             if (ImGuiCore.Button("Add"))
@@ -49,25 +52,29 @@ namespace NbCore.UI.ImGui
             if (ActiveShaderSource is null)
                 return;
 
-            ImGuiCore.InputTextMultiline("##2", ref ActiveShaderSource.SourceText, 50000,
+            ImGuiCore.InputTextMultiline("##2", ref SourceText, 50000,
                     new System.Numerics.Vector2(-1, -20));
 
             var io = ImGuiCore.GetIO();
-
+            bool save_changes = false;
             if (io.WantCaptureKeyboard && ImGuiCore.IsKeyDown((int)NbKey.LeftCtrl) && ImGuiCore.IsKeyPressed((int) NbKey.S))
             {
-                Console.WriteLine($"I SHOULD SAVE CHANGES NOW");
+                save_changes = true;    
             }
+
+            save_changes |= ImGuiCore.Button("Save");
             
-            if (ImGuiCore.Button("Save"))
+            if (save_changes)
             {
-                Console.WriteLine("Shader recompilation not supported yet");
+                Console.WriteLine($"Saving Changes to {ActiveShaderSource.SourceFilePath}");
+                System.IO.File.WriteAllText(ActiveShaderSource.SourceFilePath, SourceText);
             }
         }
 
         public void SetShader(GLSLShaderSource conf)
         {
             ActiveShaderSource = conf;
+            SourceText = conf.SourceText;
             List<Entity> shaderList = RenderState.engineRef.GetEntityTypeList(EntityType.ShaderSource);
             selectedId = shaderList.IndexOf(conf);
         }

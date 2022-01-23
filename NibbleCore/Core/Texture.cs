@@ -31,7 +31,7 @@ namespace NbCore
         public int texID = -1;
         private bool disposed = false;
         public NbTextureTarget target;
-        public string Name;
+        public string Path = "";
         public int Width;
         public int Height;
         public int Depth;
@@ -45,9 +45,9 @@ namespace NbCore
         public Texture() :base(EntityType.Texture) { }
         //Path Initializer
 
-        public Texture(byte[] data, bool isDDS, string name) : base(EntityType.Texture)
+        public Texture(byte[] data, bool isDDS, string path) : base(EntityType.Texture)
         {
-            Name = name;
+            Path = path;
             if (isDDS)
             {
                 textureInitDDS(data);
@@ -83,7 +83,7 @@ namespace NbCore
             fs.Read(image_data, 0, data_length);
 
             
-            textureInit(image_data, Path.GetExtension(path).ToUpper());
+            textureInit(image_data, System.IO.Path.GetExtension(path).ToUpper());
         }
 
         private void textureInitPNG(byte[] imageData)
@@ -150,7 +150,7 @@ namespace NbCore
             ddsImage = new DDSImage(imageData);
             RenderStats.texturesNum += 1; //Accumulate settings
 
-            Console.WriteLine("Sampler Name Path " + Name + " Width {0} Height {1}", 
+            Console.WriteLine("Sampler Name Path " + Path + " Width {0} Height {1}", 
                 ddsImage.header.dwWidth, ddsImage.header.dwHeight);
             Width = ddsImage.header.dwWidth;
             Height = ddsImage.header.dwHeight;

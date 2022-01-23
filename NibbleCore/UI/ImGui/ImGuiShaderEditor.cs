@@ -30,7 +30,7 @@ namespace NbCore.UI.ImGui
             //TODO: Make this static if possible or maybe maintain a list of shaders in the resource manager
             
             //Items
-            List<Entity> shaderList = RenderState.engineRef.GetEntityTypeList(EntityType.Shader);
+            List<Entity> shaderList = RenderState.engineRef.GetEntityTypeList(EntityType.ShaderConfig);
             string[] items = new string[shaderList.Count];
             for (int i = 0; i < items.Length; i++)
             {
@@ -70,8 +70,8 @@ namespace NbCore.UI.ImGui
                     sourceItems[i] = ss.SourceFilePath;
                 }
 
-                int OriginalVSSourceIndex = shaderSourceList.IndexOf(ActiveShader.Sources[NbShaderType.VertexShader]);
-                int OriginalFSSourceIndex = shaderSourceList.IndexOf(ActiveShader.Sources[NbShaderType.FragmentShader]);
+                int OriginalVSSourceIndex = shaderSourceList.IndexOf(ActiveShader.Sources[NbShaderSourceType.VertexShader]);
+                int OriginalFSSourceIndex = shaderSourceList.IndexOf(ActiveShader.Sources[NbShaderSourceType.FragmentShader]);
                 
                 ImGuiCore.TableNextRow();
                 ImGuiCore.TableSetColumnIndex(0);
@@ -83,7 +83,7 @@ namespace NbCore.UI.ImGui
                 ImGuiCore.TableSetColumnIndex(2);
                 if (ImGuiCore.Button("Edit##1"))
                 {
-                    sourceEditor.SetShader(ActiveShader.Sources[NbShaderType.VertexShader]);
+                    sourceEditor.SetShader(ActiveShader.Sources[NbShaderSourceType.VertexShader]);
                     showSourceEditor = true;
                 }
 
@@ -97,7 +97,7 @@ namespace NbCore.UI.ImGui
                 ImGuiCore.TableSetColumnIndex(2);
                 if (ImGuiCore.Button("Edit##2"))
                 {
-                    sourceEditor.SetShader(ActiveShader.Sources[NbShaderType.VertexShader]);
+                    sourceEditor.SetShader(ActiveShader.Sources[NbShaderSourceType.VertexShader]);
                     showSourceEditor = true;
                 }
 
@@ -135,11 +135,11 @@ namespace NbCore.UI.ImGui
         public void SetShader(GLSLShaderConfig conf)
         {
             ActiveShader = conf;
-            List<Entity> shaderList = RenderState.engineRef.GetEntityTypeList(EntityType.Shader);
+            List<Entity> shaderList = RenderState.engineRef.GetEntityTypeList(EntityType.ShaderConfig);
             List<Entity> shaderSourceList = RenderState.engineRef.GetEntityTypeList(EntityType.ShaderSource);
             selectedShaderId = shaderList.IndexOf(conf);
-            selectedVSSource = shaderSourceList.IndexOf(conf.Sources[NbShaderType.VertexShader]);
-            selectedFSSource = shaderSourceList.IndexOf(conf.Sources[NbShaderType.FragmentShader]);
+            selectedVSSource = shaderSourceList.IndexOf(conf.Sources[NbShaderSourceType.VertexShader]);
+            selectedFSSource = shaderSourceList.IndexOf(conf.Sources[NbShaderSourceType.FragmentShader]);
         }
     }
     

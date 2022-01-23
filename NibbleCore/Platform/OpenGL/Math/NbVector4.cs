@@ -11,6 +11,11 @@ namespace NbCore.Math
             _Value = vec;
         }
 
+        public NbVector4(NbVector4 vec)
+        {
+            _Value = vec._Value;
+        }
+
         public NbVector4(System.Numerics.Vector4 vec)
         {
             _Value.X = vec.X;

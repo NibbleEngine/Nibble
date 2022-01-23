@@ -11,7 +11,7 @@ namespace NbCore.Platform.Graphics.OpenGL
     public class GLSLShaderSource : Entity
     {
         public string Name = "";
-        public NbShaderSourceType SourceType;
+        public NbShaderTextType SourceType;
         private List<GLSLShaderSource> _dynamicTextParts = new();
         private List<string> _staticTextParts = new();
         public string SourceFilePath = ""; //Path of the file where the source is fetched from
@@ -32,12 +32,12 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         public GLSLShaderSource() : base(EntityType.ShaderSource)
         {
-            SourceType = NbShaderSourceType.Static;
+            SourceType = NbShaderTextType.Static;
         }
 
         public GLSLShaderSource(string text) : base(EntityType.ShaderSource)
         {
-            SourceType = NbShaderSourceType.Static;
+            SourceType = NbShaderTextType.Static;
             SourceText = text;
             Name = "Shader_" + RenderState.engineRef.GetShaderSourceCount();
             //Automatically register to engine
@@ -46,7 +46,7 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         public GLSLShaderSource(string filepath, bool watchFile) : base(EntityType.ShaderSource)
         {
-            SourceType = NbShaderSourceType.Dynamic;
+            SourceType = NbShaderTextType.Dynamic;
 
             SourceFilePath = Utils.FileUtils.FixPath(filepath);
             SourceText = File.ReadAllText(SourceFilePath);
@@ -77,7 +77,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             _dynamicTextParts.Clear();
             _staticTextParts.Clear();
             
-            if (SourceType == NbShaderSourceType.Static)
+            if (SourceType == NbShaderTextType.Static)
             {
                 Processed = true;
                 return;
@@ -155,7 +155,7 @@ namespace NbCore.Platform.Graphics.OpenGL
 
             ResolvedText = "";
 
-            if (SourceType == NbShaderSourceType.Static)
+            if (SourceType == NbShaderTextType.Static)
             {
                 ResolvedText += SourceText;
             }

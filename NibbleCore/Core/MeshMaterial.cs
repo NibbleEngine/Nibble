@@ -81,7 +81,8 @@ namespace NbCore
         public bool proc = false;
         public string name_key = "";
         public TextureManager texMgr;
-        public GLSLShaderConfig Shader;
+        public NbShader Shader;
+        public GLSLShaderConfig ShaderConfig;
         public List<NbUniform> Uniforms = new();
         public List<NbSampler> Samplers = new();
         public Dictionary<string, NbSampler> SamplerMap = new();
@@ -112,6 +113,7 @@ namespace NbCore
         };
 
         public List<NbUniform> ActiveUniforms = new();
+        public List<NbSampler> ActiveSamplers = new();
 
         //Disposable Stuff
         private bool disposed = false;

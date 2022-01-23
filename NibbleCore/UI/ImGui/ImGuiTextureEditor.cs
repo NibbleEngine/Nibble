@@ -18,7 +18,7 @@ namespace NbCore.UI.ImGui
             List<Texture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
             string[] items = new string[textureList.Count];
             for (int i = 0; i < items.Length; i++)
-                items[i] = textureList[i].Name == "" ? "Texture_" + i : textureList[i].Name; 
+                items[i] = textureList[i].Path == "" ? "Texture_" + i : textureList[i].Path; 
 
             if (ImGuiCore.Combo("##1", ref _SelectedId, items, items.Length))
                 _ActiveTexture = textureList[_SelectedId];
@@ -47,7 +47,7 @@ namespace NbCore.UI.ImGui
             ImGuiCore.Text("Class");
             ImGuiCore.Text("Flags");
             ImGuiCore.NextColumn();
-            ImGuiCore.InputText("", ref _ActiveTexture.Name, 30);
+            ImGuiCore.InputText("", ref _ActiveTexture.Path, 30);
             
         }
 

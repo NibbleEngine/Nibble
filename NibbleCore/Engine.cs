@@ -46,7 +46,7 @@ namespace NbCore
         public SceneManagementSystem sceneMgmtSys;
         public RenderingSystem renderSys; //TODO: Try to make it private. Noone should have a reason to access it
         private readonly RequestHandler reqHandler;
-        
+
         private Dictionary<EngineSystemEnum, EngineSystem> _engineSystemMap = new(); //TODO fill up
 
         //Rendering 
@@ -78,7 +78,7 @@ namespace NbCore
 
             LoadDefaultResources();
         }
-        
+
         ~Engine()
         {
             Log("Goodbye!", LogVerbosityLevel.INFO);
@@ -161,7 +161,7 @@ namespace NbCore
         {
             //Load Referenced Assemblies
             AssemblyName[] l = test.GetReferencedAssemblies();
-            
+
             foreach (AssemblyName a2 in l)
             {
                 //Check version compatibility with the Nibble library
@@ -179,7 +179,7 @@ namespace NbCore
 
             if (aName == null)
                 return;
-            
+
             Assembly test = GetAssembly(aName);
             if (test == null)
                 return;
@@ -206,7 +206,7 @@ namespace NbCore
 
         public void LoadPlugin(string filepath)
         {
-            
+
             //Load Assembly
             try
             {
@@ -214,16 +214,16 @@ namespace NbCore
                 AssemblyName NibbleName = GetAssemblyName("Nibble.dll");
 
                 Assembly a = Assembly.LoadFile(Path.GetFullPath(filepath));
-                
+
                 //Try to find the type the derived plugin class
                 foreach (Type t in a.GetTypes())
                 {
                     if (t.IsSubclassOf(typeof(PluginBase)))
                     {
                         Log($"Nibble Plugin detected! {a.GetName().Name}", LogVerbosityLevel.INFO);
-                        
+
                         System.Version testNibbleVersion = GetAssemblyRequiredNibbleVersion(a);
-                        
+
                         if (testNibbleVersion == null)
                         {
                             Callbacks.Log("Unable to fetch required Nibble.dll version. Plugin not loaded",
@@ -280,13 +280,13 @@ namespace NbCore
                         }
                         else
                         {
-                            Log(string.Format("Cannot load font {0}. Missing font atas", fontFileName), 
+                            Log(string.Format("Cannot load font {0}. Missing font atas", fontFileName),
                                 LogVerbosityLevel.WARNING);
                         }
                     }
-                }    
+                }
             }
-            
+
         }
 
         #endregion
@@ -296,13 +296,13 @@ namespace NbCore
             byte[] fontData = File.ReadAllBytes(fontPath);
             byte[] fontAtlasData = File.ReadAllBytes(fontAtlas);
             Image<Rgba32> FontAtlas = SixLabors.ImageSharp.Image.Load<Rgba32>(fontAtlasData);
-            
+
             Font f = new Font(fontData, FontAtlas, 1);
             renderSys.FontMgr.addFont(f);
             return f;
         }
 
-        
+
         public void DestroyEntity(Entity e)
         {
             //Remove from main registry
@@ -321,7 +321,7 @@ namespace NbCore
 
             scene.SetParent(GetActiveSceneGraph().Root);
             scene.Root = scene.Parent;
-            
+
             //Post Import procedures
             renderSys.SubmitOpenMeshGroups();
 
@@ -329,6 +329,35 @@ namespace NbCore
             NewSceneEvent?.Invoke(GetActiveSceneGraph());
         }
 
+        //Entity Registration Methods
+        public void RegisterEntity(NbShader shader)
+        {
+            if (registrySys.RegisterEntity(shader))
+            {
+                renderSys.ShaderMgr.AddShader(shader);
+            }
+        }
+
+        public void RegisterEntity(Texture tex)
+        {
+            if (registrySys.RegisterEntity(tex))
+            {
+                renderSys.TextureMgr.AddTexture(tex);
+            }
+        }
+
+        public void RegisterEntity(MeshMaterial mat)
+        {
+            if (registrySys.RegisterEntity(mat))
+            {
+                foreach (NbSampler sampl in mat.Samplers)
+                {
+                    Texture tex = sampl.GetTexture();
+                    if (tex != null)
+                        RegisterEntity(tex);
+                }
+            }
+        }
 
         public void RegisterEntity(Entity e)
         {
@@ -344,11 +373,11 @@ namespace NbCore
                 {
                     //Register mesh, material and the corresponding shader if necessary
                     MeshComponent mc = e.GetComponent<MeshComponent>() as MeshComponent;
-                    
+
                     RegisterEntity(mc.Mesh);
                     RegisterEntity(mc.Mesh.Material);
                     RegisterEntity(mc.Mesh.Material.Shader);
-                    
+
                     renderSys.RegisterEntity(e); //Register Mesh
                 }
 
@@ -367,7 +396,7 @@ namespace NbCore
 
                 if (e is SceneGraphNode)
                     sceneMgmtSys.AddNode(e as SceneGraphNode);
-                
+
                 //TODO Register to the rest systems if necessary
             }
         }
@@ -387,11 +416,11 @@ namespace NbCore
         }
 
         #region SceneManagement
-        
+
         public void ClearActiveSceneGraph()
         {
             sceneMgmtSys.ClearSceneGraph(sceneMgmtSys.ActiveSceneGraph);
-        
+
         }
 
         #endregion
@@ -400,10 +429,35 @@ namespace NbCore
 
         public void InitializeResources()
         {
-            AddDefaultShaders();
+            AddDefaultShaderSources();
+            AddDefaultShaderConfigs();
+            SetupDefaultCamera();
         }
 
-        private void AddDefaultShaders()
+        private void SetupDefaultCamera()
+        {
+            //Add Camera
+            Camera cam = new(90, 0, true)
+            {
+                isActive = false
+            };
+
+            //Add Necessary Components to Camera
+            TransformationSystem.AddTransformComponentToEntity(cam);
+            TransformComponent tc = cam.GetComponent<TransformComponent>() as TransformComponent;
+            tc.IsControllable = true;
+            RegisterEntity(cam);
+
+            //Set global reference to cam
+            RenderState.activeCam = cam;
+
+            //Set Camera Initial State
+            TransformController tcontroller = transformSys.GetEntityTransformController(cam);
+            tcontroller.AddFutureState(new NbVector3(), NbQuaternion.FromEulerAngles(0.0f, -3.14f / 2.0f, 0.0f, "XYZ"), new NbVector3(1.0f));
+        }
+
+
+        private void AddDefaultShaderSources()
         {
             //Local function
             void WalkDirectory(DirectoryInfo dir)
@@ -428,7 +482,7 @@ namespace NbCore
                         if (GetShaderSourceByFilePath(filepath) == null)
                         {
                             //Construction includes registration
-                            GLSLShaderSource ss = new(filepath, true); 
+                            GLSLShaderSource ss = new(filepath, true);
                         }
                     }
                 }
@@ -443,12 +497,136 @@ namespace NbCore
             int i = 0;
             while (i < sourceList.Count) //This way can account for new entries 
             {
-                ((GLSLShaderSource) sourceList[i]).Process();
+                ((GLSLShaderSource)sourceList[i]).Process();
                 i++;
             }
-            
+
         }
 
+
+        private void AddDefaultShaderConfigs()
+        {
+            //Create Debug Shader Config
+            //Debug Shader
+            GLSLShaderConfig conf;
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VSEmpty.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/Simple_FSEmpty.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/Simple_GS.glsl"), null, null,
+                                      new() { }, NbShaderMode.DEFFERED, "Debug");
+            RegisterEntity(conf);
+
+            //UberShader Shader
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/Simple_FS.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.DEFFERED, "UberShader");
+            RegisterEntity(conf);
+
+            //UNLIT
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/light_pass_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/light_pass_FS.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.DEFFERED, "LightPass_Unlit_Forward"); ;
+            RegisterEntity(conf);
+
+            //UNLIT
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/light_pass_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/light_pass_FS.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "LightPass_Unlit_Forward"); ;
+            RegisterEntity(conf);
+
+
+            //LIT
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/light_pass_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/light_pass_FS.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD | NbShaderMode.LIT, "LightPass_Lit_Forward"); ;
+            RegisterEntity(conf);
+
+
+            //GAUSSIAN HORIZONTAL BLUR SHADER
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/gaussian_horizontalBlur_FS.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "Horizontal_Gaussian_Blur");
+            RegisterEntity(conf);
+
+
+            //GAUSSIAN VERTICAL BLUR SHADER
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/gaussian_verticalBlur_FS.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.DEFAULT, "Vertical_Gaussian_Blur");
+            RegisterEntity(conf);
+
+            //Brightness Extraction Shader
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/brightness_extract_shader_fs.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "Brightness_Extract");
+            RegisterEntity(conf);
+
+            //ADDITIVE BLEND
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/additive_blend_fs.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "Additive_Blend");
+            RegisterEntity(conf);
+
+            //FXAA
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/fxaa_shader_fs.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "FXAA");
+            RegisterEntity(conf);
+
+            //TONE MAPPING + GAMMA CORRECTION
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/tone_mapping_fs.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "ToneMapping");
+            RegisterEntity(conf);
+
+            //INV TONE MAPPING
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/inv_tone_mapping_fs.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "InverseToneMapping");
+            RegisterEntity(conf);
+
+            //BWOIT SHADER
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/bwoit_shader_fs.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "BWOIT");
+            RegisterEntity(conf);
+
+            //Text Shaders
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Text_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/Text_FS.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "Text");
+            RegisterEntity(conf);
+
+            //Pass Shader
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/PassThrough_FS.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "Passthrough");
+            RegisterEntity(conf);
+
+            //Red Shader
+            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
+                                      GetShaderSourceByFilePath("Shaders/RedFill.glsl"),
+                                      null, null, null,
+                                      new() { }, NbShaderMode.FORWARD, "RedFill");
+            RegisterEntity(conf);
+
+        }
+
+
+        
         #endregion
 
 
@@ -508,15 +686,16 @@ namespace NbCore
                 .Find(x => ((GLSLShaderSource)x).SourceFilePath == FileUtils.FixPath(path)) as GLSLShaderSource;
         }
 
-        public GLSLShaderConfig GetShaderByHash(int hash)
+        public GLSLShaderConfig GetShaderConfigByName(string name)
         {
-            return registrySys.GetEntityTypeList(EntityType.Shader)
-                .Find(x => ((GLSLShaderConfig) x).Hash == hash) as GLSLShaderConfig;
+            return registrySys.GetEntityTypeList(EntityType.ShaderConfig)
+                .Find(x => ((GLSLShaderConfig)x).Name == name) as GLSLShaderConfig;
         }
 
-        public GLSLShaderConfig GetShaderByType(SHADER_TYPE typ)
+        public NbShader GetShaderByHash(int hash)
         {
-            return renderSys.ShaderMgr.GetGenericShader(typ);
+            return registrySys.GetEntityTypeList(EntityType.Shader)
+                .Find(x => ((NbShader)x).Hash == hash) as NbShader;
         }
 
         public int GetEntityListCount(EntityType type)
@@ -543,28 +722,9 @@ namespace NbCore
 
         public void init(int width, int height)
         {
-            //Initialize Resource Manager
+            //Initialize Resources
             InitializeResources();
-
-            //Add Camera
-            Camera cam = new(90, 0, true)
-            {
-                isActive = false
-            };
-
-            //Add Necessary Components to Camera
-            TransformationSystem.AddTransformComponentToEntity(cam);
-            TransformComponent tc = cam.GetComponent<TransformComponent>() as TransformComponent;
-            tc.IsControllable = true;
-            RegisterEntity(cam);
             
-            //Set global reference to cam
-            RenderState.activeCam = cam;
-
-            //Set Camera Initial State
-            TransformController tcontroller = transformSys.GetEntityTransformController(cam);
-            tcontroller.AddFutureState(new NbVector3(), NbQuaternion.FromEulerAngles(0.0f, -3.14f/2.0f, 0.0f, "XYZ"), new NbVector3(1.0f));
-
             //Initialize the render manager
             renderSys.init(width, height);
             rt_State = EngineRenderingState.ACTIVE;
@@ -666,7 +826,7 @@ namespace NbCore
                 
             };
 
-            GLSLShaderConfig shader = null;
+            NbShader shader = null;
 
             //Sphere Material
             MeshMaterial mat = new();
@@ -683,8 +843,8 @@ namespace NbCore
             //x: roughness
             //z: metallic
             mat.Uniforms.Add(uf);
-            shader = CompileMaterialShader(mat, SHADER_MODE.DEFFERED);
-            renderSys.Renderer.AttachShaderToMaterial(mat, shader);
+            shader = CompileMaterialShader(mat, NbShaderMode.DEFFERED);
+            AttachShaderToMaterial(mat, shader);
 
             RegisterEntity(mat);
             
@@ -917,78 +1077,127 @@ namespace NbCore
         {
             //TODO: Possibly move that to a separate rendering thread
             Texture tex = new();
-            tex.Name = name;
+            tex.Path = name;
             string ext = Path.GetExtension(name).ToUpper();
             tex.textureInit(data, ext); //Manually load data
             renderSys.TextureMgr.AddTexture(tex);
             return tex;
         }
 
-        public void CompileShader(GLSLShaderConfig shader)
+        public void AttachShaderToMaterial(MeshMaterial mat, NbShader shader)
         {
-            renderSys.Renderer.CompileShader(shader);
+            mat.Shader = shader;
+
+            //Load Active Uniforms to Material
+            for (int i = 0; i < mat.Uniforms.Count; i++)
+            {
+                string un_name = $"mpCustomPerMaterial.uniforms[{mat.Uniforms[i].ID}]";
+                if (shader.uniformLocations.ContainsKey(un_name))
+                {
+                    mat.Uniforms[i].Format = shader.uniformLocations[un_name];
+                    mat.ActiveUniforms.Add(mat.Uniforms[i]);
+                }
+            }
+
+            foreach (NbSampler s in mat.Samplers)
+            {
+                if (shader.uniformLocations.ContainsKey(s.Name))
+                {
+                    mat.ActiveSamplers.Add(s);
+                    s.State.ShaderLocation = shader.uniformLocations[s.Name].loc;
+                    s.State.ShaderBinding = s.Name;
+                }
+            }
+
         }
 
-        public GLSLShaderConfig CreateShader(GLSLShaderSource vs, GLSLShaderSource fs,
+        public List<string> GetMaterialShaderDirectives(MeshMaterial mat)
+        {
+            List<string> includes = new();
+
+            for (int i = 0; i < mat.Flags.Count; i++)
+            {
+                if (MeshMaterial.supported_flags.Contains(mat.Flags[i]))
+                    includes.Add(mat.Flags[i].ToString().Split(".")[^1]);
+            }
+
+            return includes;
+        }
+
+        public List<string> CombineShaderDirectives(List<string> directives, NbShaderMode mode)
+        {
+            List<string> includes = directives.ToList();
+
+            //General Directives are provided here
+            if ((mode & NbShaderMode.DEFFERED) == NbShaderMode.DEFFERED)
+                includes.Add("_D_DEFERRED_RENDERING");
+
+            return includes;
+        }
+
+        public int CalculateShaderHash(List<string> includes)
+        {
+            //Directive ordering
+            //1: General directives
+            //2: Material directives
+            //3: Config unique name
+
+            string hash = "";
+
+            for (int i = 0; i < includes.Count; i++)
+                hash += includes[i].ToString();
+
+            if (hash == "")
+                hash = "DEFAULT";
+
+            return hash.GetHashCode();
+        }
+
+
+        public GLSLShaderConfig CreateShaderConfig(GLSLShaderSource vs, GLSLShaderSource fs,
                                                 GLSLShaderSource gs, GLSLShaderSource tcs,
                                                 GLSLShaderSource tes, List<string> directives,
-            SHADER_TYPE type, SHADER_MODE mode)
+            NbShaderMode mode, string name)
         {
-            List<string> finaldirectives = renderSys.Renderer.CombineShaderDirectives(directives, mode);
-            GLSLShaderConfig shader_conf = new GLSLShaderConfig(type, vs, fs, gs, tcs, tes, finaldirectives, mode);
-            renderSys.Renderer.CompileShader(shader_conf);
+            List<string> finaldirectives = CombineShaderDirectives(directives, mode);
+            GLSLShaderConfig shader_conf = new GLSLShaderConfig(vs, fs, gs, tcs, tes, finaldirectives, mode);
+            shader_conf.Name = name;
             return shader_conf;
         }
 
-        public GLSLShaderConfig CompileMaterialShader(MeshMaterial mat, SHADER_MODE mode)
+        public NbShader CompileMaterialShader(MeshMaterial mat, NbShaderMode mode)
         {
-
-            List<string> matdirectives = renderSys.Renderer.GetMaterialShaderDirectives(mat);
+            List<string> matdirectives = GetMaterialShaderDirectives(mat);
             List<string> hashdirectives = new();
-            hashdirectives = renderSys.Renderer.CombineShaderDirectives(hashdirectives, mode);
+            hashdirectives = CombineShaderDirectives(hashdirectives, mode);
             hashdirectives.AddRange(matdirectives);
-
-            string vs_path = "Shaders/Simple_VS.glsl";
-            vs_path = FileUtils.FixPath(vs_path);
-            hashdirectives.Add(vs_path);
-
-            string fs_path = "Shaders/Simple_FS.glsl";
-            fs_path = FileUtils.FixPath(fs_path);
-            hashdirectives.Add(fs_path);
-
-            int hash = renderSys.Renderer.CalculateShaderHash(hashdirectives);
+            hashdirectives.Add("UberShader");
 
             //Check if a config exists
-            GLSLShaderConfig conf = GetShaderByHash(hash);
+            GLSLShaderConfig conf = GetShaderConfigByName("UberShader");
+            Callbacks.Assert(conf != null, "UberShader Config Missing");
+
+            int hash = CalculateShaderHash(hashdirectives);
+
+            NbShader shader = GetShaderByHash(hash);
 
             //Create New Shader if it doesn't exist
-            if (conf == null)
+            if (shader == null)
             {
-                GLSLShaderSource vs = GetShaderSourceByFilePath(vs_path);
-                GLSLShaderSource fs = GetShaderSourceByFilePath(fs_path);
-
-                conf = new()
-                {
-                    directives = matdirectives.ToList(),
-                    ShaderMode = mode
-                };
-
-                //Add Sources
-                conf.AddSource(NbShaderType.VertexShader, vs);
-                conf.AddSource(NbShaderType.FragmentShader, fs);
-
-                renderSys.Renderer.CompileShader(conf);
-
+                shader = new();
+                
+                renderSys.Renderer.CompileShader(ref shader, conf, mat);
                 //Attach UBO binding Points
-                renderSys.Renderer.AttachUBOToShaderBindingPoint(conf, "_COMMON_PER_FRAME", 0);
-                renderSys.Renderer.AttachSSBOToShaderBindingPoint(conf, "_COMMON_PER_MESH", 1);
-                renderSys.Renderer.AttachSSBOToShaderBindingPoint(conf, "_COMMON_PER_MESHGROUP", 2);
+                renderSys.Renderer.AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_FRAME", 0);
+                renderSys.Renderer.AttachSSBOToShaderBindingPoint(shader, "_COMMON_PER_MESH", 1);
+                renderSys.Renderer.AttachSSBOToShaderBindingPoint(shader, "_COMMON_PER_MESHGROUP", 2);
 
-                Callbacks.Assert(conf.Hash == hash, "Inconsistent Shader Hash Calculation");
-
+                //Attach Shader to material
+                AttachShaderToMaterial(mat, shader);
+                shader.Hash = hash;
             }
 
-            return conf;
+            return shader;
         }
 
         #endregion
