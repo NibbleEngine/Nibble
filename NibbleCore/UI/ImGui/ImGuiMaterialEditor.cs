@@ -47,12 +47,18 @@ namespace NbCore.UI.ImGui
 
             if (ImGuiNET.ImGui.Button("Add"))
             {
-                Console.WriteLine("Todo Create Material");
+                string name = "Material_" + (new Random()).Next(0x1000, 0xFFFF).ToString();
+                MeshMaterial mat = new();
+                mat.Name = name;
+                RenderState.engineRef.RegisterEntity(mat);
+                SetMaterial(mat);
             }
             ImGuiNET.ImGui.SameLine();
             if (ImGuiNET.ImGui.Button("Del"))
             {
-                Console.WriteLine("Todo Delete Material");
+                MeshMaterial mat = _ActiveMaterial;
+                SetMaterial(null);
+                RenderState.engineRef.DestroyEntity(mat);
             }
 
             if (_ActiveMaterial is null)

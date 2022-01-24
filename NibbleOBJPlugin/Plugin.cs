@@ -15,10 +15,10 @@ namespace NibbleOBJPlugin
 {
     public class Plugin : PluginBase
     {
-        public static string PluginName = "OBJPlugin";
-        public static string PluginVersion = "1.0.0";
-        public static string PluginDescription = "OBJ Plugin for Nibble Engine. Created by gregkwaste";
-        public static string PluginCreator = "gregkwaste";
+        private static readonly string PluginName = "OBJPlugin";
+        private static readonly string PluginVersion = "1.0.0";
+        private static readonly string PluginDescription = "OBJ Plugin for Nibble Engine. Created by gregkwaste";
+        private static readonly string PluginCreator = "gregkwaste";
 
         private OpenFileDialog openFileDialog;
 

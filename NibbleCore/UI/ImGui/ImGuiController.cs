@@ -366,7 +366,7 @@ void main()
 
                         if ((io.BackendFlags & ImGuiBackendFlags.RendererHasVtxOffset) != 0)
                         {
-                            GL.DrawElementsBaseVertex(PrimitiveType.Triangles, (int)pcmd.ElemCount, DrawElementsType.UnsignedShort, (IntPtr)(idx_offset * sizeof(ushort)), vtx_offset);
+                            GL.DrawElementsBaseVertex(PrimitiveType.Triangles, (int)pcmd.ElemCount, DrawElementsType.UnsignedShort, (IntPtr)((idx_offset + pcmd.IdxOffset) * sizeof(ushort)) , vtx_offset);
                         }
                         else
                         {
@@ -375,7 +375,6 @@ void main()
                         ImGuiUtil.CheckGLError("Draw");
                     }
 
-                    idx_offset += (int)pcmd.ElemCount;
                 }
                 vtx_offset += cmd_list.VtxBuffer.Size;
             }

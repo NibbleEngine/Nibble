@@ -60,6 +60,25 @@ namespace NbCore.Common
         EmulateActions = 256
     }
 
+    public struct CameraSettings
+    {
+        public int FOV;
+        public float Sensitivity;
+        public float Speed;
+        public float zNear;
+        public float zFar;
+
+        public CameraSettings(int fov, float sens,
+            float speed, float near, float far)
+        {
+            FOV = fov;
+            Sensitivity = sens;
+            Speed = speed;
+            zNear = near;
+            zFar = far;
+        }
+    }
+
     public struct ViewSettings
     {
         public bool ViewInfo;
@@ -173,30 +192,15 @@ namespace NbCore.Common
     }   
     
     //Get rid of that class
-    public class Settings : INotifyPropertyChanged
+    public class Settings
     {
         //Public Settings
         public RenderSettings renderSettings = new RenderSettings();
         public ViewSettings viewSettings = new ViewSettings(31);
+        public CameraSettings camSettings = new CameraSettings(90, 1.0f, 1.0f, 0.05f, 30000f);
 
         //Private Settings
-        
-        private LogVerbosityLevel _logVerbosity;
-
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        public LogVerbosityLevel LogVerbosity
-        {
-            get
-            {
-                return _logVerbosity;
-            }
-
-            set
-            {
-                _logVerbosity = value;
-            }
-        }
+        public LogVerbosityLevel LogVerbosity;
 
         //Methods
         public static Settings generateDefaultSettings()
