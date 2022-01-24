@@ -49,9 +49,6 @@ namespace NbCore
 
         private Dictionary<EngineSystemEnum, EngineSystem> _engineSystemMap = new(); //TODO fill up
 
-        //Rendering 
-        public EngineRenderingState rt_State;
-
         //Events
         public delegate void NewSceneEventHandler(SceneGraph s);
         public NewSceneEventHandler NewSceneEvent;
@@ -72,9 +69,6 @@ namespace NbCore
             reqHandler = new RequestHandler();
 
             InitSystems();
-
-            //Set Start Status
-            rt_State = EngineRenderingState.UNINITIALIZED;
 
             LoadDefaultResources();
         }
@@ -303,6 +297,15 @@ namespace NbCore
         }
 
 
+        public void DestroyEntity(MeshMaterial mat)
+        {
+            //Remove from main registry
+            if (registrySys.DeleteEntity(mat))
+            {
+                renderSys.MaterialMgr.Remove(mat);
+            }
+        }
+
         public void DestroyEntity(Entity e)
         {
             //Remove from main registry
@@ -337,7 +340,7 @@ namespace NbCore
                 renderSys.ShaderMgr.AddShader(shader);
             }
         }
-
+        
         public void RegisterEntity(Texture tex)
         {
             if (registrySys.RegisterEntity(tex))
@@ -350,6 +353,9 @@ namespace NbCore
         {
             if (registrySys.RegisterEntity(mat))
             {
+                //Add material to teh material manager
+                renderSys.MaterialMgr.AddMaterial(mat);
+                
                 foreach (NbSampler sampl in mat.Samplers)
                 {
                     Texture tex = sampl.GetTexture();
@@ -425,223 +431,7 @@ namespace NbCore
 
         #endregion
 
-        #region ResourceManager
-
-        public void InitializeResources()
-        {
-            AddDefaultShaderSources();
-            AddDefaultShaderConfigs();
-            SetupDefaultCamera();
-        }
-
-        private void SetupDefaultCamera()
-        {
-            //Add Camera
-            Camera cam = new(90, 0, true)
-            {
-                isActive = false
-            };
-
-            //Add Necessary Components to Camera
-            TransformationSystem.AddTransformComponentToEntity(cam);
-            TransformComponent tc = cam.GetComponent<TransformComponent>() as TransformComponent;
-            tc.IsControllable = true;
-            RegisterEntity(cam);
-
-            //Set global reference to cam
-            RenderState.activeCam = cam;
-
-            //Set Camera Initial State
-            TransformController tcontroller = transformSys.GetEntityTransformController(cam);
-            tcontroller.AddFutureState(new NbVector3(), NbQuaternion.FromEulerAngles(0.0f, -3.14f / 2.0f, 0.0f, "XYZ"), new NbVector3(1.0f));
-        }
-
-
-        private void AddDefaultShaderSources()
-        {
-            //Local function
-            void WalkDirectory(DirectoryInfo dir)
-            {
-                FileInfo[] files = dir.GetFiles("*.glsl");
-                DirectoryInfo[] subdirs = dir.GetDirectories();
-
-                if (subdirs.Length != 0)
-                {
-                    foreach (DirectoryInfo subdir in subdirs)
-                        WalkDirectory(subdir);
-                }
-
-                if (files.Length != 0)
-                {
-                    foreach (FileInfo file in files)
-                    {
-                        //Convert filepath to single 
-                        string filepath = Utils.FileUtils.FixPath(file.FullName);
-                        //Add source file
-                        Log($"Working On {filepath}", LogVerbosityLevel.INFO);
-                        if (GetShaderSourceByFilePath(filepath) == null)
-                        {
-                            //Construction includes registration
-                            GLSLShaderSource ss = new(filepath, true);
-                        }
-                    }
-                }
-            }
-
-            DirectoryInfo dirInfo = new("Shaders");
-            WalkDirectory(dirInfo);
-
-            //Now that all sources are loaded we can start processing all of them
-            //Step 1: Process Shaders
-            List<Entity> sourceList = GetEntityTypeList(EntityType.ShaderSource);
-            int i = 0;
-            while (i < sourceList.Count) //This way can account for new entries 
-            {
-                ((GLSLShaderSource)sourceList[i]).Process();
-                i++;
-            }
-
-        }
-
-
-        private void AddDefaultShaderConfigs()
-        {
-            //Create Debug Shader Config
-            //Debug Shader
-            GLSLShaderConfig conf;
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VSEmpty.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/Simple_FSEmpty.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/Simple_GS.glsl"), null, null,
-                                      new() { }, NbShaderMode.DEFFERED, "Debug");
-            RegisterEntity(conf);
-
-            //Test Shader
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VSEmpty.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/Test_fs.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.DEFFERED, "Test");
-            RegisterEntity(conf);
-
-            //UberShader Shader
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/Simple_FS.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.DEFFERED, "UberShader_Deferred");
-            RegisterEntity(conf);
-
-            //UberShader Lit Shader
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/Simple_FS.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.DEFFERED | NbShaderMode.LIT, "UberShader_Deferred_Lit");
-            RegisterEntity(conf);
-
-            //UNLIT
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/light_pass_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/light_pass_FS.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.DEFFERED, "LightPass_Unlit_Forward"); ;
-            RegisterEntity(conf);
-
-            //UNLIT
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/light_pass_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/light_pass_FS.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "LightPass_Unlit_Forward"); ;
-            RegisterEntity(conf);
-
-
-            //LIT
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/light_pass_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/light_pass_FS.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD | NbShaderMode.LIT, "LightPass_Lit_Forward"); ;
-            RegisterEntity(conf);
-
-
-            //GAUSSIAN HORIZONTAL BLUR SHADER
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/gaussian_horizontalBlur_FS.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "Horizontal_Gaussian_Blur");
-            RegisterEntity(conf);
-
-
-            //GAUSSIAN VERTICAL BLUR SHADER
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/gaussian_verticalBlur_FS.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.DEFAULT, "Vertical_Gaussian_Blur");
-            RegisterEntity(conf);
-
-            //Brightness Extraction Shader
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/brightness_extract_shader_fs.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "Brightness_Extract");
-            RegisterEntity(conf);
-
-            //ADDITIVE BLEND
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/additive_blend_fs.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "Additive_Blend");
-            RegisterEntity(conf);
-
-            //FXAA
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/fxaa_shader_fs.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "FXAA");
-            RegisterEntity(conf);
-
-            //TONE MAPPING + GAMMA CORRECTION
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/tone_mapping_fs.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "ToneMapping");
-            RegisterEntity(conf);
-
-            //INV TONE MAPPING
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/inv_tone_mapping_fs.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "InverseToneMapping");
-            RegisterEntity(conf);
-
-            //BWOIT SHADER
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/bwoit_shader_fs.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "BWOIT");
-            RegisterEntity(conf);
-
-            //Text Shaders
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Text_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/Text_FS.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "Text");
-            RegisterEntity(conf);
-
-            //Pass Shader
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/PassThrough_FS.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "Passthrough");
-            RegisterEntity(conf);
-
-            //Red Shader
-            conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Gbuffer_VS.glsl"),
-                                      GetShaderSourceByFilePath("Shaders/RedFill.glsl"),
-                                      null, null, null,
-                                      new() { }, NbShaderMode.FORWARD, "RedFill");
-            RegisterEntity(conf);
-
-        }
-
-
         
-        #endregion
 
 
         #region EngineQueries
@@ -736,13 +526,9 @@ namespace NbCore
 
         public void init(int width, int height)
         {
-            //Initialize Resources
-            InitializeResources();
-            
             //Initialize the render manager
             renderSys.init(width, height);
-            rt_State = EngineRenderingState.ACTIVE;
-
+            
             Log("Initialized", LogVerbosityLevel.INFO);
         }
         

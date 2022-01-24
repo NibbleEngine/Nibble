@@ -369,8 +369,8 @@ namespace NbCore.Platform.Graphics.OpenGL
             cpfu.projMatInv = RenderState.activeCam.projMatInv._Value;
             cpfu.cameraPositionExposure.Xyz = RenderState.activeCam.Position._Value;
             cpfu.cameraDirection = RenderState.activeCam.Front._Value;
-            cpfu.cameraNearPlane = RenderState.activeCam.zNear;
-            cpfu.cameraFarPlane = RenderState.activeCam.zFar;
+            cpfu.cameraNearPlane = RenderState.settings.camSettings.zNear;
+            cpfu.cameraFarPlane = RenderState.settings.camSettings.zFar;
         }
 
         public void SetCommonDataPerFrame(FBO gBuffer, NbMatrix4 rotMat, double time)
@@ -1149,7 +1149,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             }
         }
 
-        public static void reportUBOs(NbShader shader)
+        public void ShaderReport(NbShader shader)
         {
             //Print Debug Information for the UBO
             // Get named blocks info

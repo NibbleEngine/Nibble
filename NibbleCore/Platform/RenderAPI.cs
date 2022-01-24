@@ -31,8 +31,8 @@ namespace NbCore.Platform.Graphics
         public bool CompileShader(MeshMaterial mat);
         public void AttachUBOToShaderBindingPoint(NbShader shader_conf, string block_name, int binding_point);
         public void AttachSSBOToShaderBindingPoint(NbShader shader_conf, string block_name, int binding_point);
-        
-        
+        public void ShaderReport(NbShader shader);
+
         //Mesh Buffer Methods
         public void PrepareMeshBuffers();
         public void UnbindMeshBuffers();
