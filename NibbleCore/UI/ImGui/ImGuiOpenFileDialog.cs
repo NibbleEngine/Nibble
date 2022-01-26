@@ -17,13 +17,11 @@ namespace NbCore.UI.ImGui
 		public bool IsOpen = false;
 		private bool show_open_file_dialog = false;
 
-		public OpenFileDialog(string uid, string startingPath, string searchFilter = null, bool onlyAllowFolders = false)
+		public OpenFileDialog(string uid, string searchFilter = null, bool onlyAllowFolders = false)
         {
 			_uid = uid;
 			filePicker = new();
 			filePicker.SelectedFile = "";
-			filePicker.RootFolder = startingPath;
-			filePicker.CurrentFolder = startingPath;
 			filePicker.OnlyAllowFolders = onlyAllowFolders;
 			
 			if (searchFilter != null)
@@ -82,7 +80,7 @@ namespace NbCore.UI.ImGui
 			return filePicker.SelectedFile;
         }
 		
-		public bool Draw(System.Numerics.Vector2 winsize)
+		public bool Draw(Num.Vector2 winsize)
 		{
 			if (show_open_file_dialog)
 			{
@@ -118,6 +116,9 @@ namespace NbCore.UI.ImGui
 					{
 						Close();
 					}
+
+					ImGuiCore.EndPopup();
+					return false;
 				}
 
 				ImGuiCore.Text("Current Folder: " + filePicker.CurrentFolder);
@@ -144,9 +145,10 @@ namespace NbCore.UI.ImGui
 							DrawDirectoryFiles(di);
 						}
 					}
-				}
-				ImGuiCore.EndChildFrame();
 
+					ImGuiCore.EndChildFrame();
+				}
+				
 
 				if (ImGuiCore.Button("Cancel"))
 				{
@@ -178,6 +180,11 @@ namespace NbCore.UI.ImGui
 			return false;
 
 		}
+
+		public void SetDialogPath(string path)
+        {
+			filePicker.CurrentFolder = path;
+        }
 
 		bool TryGetFileInfo(string fileName, out FileInfo realFile)
 		{

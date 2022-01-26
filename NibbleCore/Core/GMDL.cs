@@ -187,6 +187,7 @@ namespace NbCore
             //Warning: For now this method assumes 
             return new NbMeshMetaData()
             {
+                BoneRemapIndices = new int[1],
                 BatchCount = ibuffer.Length / indicesLength,
                 FirstSkinMat = 0,
                 LastSkinMat = 0,

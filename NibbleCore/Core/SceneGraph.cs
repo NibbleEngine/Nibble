@@ -53,6 +53,8 @@ namespace NbCore
             if (n.Parent != null)
                 n.Parent.RemoveChild(n);
 
+            Nodes.Remove(n);
+
             if (n.HasComponent<MeshComponent>())
                 MeshNodes.Remove(n);
 

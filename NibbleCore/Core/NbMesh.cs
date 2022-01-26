@@ -16,21 +16,23 @@ namespace NbCore
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    public struct MeshInstance
+    public unsafe struct MeshInstance
     {
         //4 x Vec4 Uniforms
         [FieldOffset(0)]
         public NbMatrix4 uniforms;
-        //Matrices
         [FieldOffset(64)]
+        public fixed int boneIndices[64];
+        //Matrices
+        [FieldOffset(320)]
         public NbMatrix4 worldMat;
-        [FieldOffset(128)]
+        [FieldOffset(384)]
         public NbMatrix4 normalMat;
-        [FieldOffset(192)]
+        [FieldOffset(448)]
         public NbMatrix4 worldMatInv;
-        [FieldOffset(256)]
+        [FieldOffset(512)]
         public NbVector3 color;
-        [FieldOffset(268)]
+        [FieldOffset(524)]
         public float isSelected;
     };
 

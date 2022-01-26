@@ -95,8 +95,8 @@ namespace NbCore.Platform.Graphics.OpenGL
             SetInstanceWorldMat(mesh, mc.InstanceID, actualWorldMat);
             SetInstanceWorldMatInv(mesh, mc.InstanceID, actualWorldMatInv);
             SetInstanceNormalMat(mesh, mc.InstanceID, NbMatrix4.Transpose(actualWorldMatInv));
-            //Save firstskin mat for skinned instances
             SetInstanceUniform4(mesh, mc.InstanceID, 0, new NbVector4(mesh.MetaData.FirstSkinMat, 0.0f, 0.0f, 0.0f));
+            SetInstanceBoneRemap(mesh, mc.InstanceID, mesh.MetaData.BoneRemapIndices);
             mesh.InstanceCount++;
         }
         
@@ -187,6 +187,15 @@ namespace NbCore.Platform.Graphics.OpenGL
         public static void SetInstanceNormalMat(NbMesh mesh, int instance_id, NbMatrix4 mat)
         {
             mesh.InstanceDataBuffer[instance_id].normalMat = mat;
+        }
+
+        public static void SetInstanceBoneRemap(NbMesh mesh, int instance_id, int[] boneRemap)
+        {
+            unsafe
+            {
+                for (int i= 0; i < boneRemap.Length; i++)
+                    mesh.InstanceDataBuffer[instance_id].boneIndices[i] = boneRemap[i];
+            }
         }
 
 

@@ -191,6 +191,9 @@ namespace NbCore.UI.ImGui
 
                         //Items
                         List<Entity> materialList = _manager.EngineRef.GetEntityTypeList(EntityType.Material);
+                        materialList = materialList.FindAll(x => ((MeshMaterial)x).Shader != null);
+                        materialList = materialList.FindAll(x => ((MeshMaterial)x).Shader.ProgramID != -1);
+
                         string[] items = new string[materialList.Count];
                         for (int i = 0; i < items.Length; i++)
                         {

@@ -131,7 +131,41 @@ namespace NbCore
                 material_flags[i] = 0.0f;
         }
 
-        
+        public void UpdateSampler(NbSampler sampler)
+        {
+            if (Shader.uniformLocations.ContainsKey(sampler.State.ShaderBinding))
+            {
+                sampler.State.ShaderLocation = Shader.uniformLocations[sampler.State.ShaderBinding].loc;
+                if (!ActiveSamplers.Contains(sampler))
+                    ActiveSamplers.Add(sampler);
+            } else
+            {
+                sampler.State.ShaderBinding = "";
+                sampler.State.ShaderLocation = -1;
+                if (ActiveSamplers.Contains(sampler))
+                    ActiveSamplers.Remove(sampler);
+            }
+        }
+
+        public void UpdateUniform(NbUniform uf) 
+        { 
+            if (Shader.uniformLocations.ContainsKey(uf.State.ShaderBinding))
+            {
+                NbUniformFormat fmt = Shader.uniformLocations[uf.State.ShaderBinding];
+                uf.State.ShaderBinding = fmt.name;
+                uf.State.ShaderLocation = fmt.loc;
+                if (!ActiveUniforms.Contains(uf))
+                    ActiveUniforms.Add(uf);
+            }
+            else
+            {
+                //TODO: Clear uniform state; (maybe not required?)
+                if (ActiveUniforms.Contains(uf))
+                    ActiveUniforms.Remove(uf);
+            }
+        }
+
+
         //Wrapper to support uberflags
         public bool has_flag(MaterialFlagEnum flag)
         {
@@ -157,6 +191,23 @@ namespace NbCore
             
             //Remix textures
             return newmat;
+        }
+
+        public void SetShader(NbShader shader)
+        {
+            Shader = shader;
+            shader.IsUpdated += OnShaderUpdate;
+        }
+
+        public void OnShaderUpdate()
+        {
+            //Re-check samplers
+            foreach (NbSampler s in Samplers)
+                UpdateSampler(s);
+
+            //Re-check uniforms
+            foreach (NbUniform uf in Uniforms)
+                UpdateUniform(uf);
         }
 
 

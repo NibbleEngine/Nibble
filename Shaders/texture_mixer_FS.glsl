@@ -15,7 +15,7 @@ uniform float recolor_flag;
 uniform float use_alpha_textures;
 uniform float baseLayerIndex;
 
-in vec2 uv0;
+in vec4 uv;
 in vec3 color;
 
 #include "common.glsl"
@@ -74,9 +74,9 @@ vec4 MixTextures(){
 
 	//Fetch Diffuse Colors
 	for (int i=0; i<8; i++){
-		lLayerXVec4[i] = texture(mainTex[i], uv0);
+		lLayerXVec4[i] = texture(mainTex[i], uv.xy);
 		if (use_alpha_textures > 0.0) {
-			lfAlpha[i] = texture(alphaTex[i], uv0).a;
+			lfAlpha[i] = texture(alphaTex[i], uv.xy).a;
 		}
 		 else {
 			lfAlpha[i] = lLayerXVec4[i].a;	
@@ -87,8 +87,6 @@ vec4 MixTextures(){
 	//Set Base layer
  	//gBaseAlphaLayerXVec4[baseLayerIndex] = 1.0f;
 
-
-	
 	//Set the lowest alpha layer to fully opaque
 	gBaseAlphaLayerXVec4[int(baseLayerIndex)] = 1.0;
 	for (int i=0; i<8; i++) {
@@ -100,39 +98,26 @@ vec4 MixTextures(){
 		lfAlpha[i] *= lbaseLayersUsed[i];
 	}
 
-	//RECOLOURING HAPPENS HERE
-	// vec4 iColour[8];
-	// for (int i=0; i<8; i++){
-	// 	//iColour[i] = mix( lLayerXVec4[i] * lRecolours[i], lRecolours[i], lfAlpha[i] );
-	// 	iColour[i] = mix(lRecolours[i], lLayerXVec4[i] * lRecolours[i], lfAlpha[i]);	
-	// }
-	
 	if (recolor_flag > 0.0) {
 		// Original Color Mix
 		for (int i=0; i<8; i++){
 			//Maintain original color
-			//lLayerXVec4[i].rgb = lLayerXVec4[i].rgb;
 			
 			//Recoloring Modes
 			lLayerXVec4[i].rgb = Recolour(lLayerXVec4[i].rgb, lAverageColors[i].rgb, lRecolours[i].rgb, lRecolours[i].a);
-			
-			//my way
-			//lLayerXVec4[i].rgb = lRecolours[i].rgb * toGrayScale(lLayerXVec4[i].rgb);
-			//lLayerXVec4[i].rgb = lRecolours[i].rgb;
 		}
 	}
 	
 
 	//Blend Layers together
 	//Blend the opposite way
-	vec4 lFinalDiffColor = vec4(0.0, 0.0, 0.0, 0.0);
-	for (int i=7; i>=0; i--) {
+	vec4 lFinalDiffColor = vec4(1.0, 1.0, 1.0, 0.0);
+	for (int i=0; i<8; i++) {
 		lFinalDiffColor = mix(lFinalDiffColor, lLayerXVec4[i], lfAlpha[i]);
 	}
 
 	//Output Color
-	return lLayerXVec4[0];
-	//return lFinalDiffColor;
+	return lFinalDiffColor;
 }
 
 

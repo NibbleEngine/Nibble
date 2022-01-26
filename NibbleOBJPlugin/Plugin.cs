@@ -34,7 +34,8 @@ namespace NibbleOBJPlugin
         public override void OnLoad()
         {
             var assemblypath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            openFileDialog = new("obj-open-file", assemblypath, ".obj", false); //Initialize OpenFileDialog
+            openFileDialog = new("obj-open-file", ".obj", false); //Initialize OpenFileDialog
+            openFileDialog.SetDialogPath(assemblypath);
             Log("Loaded OBJ Plugin", LogVerbosityLevel.INFO);
         }
 

@@ -10,6 +10,20 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace NbCore.Systems
 {
+    public struct RenderFrameStats
+    {
+        public float Frametime;
+        public int RenderedVerts;
+        public int RenderedIndices;
+
+        public void Clear()
+        {
+            Frametime = 0;
+            RenderedVerts = 0;
+            RenderedIndices = 0;
+        }
+    }
+
     public class RenderingSystem : EngineSystem, IDisposable
     {
         //Constants
@@ -25,9 +39,6 @@ namespace NbCore.Systems
         readonly List<NbMeshGroup> MeshGroups = new();
         //This is used during group population
         readonly Dictionary<int, NbMeshGroup> OpenMeshGroups = new(); 
-
-        //Counters
-        public int MeshGroupCount = 1; //Account for the default group
 
         public IGraphicsApi Renderer;
 
@@ -51,10 +62,11 @@ namespace NbCore.Systems
         private FBO gBuffer;
         private FBO renderBuffer;
         
-        
-
         //Octree Structure
         private Octree octree;
+
+        //RenderFrame Stats
+        public RenderFrameStats frameStats;
 
         public RenderingSystem() : base(EngineSystemEnum.RENDERING_SYSTEM)
         {
@@ -402,10 +414,12 @@ namespace NbCore.Systems
         public void UpdateMeshGroupData(NbMeshGroup mg)
         {
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, mg.GroupTBO1);
+            
             //Upload skinning data
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, mg.GroupTBO1Data.Length * 4, mg.GroupTBO1Data);
             //Upload remap data
-            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero + mg.GroupTBO1Data.Length * 4, mg.boneRemapIndices.Length * 4, mg.boneRemapIndices);
+            //TODO: BRING BACK
+            //GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero + mg.GroupTBO1Data.Length * 4, mg.boneRemapIndices.Length * 4, mg.boneRemapIndices);
         }
 
         #endregion
@@ -604,13 +618,15 @@ namespace NbCore.Systems
                 Renderer.SetProgram(mat.Shader.ProgramID);
                 
                 //Render static meshes
-                foreach (NbMesh m in locatorMeshList)
+                foreach (NbMesh mesh in locatorMeshList)
                 {
-                    if (m.InstanceCount == 0)
+                    if (mesh.InstanceCount == 0)
                         continue;
 
                     //Renderer.RenderLocator(m, mat);
-                    Renderer.RenderMesh(m, mat);
+                    Renderer.RenderMesh(mesh, mat);
+                    frameStats.RenderedVerts += mesh.InstanceCount * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics);
+                    frameStats.RenderedIndices += mesh.InstanceCount * mesh.MetaData.BatchCount;
                 }
             }
 
@@ -652,6 +668,8 @@ namespace NbCore.Systems
                     MeshMaterial mat = MaterialMgr.Get(mesh.Material.GetID());
                     Renderer.SetProgram(mat.Shader.ProgramID);
                     Renderer.RenderMesh(mesh, mat);
+                    frameStats.RenderedVerts += mesh.InstanceCount * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics);
+                    frameStats.RenderedIndices += mesh.InstanceCount * mesh.MetaData.BatchCount;
                 }
             }
             
@@ -813,23 +831,23 @@ namespace NbCore.Systems
             
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
             GL.BlitFramebuffer(0, 0, gBuffer.Size.X, gBuffer.Size.Y, 0, 0, 
-                                     renderBuffer.Size.X/4, renderBuffer.Size.Y / 4, 
+                                     renderBuffer.Size.X/8, renderBuffer.Size.Y / 8, 
                 ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Linear);
 
             //B: Normals
             GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, gBuffer.fbo);
             GL.ReadBuffer(ReadBufferMode.ColorAttachment1);
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
-            GL.BlitFramebuffer(0, 0, gBuffer.Size.X, gBuffer.Size.Y, renderBuffer.Size.X / 4, 0,
-                                     2 * renderBuffer.Size.X / 4, renderBuffer.Size.Y / 4,
+            GL.BlitFramebuffer(0, 0, gBuffer.Size.X, gBuffer.Size.Y, renderBuffer.Size.X / 8, 0,
+                                     2 * renderBuffer.Size.X / 8, renderBuffer.Size.Y / 8,
                 ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Linear);
 
             //B: Params
             GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, gBuffer.fbo);
             GL.ReadBuffer(ReadBufferMode.ColorAttachment2);
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
-            GL.BlitFramebuffer(0, 0, gBuffer.Size.X, gBuffer.Size.Y, 2 * renderBuffer.Size.X / 4, 0,
-                                     3 * renderBuffer.Size.X / 4, renderBuffer.Size.Y / 4,
+            GL.BlitFramebuffer(0, 0, gBuffer.Size.X, gBuffer.Size.Y, 2 * renderBuffer.Size.X / 8, 0,
+                                     3 * renderBuffer.Size.X / 8, renderBuffer.Size.Y / 8,
                 ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Linear);
 
         }
@@ -842,22 +860,13 @@ namespace NbCore.Systems
         //Rendering Mechanism
         public void testrender(double dt)
         {
+            frameStats.Clear();
+            //Previous frame time but makes sense
+            frameStats.Frametime = (float) dt; 
             gfTime += dt; //Update render time
-
+            
             //Log("Rendering Frame");
             
-            
-            //TEST RENDERING
-
-            //GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
-            //GL.DrawBuffer(DrawBufferMode.ColorAttachment0); //Draw to the light color channel only
-
-            //GL.ClearColor(1.0f, 0.0f, 1.0f, 1.0f);
-            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-            
-            //END:TEST
-            
-
             //Prepare UBOs
             prepareCommonPerFrameUBO();
 
@@ -869,15 +878,13 @@ namespace NbCore.Systems
 
             Renderer.SyncGPUCommands();
 
-
             //POST-PROCESSING
             post_process();
 
             //Pass result to Render FBO
             renderFinalPass();
             
-            return;
-
+            
             //Pass Result to Render FBO
             //Render to render_fbo
             //GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, render_fbo.fbo);
@@ -1298,6 +1305,8 @@ namespace NbCore.Systems
                     Renderer.CompileShader(ref shader, shader.RefConfig);
                 else
                     Renderer.CompileShader(ref shader, shader.RefConfig, shader.RefMaterial);
+
+                shader.IsUpdated?.Invoke();
             }
             
             //Render Scene

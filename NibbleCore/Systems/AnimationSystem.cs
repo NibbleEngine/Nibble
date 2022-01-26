@@ -44,14 +44,25 @@ namespace NbCore.Systems
             {
                 foreach (Animation a in group.Animations)
                 {
+                    SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
+
                     //if (a.IsPlaying)
                     {
                         //Update data to the meshgroups
                         foreach (var node in a.animData.Nodes)
                         {
-                            //Get Node
-                            SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
-                            SceneGraphNode joint = sc.GetNodeByName(node);
+                            SceneGraphNode joint;
+                            if (node.EndsWith("JNT"))
+                            {
+                                string temp_name = node;
+                                if (node.Contains("End"))
+                                    temp_name = temp_name.Replace("JNT", "");
+                                joint = sc.JointNodes[temp_name];
+                            }
+                            else
+                            {
+                                joint = sc.GetNodeByName(node);
+                            }
                             
                             if (joint == null)
                                 continue;
@@ -94,7 +105,7 @@ namespace NbCore.Systems
 
                             //Get Node
                             SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
-                            SceneGraphNode joint = sc.GetNodeByName(node);
+                            SceneGraphNode joint = sc.JointNodes[node];
                             if (joint != null && joint.Type == SceneNodeType.JOINT)
                             {
                                 TransformController tc = EngineRef.transformSys.GetEntityTransformController(joint);

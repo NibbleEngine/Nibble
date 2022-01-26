@@ -297,25 +297,7 @@ namespace NbCore
         }
 
 
-        public void DestroyEntity(MeshMaterial mat)
-        {
-            //Remove from main registry
-            if (registrySys.DeleteEntity(mat))
-            {
-                renderSys.MaterialMgr.Remove(mat);
-            }
-        }
-
-        public void DestroyEntity(Entity e)
-        {
-            //Remove from main registry
-            if (registrySys.DeleteEntity(e))
-            {
-                //Register to transformation System
-                if (e.HasComponent<TransformComponent>())
-                    transformSys.DeleteEntity(e);
-            }
-        }
+        
 
         public void ImportScene(SceneGraphNode scene)
         {
@@ -413,6 +395,29 @@ namespace NbCore
             foreach (SceneGraphNode child in node.Children)
                 RegisterSceneGraphNode(child);
         }
+
+        public void DestroyEntity(MeshMaterial mat)
+        {
+            //Remove from main registry
+            if (registrySys.DeleteEntity(mat))
+            {
+                renderSys.MaterialMgr.Remove(mat);
+            }
+        }
+
+        public void DestroyEntity(Entity e)
+        {
+            //Remove from main registry
+            if (registrySys.DeleteEntity(e))
+            {
+                //Register to transformation System
+                if (e.HasComponent<TransformComponent>())
+                    transformSys.DeleteEntity(e);
+            }
+
+            e.Dispose();
+        }
+
 
         public void RequestEntityTransformUpdate(SceneGraphNode node)
         {
@@ -555,9 +560,6 @@ namespace NbCore
 
             //Clear Resources
             //ModelProcGen.procDecisions.Clear();
-
-            //Clear RenderStats
-            RenderStats.ClearStats();
 
             //Stop animation if on
             bool animToggleStatus = RenderState.settings.renderSettings.ToggleAnimations;
@@ -887,7 +889,8 @@ namespace NbCore
 
         public void AttachShaderToMaterial(MeshMaterial mat, NbShader shader)
         {
-            mat.Shader = shader;
+            mat.SetShader(shader);
+            
             //Set Shader References
             shader.RefMaterial = mat;
             shader.RefConfig = mat.ShaderConfig;
@@ -900,24 +903,15 @@ namespace NbCore
             //Load Active Uniforms to Material
             for (int i = 0; i < mat.Uniforms.Count; i++)
             {
-                string un_name = $"mpCustomPerMaterial.uniforms[{mat.Uniforms[i].ID}]";
-                if (shader.uniformLocations.ContainsKey(un_name))
-                {
-                    mat.Uniforms[i].Format = shader.uniformLocations[un_name];
-                    mat.ActiveUniforms.Add(mat.Uniforms[i]);
-                }
+                mat.UpdateUniform(mat.Uniforms[i]);
             }
 
             foreach (NbSampler s in mat.Samplers)
             {
-                if (shader.uniformLocations.ContainsKey(s.Name))
-                {
-                    mat.ActiveSamplers.Add(s);
-                    s.State.ShaderLocation = shader.uniformLocations[s.Name].loc;
-                    s.State.ShaderBinding = s.Name;
-                }
+                //I don't like htis method being here. I think I need to relocate it
+                mat.UpdateSampler(s); 
             }
-
+    
         }
 
         public List<string> GetMaterialShaderDirectives(MeshMaterial mat)
@@ -1029,8 +1023,6 @@ namespace NbCore
             //Remove from SceneGraph
             sceneMgmtSys.ActiveSceneGraph.RemoveNode(node);
             
-            DestroyEntity(node);
-            
             //Mesh Node Disposal
             if (node.HasComponent<MeshComponent>())
             {
@@ -1060,7 +1052,8 @@ namespace NbCore
                 //TODO: Remove animation data objects as well
             }
 
-            node.Dispose();
+            DestroyEntity(node);
+            
         }
 
         public void RecursiveSceneGraphNodeDispose(SceneGraphNode node)

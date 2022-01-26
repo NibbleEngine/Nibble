@@ -230,16 +230,6 @@ namespace NbCore.UI.ImGui
                                 }
                             }
 
-                            //Sampler ID
-                            ImGuiNET.ImGui.TableNextRow();
-                            ImGuiNET.ImGui.TableSetColumnIndex(0);
-                            ImGuiNET.ImGui.Text("Sampler ID");
-                            ImGuiNET.ImGui.TableSetColumnIndex(1);
-                            ImGuiNET.ImGui.SetNextItemWidth(-1);
-                            ImGuiNET.ImGui.Combo("##SamplerID" + i, ref current_sampler.State.SamplerID,
-                                new string[] { "0", "1", "2", "3", "4", "5", "6", "7" }, 8);
-
-
                             //Texture Selector
                             //Get All Textures
                             List<Texture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
@@ -258,33 +248,47 @@ namespace NbCore.UI.ImGui
                                 current_sampler.SetTexture(textureList[currentTexImageID]);
                             }
 
-                            //Sampler Shader Binding
-                            List<string> compatibleShaderBindings = new();
-                            foreach (var pair in _ActiveMaterial.Shader.uniformLocations)
+                            if (samplerTex != null)
                             {
-                                if (pair.Value.type == NbUniformType.Sampler2D)
-                                    compatibleShaderBindings.Add(pair.Key);
+                                //Sampler ID
+                                ImGuiNET.ImGui.TableNextRow();
+                                ImGuiNET.ImGui.TableSetColumnIndex(0);
+                                ImGuiNET.ImGui.Text("Sampler ID");
+                                ImGuiNET.ImGui.TableSetColumnIndex(1);
+                                ImGuiNET.ImGui.SetNextItemWidth(-1);
+                                ImGuiNET.ImGui.Combo("##SamplerID" + i, ref current_sampler.State.SamplerID,
+                                    new string[] { "0", "1", "2", "3", "4", "5", "6", "7" }, 8);
                             }
-
-                            int currentShaderBinding = compatibleShaderBindings.IndexOf(current_sampler.State.ShaderBinding);
-                            ImGuiNET.ImGui.TableNextRow();
-                            ImGuiNET.ImGui.TableSetColumnIndex(0);
-                            ImGuiNET.ImGui.Text("Shader Binding");
-                            ImGuiNET.ImGui.TableSetColumnIndex(1);
-                            ImGuiNET.ImGui.SetNextItemWidth(-1);
-                            if (ImGuiNET.ImGui.Combo("##SamplerBinding", ref currentShaderBinding, compatibleShaderBindings.ToArray(),
-                                compatibleShaderBindings.Count))
+                                
+                            if (_ActiveMaterial.Shader != null && samplerTex != null)
                             {
-                                Console.WriteLine("Change sampler shader binding");
-                                current_sampler.State.ShaderBinding = compatibleShaderBindings[currentShaderBinding];
-                                current_sampler.State.ShaderLocation = _ActiveMaterial.Shader.uniformLocations[compatibleShaderBindings[currentShaderBinding]].loc;
+                                //Sampler Shader Binding
+                                List<string> compatibleShaderBindings = new();
+                                foreach (var pair in _ActiveMaterial.Shader.uniformLocations)
+                                {
+                                    if (pair.Value.type == NbUniformType.Sampler2D)
+                                        compatibleShaderBindings.Add(pair.Key);
+                                }
+
+                                int currentShaderBinding = compatibleShaderBindings.IndexOf(current_sampler.State.ShaderBinding);
+                                ImGuiNET.ImGui.TableNextRow();
+                                ImGuiNET.ImGui.TableSetColumnIndex(0);
+                                ImGuiNET.ImGui.Text("Shader Binding");
+                                ImGuiNET.ImGui.TableSetColumnIndex(1);
+                                ImGuiNET.ImGui.SetNextItemWidth(-1);
+                                if (ImGuiNET.ImGui.Combo("##SamplerBinding", ref currentShaderBinding, compatibleShaderBindings.ToArray(),
+                                    compatibleShaderBindings.Count))
+                                {
+
+                                    Console.WriteLine("Change sampler shader binding");
+                                    current_sampler.State.ShaderBinding = compatibleShaderBindings[currentShaderBinding];
+                                    _ActiveMaterial.UpdateSampler(current_sampler);
+                                }
                             }
 
 
                             ImGuiNET.ImGui.EndTable();
                         }
-
-                        
 
                         ImGuiNET.ImGui.TreePop();
                     }
@@ -311,7 +315,7 @@ namespace NbCore.UI.ImGui
                 {
                     NbUniform current_uf = _ActiveMaterial.Uniforms[i];
 
-                    if (ImGuiNET.ImGui.TreeNode("Uniform " + i))
+                    if (ImGuiNET.ImGui.TreeNode(current_uf.Name + "##" + i))
                     {
                         if (ImGuiNET.ImGui.BeginTable("##SamplerTable" + i, 2))
                         {
@@ -325,7 +329,12 @@ namespace NbCore.UI.ImGui
                             ImGuiNET.ImGui.Text("Name");
                             ImGuiNET.ImGui.TableSetColumnIndex(1);
                             ImGuiNET.ImGui.SetNextItemWidth(-1);
-                            ImGuiNET.ImGui.InputText("UniformName" + i, ref current_uf.Name, 30);
+                            string temp_name = current_uf.Name;
+                            if (ImGuiNET.ImGui.InputText("UniformName" + i, ref temp_name, 30,
+                                ImGuiInputTextFlags.EnterReturnsTrue))
+                            {
+                                current_uf.Name = temp_name;
+                            };
                             
                             //Format
                             ImGuiNET.ImGui.TableNextRow();
@@ -335,12 +344,12 @@ namespace NbCore.UI.ImGui
                             ImGuiNET.ImGui.SetNextItemWidth(-1);
 
                             List<string> formats = Enum.GetNames(typeof(NbUniformType)).ToList();
-                            int currentFormat = formats.IndexOf(current_uf.Format.type.ToString());
+                            int currentFormat = formats.IndexOf(current_uf.State.Type.ToString());
                             if (ImGuiNET.ImGui.Combo("##UniformFormat" + i, ref currentFormat, formats.ToArray(), formats.Count))
                             {
-                                current_uf.Format.type = (NbUniformType)currentFormat;
-                                current_uf.Format.name = "";
-                                current_uf.Format.loc = -1;
+                                current_uf.State.Type = (NbUniformType)currentFormat;
+                                current_uf.State.ShaderBinding = "";
+                                current_uf.State.ShaderLocation = -1;
                                 _ActiveMaterial.ActiveUniforms.Remove(current_uf);
                             }
 
@@ -352,7 +361,7 @@ namespace NbCore.UI.ImGui
                             ImGuiNET.ImGui.SetNextItemWidth(-1);
 
                             NbCore.Math.NbVector4 vec = new(current_uf.Values);
-                            switch (current_uf.Format.type)
+                            switch (current_uf.State.Type)
                             {
                                 case NbUniformType.Float:
                                     {
@@ -403,11 +412,11 @@ namespace NbCore.UI.ImGui
                             List<string> compatibleShaderBindings = new();
                             foreach (var pair in _ActiveMaterial.Shader.uniformLocations)
                             {
-                                if (pair.Value.type == current_uf.Format.type)
+                                if (pair.Value.type == current_uf.State.Type)
                                     compatibleShaderBindings.Add(pair.Key);
                             }
 
-                            int currentShaderBinding = compatibleShaderBindings.IndexOf(current_uf.Format.name);
+                            int currentShaderBinding = compatibleShaderBindings.IndexOf(current_uf.State.ShaderBinding);
                             ImGuiNET.ImGui.TableNextRow();
                             ImGuiNET.ImGui.TableSetColumnIndex(0);
                             ImGuiNET.ImGui.Text("Shader Binding");
@@ -416,8 +425,8 @@ namespace NbCore.UI.ImGui
                             if (ImGuiNET.ImGui.Combo("##SamplerBinding", ref currentShaderBinding, compatibleShaderBindings.ToArray(),
                                 compatibleShaderBindings.Count))
                             {
-                                current_uf.Format.name = compatibleShaderBindings[currentShaderBinding];
-                                current_uf.Format.loc = _ActiveMaterial.Shader.uniformLocations[compatibleShaderBindings[currentShaderBinding]].loc;
+                                current_uf.State.ShaderBinding = compatibleShaderBindings[currentShaderBinding];
+                                current_uf.State.ShaderLocation = _ActiveMaterial.Shader.uniformLocations[compatibleShaderBindings[currentShaderBinding]].loc;
                                 if (!_ActiveMaterial.ActiveUniforms.Contains(current_uf))
                                     _ActiveMaterial.ActiveUniforms.Add(current_uf);
                             }

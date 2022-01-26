@@ -22,7 +22,11 @@ namespace NbCore
         //Override Properties
         public NbSampler()
         {
-            
+            //Init State
+            State.SamplerID = -1;
+            State.ShaderBinding = "";
+            State.ShaderLocation = -1;
+            State.TextureID = -1;
         }
 
         public NbSampler Clone()
