@@ -21,10 +21,12 @@ namespace NbCore
         //Shader Compilation log
         public string CompilationLog = "";
 
+        public delegate void OnShaderUpdateEventHandler();
+        public OnShaderUpdateEventHandler IsUpdated;
 
         public NbShader() : base(EntityType.Shader)
         {
-
+            
         }
 
         public void ClearCurrentState()

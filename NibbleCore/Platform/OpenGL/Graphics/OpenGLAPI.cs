@@ -136,6 +136,9 @@ namespace NbCore.Platform.Graphics.OpenGL
 
             GL.DebugMessageInsert(DebugSourceExternal.DebugSourceApplication, DebugType.DebugTypeMarker, 0, DebugSeverity.DebugSeverityNotification, -1, "Debug output enabled");
 #endif
+            //Default Enables
+            EnableBlend();
+            
             //Setup per Frame UBOs
             setupFrameUBO();
 
@@ -817,22 +820,22 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         private void UploadUniform(NbUniform uf)
         {
-            switch (uf.Format.type)
+            switch (uf.State.Type)
             {
                 case (NbUniformType.Float):
-                    GL.Uniform1(uf.Format.loc, uf.Values._Value.X);
+                    GL.Uniform1(uf.State.ShaderLocation, uf.Values._Value.X);
                     break;
                 case (NbUniformType.Vector2):
-                    GL.Uniform2(uf.Format.loc, uf.Values._Value.Xy);
+                    GL.Uniform2(uf.State.ShaderLocation, uf.Values._Value.Xy);
                     break;
                 case (NbUniformType.Vector3):
-                    GL.Uniform3(uf.Format.loc, uf.Values._Value.Xyz);
+                    GL.Uniform3(uf.State.ShaderLocation, uf.Values._Value.Xyz);
                     break;
                 case (NbUniformType.Vector4):
-                    GL.Uniform4(uf.Format.loc, uf.Values._Value);
+                    GL.Uniform4(uf.State.ShaderLocation, uf.Values._Value);
                     break;
                 default:
-                    Console.WriteLine($"Unsupported Uniform {uf.Format.type}");
+                    Console.WriteLine($"Unsupported Uniform {uf.State.Type}");
                     break;
             }
         }
@@ -1046,7 +1049,7 @@ namespace NbCore.Platform.Graphics.OpenGL
                 GL.AttachShader(shader.ProgramID, pair.Value);
             
             GL.LinkProgram(shader.ProgramID);
-
+            
             //Check Linking
             GL.GetProgramInfoLog(shader.ProgramID, out string info);
             shader.CompilationLog += info + "\n";

@@ -62,6 +62,7 @@ namespace NbCore
             Stream fs;
             byte[] image_data;
             int data_length;
+            
 
             fs = new FileStream(path, FileMode.Open);
 
@@ -82,7 +83,7 @@ namespace NbCore
 
             fs.Read(image_data, 0, data_length);
 
-            
+            Path = path;
             textureInit(image_data, System.IO.Path.GetExtension(path).ToUpper());
         }
 
@@ -148,8 +149,7 @@ namespace NbCore
             DDSImage ddsImage;
             
             ddsImage = new DDSImage(imageData);
-            RenderStats.texturesNum += 1; //Accumulate settings
-
+            
             Console.WriteLine("Sampler Name Path " + Path + " Width {0} Height {1}", 
                 ddsImage.header.dwWidth, ddsImage.header.dwHeight);
             Width = ddsImage.header.dwWidth;

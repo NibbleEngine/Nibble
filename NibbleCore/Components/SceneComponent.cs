@@ -16,7 +16,7 @@ namespace NbCore
         public readonly List<SceneGraphNode> Nodes = new();
         public readonly List<SceneGraphNode> MeshNodes = new();
         public readonly List<SceneGraphNode> LightNodes = new();
-        public readonly List<SceneGraphNode> JointNodes = new();
+        public readonly Dictionary<string, SceneGraphNode> JointNodes = new();
         
         public SceneComponent()
         {
@@ -87,8 +87,7 @@ namespace NbCore
                 LightNodes.Add(n);
 
             if (n.HasComponent<JointComponent>())
-                JointNodes.Add(n);
-
+                JointNodes[n.Name] = n;
         }
 
         protected override void Dispose(bool disposing)

@@ -134,9 +134,9 @@ namespace NbCore.Systems
 
         public void ClearSceneGraph(SceneGraph graph)
         {
-            foreach (SceneGraphNode node in graph.Nodes)
-                EngineRef.DisposeSceneGraphNode(node);
-            
+            var nodes = graph.Nodes.ToArray();
+            for (int i = 0; i< nodes.Length; i++) 
+                EngineRef.DisposeSceneGraphNode(nodes[i]);
             graph.Clear();
         }
 

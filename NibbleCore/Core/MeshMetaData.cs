@@ -25,6 +25,7 @@ namespace NbCore
         public int LODLevel;
         public int BoundHullStart;
         public int BoundHullEnd;
+
         
         
         //LOD Properties
@@ -33,9 +34,7 @@ namespace NbCore
 
         //Skinning Data
         //public bool skinned = false;
-        public int BoneRemapIndicesCount;
-        //public int[] BoneRemapIndices;
-
+        public int[] BoneRemapIndices;
 
         public NbMeshMetaData()
         {

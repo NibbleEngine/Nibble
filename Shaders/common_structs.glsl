@@ -10,6 +10,7 @@ struct Light //locations:6
 struct MeshInstance
 {
     mat4 uniforms;
+    int boneIndicesRemap[64];
     mat4 worldMat;
     mat4 normalMat;
     mat4 worldMatInv;

@@ -75,6 +75,13 @@ namespace NbCore
         public NbTextureTarget Target;
     }
 
+    public struct NbUniformState
+    {
+        public string ShaderBinding;
+        public int ShaderLocation;
+        public NbUniformType Type;
+    }
+
     public struct NbShaderState
     {
         //splitting per 2s,3s,4s is so fucking stupid. TODO: FIX it

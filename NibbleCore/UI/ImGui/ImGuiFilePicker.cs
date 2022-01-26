@@ -13,7 +13,6 @@ namespace NbCore.UI.ImGui
 		static readonly Dictionary<object, FilePicker> _filePickers = new Dictionary<object, FilePicker>();
 		static readonly Num.Vector4 YELLOW_TEXT_COLOR = new Num.Vector4(1.0f, 1.0f, 0.0f, 1.0f);
 
-		public string RootFolder;
 		public string CurrentFolder;
 		public string SelectedFile;
 		public List<string> AllowedExtensions;
@@ -38,7 +37,6 @@ namespace NbCore.UI.ImGui
 			if (!_filePickers.TryGetValue(o, out FilePicker fp))
 			{
 				fp = new FilePicker();
-				fp.RootFolder = startingPath;
 				fp.CurrentFolder = startingPath;
 				fp.OnlyAllowFolders = onlyAllowFolders;
 

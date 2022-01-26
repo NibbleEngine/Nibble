@@ -12,12 +12,11 @@ namespace NbCore.UI.ImGui
     {
         private GLSLShaderConfig ActiveShader = null;
         private int selectedShaderId = -1;
-        private int selectedVSSource = -1;
-        private int selectedFSSource = -1;
         private int selectedGSSource = -1;
         private int selectedTCSSource = -1;
         private int selectedTESSource = -1;
         private bool showSourceEditor = false;
+        private bool Updated = false;
         private ImGuiShaderSourceEditor sourceEditor = new();
 
         public ImGuiShaderEditor()
@@ -65,9 +64,15 @@ namespace NbCore.UI.ImGui
             if (ActiveShader is null)
                 return;
 
-            bool Updated = false;
             if (ImGuiCore.BeginTable("##ShaderTable", 3))
             {
+                ImGuiCore.TableNextRow();
+                ImGuiCore.TableSetColumnIndex(0);
+                ImGuiCore.Text("Config Name");
+                ImGuiCore.TableSetColumnIndex(1);
+                ImGuiCore.PushItemWidth(-1);
+                ImGuiCore.InputText("##ShaderName", ref ActiveShader.Name, 30);
+
                 //Cache ShaderSources
                 List<Entity> shaderSourceList = RenderState.engineRef.GetEntityTypeList(EntityType.ShaderSource);
                 string[] sourceItems = new string[shaderSourceList.Count];
@@ -81,13 +86,18 @@ namespace NbCore.UI.ImGui
                 if (ActiveShader.Sources.ContainsKey(NbShaderSourceType.VertexShader))
                     OriginalVSSourceIndex = shaderSourceList.IndexOf(ActiveShader.Sources[NbShaderSourceType.VertexShader]);
 
-
                 ImGuiCore.TableNextRow();
                 ImGuiCore.TableSetColumnIndex(0);
                 ImGuiCore.Text("Vertex Shader");
                 ImGuiCore.TableSetColumnIndex(1);
                 ImGuiCore.PushItemWidth(-1);
-                ImGuiCore.Combo("##VSCombo", ref selectedVSSource, sourceItems, sourceItems.Length);
+                if (ImGuiCore.Combo("##VSCombo", ref OriginalVSSourceIndex, sourceItems, sourceItems.Length))
+                {
+                    ActiveShader.AddSource(NbShaderSourceType.VertexShader,
+                        (GLSLShaderSource)shaderSourceList[OriginalVSSourceIndex]);
+                    Updated = true;
+                }
+                    
                 ImGuiCore.PopItemWidth();
                 ImGuiCore.TableSetColumnIndex(2);
                 if (ImGuiCore.Button("Edit##1"))
@@ -99,13 +109,19 @@ namespace NbCore.UI.ImGui
                 int OriginalFSSourceIndex = -1;
                 if (ActiveShader.Sources.ContainsKey(NbShaderSourceType.FragmentShader))
                     OriginalFSSourceIndex = shaderSourceList.IndexOf(ActiveShader.Sources[NbShaderSourceType.FragmentShader]);
-
+                
+                
                 ImGuiCore.TableNextRow();
                 ImGuiCore.TableSetColumnIndex(0);
                 ImGuiCore.Text("Fragment Shader");
                 ImGuiCore.TableSetColumnIndex(1);
                 ImGuiCore.PushItemWidth(-1);
-                ImGuiCore.Combo("##FSCombo", ref selectedFSSource, sourceItems, sourceItems.Length);
+                if(ImGuiCore.Combo("##FSCombo", ref OriginalFSSourceIndex, sourceItems, sourceItems.Length))
+                {
+                    ActiveShader.AddSource(NbShaderSourceType.FragmentShader, 
+                        (GLSLShaderSource)shaderSourceList[OriginalFSSourceIndex]);
+                    Updated = true;
+                }
                 ImGuiCore.PopItemWidth();
                 ImGuiCore.TableSetColumnIndex(2);
                 if (ImGuiCore.Button("Edit##2"))
@@ -114,17 +130,12 @@ namespace NbCore.UI.ImGui
                     showSourceEditor = true;
                 }
 
-                if (OriginalFSSourceIndex != selectedFSSource ||
-                    OriginalVSSourceIndex != selectedVSSource)
-                {
-                    Updated = true;
-                }
-
                 ImGuiCore.EndTable();
             }
 
             if (Updated)
             {
+                
                 if (ImGuiCore.Button("Recompile Shader"))
                 {
                     Console.WriteLine("Shader recompilation not supported yet");
@@ -149,10 +160,6 @@ namespace NbCore.UI.ImGui
             List<Entity> shaderList = RenderState.engineRef.GetEntityTypeList(EntityType.ShaderConfig);
             List<Entity> shaderSourceList = RenderState.engineRef.GetEntityTypeList(EntityType.ShaderSource);
             selectedShaderId = shaderList.IndexOf(conf);
-            if (conf.Sources.ContainsKey(NbShaderSourceType.VertexShader))
-                selectedVSSource = shaderSourceList.IndexOf(conf.Sources[NbShaderSourceType.VertexShader]);
-            if (conf.Sources.ContainsKey(NbShaderSourceType.FragmentShader))
-                selectedFSSource = shaderSourceList.IndexOf(conf.Sources[NbShaderSourceType.FragmentShader]);
         }
     }
     

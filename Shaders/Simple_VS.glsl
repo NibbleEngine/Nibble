@@ -35,7 +35,6 @@ layout (std430, binding=1) buffer _COMMON_PER_MESH
 layout (std430, binding=2) buffer _COMMON_PER_MESHGROUP
 {
     mat4 boneMatricesTBO[256];
-    int BoneIndicesRemap[128];
 };
 
 //Outputs
@@ -72,11 +71,10 @@ void main()
         index.w = int(blendIndices.w);
 
         //Remapped indices
-        int offset = int(instanceData[gl_InstanceID].uniforms[0].x); //First element of the first uniform contains the firstskinmat
-        index.x = BoneIndicesRemap[offset + index.x];
-        index.y = BoneIndicesRemap[offset + index.y];
-        index.z = BoneIndicesRemap[offset + index.z];
-        index.w = BoneIndicesRemap[offset + index.w];
+        index.x = instanceData[gl_InstanceID].boneIndicesRemap[index.x];
+        index.y = instanceData[gl_InstanceID].boneIndicesRemap[index.y];
+        index.z = instanceData[gl_InstanceID].boneIndicesRemap[index.z];
+        index.w = instanceData[gl_InstanceID].boneIndicesRemap[index.w];
 
         //Assemble matrices from 
         lWorldMat =  blendWeights.x * boneMatricesTBO[index.x];
