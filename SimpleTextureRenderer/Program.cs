@@ -115,7 +115,6 @@ namespace SimpleTextureRenderer
             RenderState.engineRef = _engine;
             _engine.init(ClientSize.X, ClientSize.Y);
             
-
             //Initialize Application Layers
             _renderLayer = new(_engine); //render layer
             _UILayer = new(this, _engine);
