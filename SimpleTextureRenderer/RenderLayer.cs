@@ -27,6 +27,27 @@ namespace SimpleTextureRenderer
 
         public RenderLayer(Engine engine) : base(engine)
         {
+            //Default render quad
+            NbCore.Primitives.Quad q = new NbCore.Primitives.Quad();
+
+            NbMesh mesh = new()
+            {
+                Hash = (ulong)"default_renderquad".GetHashCode(),
+                Data = q.geom.GetData(),
+                MetaData = q.geom.GetMetaData(),
+            };
+            EngineRef.renderSys.Renderer.AddMesh(mesh);
+            EngineRef.RegisterEntity(mesh);
+            EngineRef.renderSys.GeometryMgr.AddPrimitiveMesh(mesh);
+            q.Dispose();
+
+            //Add Shader Sources to engine
+            GLSLShaderSource ss = new("Shaders/texture_shader_vs.glsl", true);
+            ss.Process();
+
+            ss = new("Shaders/texture_shader_fs.glsl", true);
+            ss.Process();
+            
             //Compile Necessary Shaders
             GLSLShaderConfig conf = EngineRef.CreateShaderConfig(
                 EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_vs.glsl"),

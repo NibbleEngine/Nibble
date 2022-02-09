@@ -215,8 +215,9 @@ namespace NbCore
             GL.BindTexture(gl_target, texID);
             //When manually loading mipmaps, levels should be loaded first
             GL.TexParameter(gl_target, TextureParameterName.TextureBaseLevel, 0);
-            //GL.TexParameter(target, TextureParameterName.TextureMaxLevel, mm_count - 1);
-
+            GL.TexParameter(gl_target, TextureParameterName.TextureMaxLevel, mm_count - 1);
+            GL.TextureParameter(texID, TextureParameterName.TextureMaxLod, mm_count - 1);
+            
             int offset = 0;
             for (int i = 0; i < mm_count; i++)
             {
@@ -239,8 +240,11 @@ namespace NbCore
             //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            if (MipMapCount > 1)
+                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.NearestMipmapLinear);
+            else
+                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             //Console.WriteLine(GL.GetError());
 
             //Use anisotropic filtering
@@ -309,6 +313,8 @@ namespace NbCore
             {
                 //Free other resources here
                 if (texID != -1) GL.DeleteTexture(texID);
+
+                base.Dispose(disposing);
             }
 
             //Free unmanaged resources

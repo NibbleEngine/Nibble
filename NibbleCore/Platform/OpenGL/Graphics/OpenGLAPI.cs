@@ -478,7 +478,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             //Floats
             foreach (KeyValuePair<string, float> pair in state.Floats)
             {
-                GL.Uniform1(shader.uniformLocations[pair.Key].loc, pair.Value);
+                GL.Uniform1(shader.uniformLocations[pair.Key].loc, (float) pair.Value);
             }
 
             //Vec2s
@@ -1135,6 +1135,9 @@ namespace NbCore.Platform.Graphics.OpenGL
                             break;
                         case ActiveUniformType.Sampler2D:
                             fmt.type = NbUniformType.Sampler2D;
+                            break;
+                        case ActiveUniformType.Sampler2DArray:
+                            fmt.type = NbUniformType.Sampler2DArray;
                             break;
                         default:
                             throw new Exception("Unidentified uniform format. Inform dev");
