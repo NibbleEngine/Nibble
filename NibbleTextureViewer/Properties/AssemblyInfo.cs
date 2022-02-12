@@ -34,6 +34,6 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 
 // Use the Version.cs to update the plugin version
-[assembly: AssemblyVersion(SimpleTextureRenderer.Version.VERSION_STRING)]
-[assembly: AssemblyFileVersion(SimpleTextureRenderer.Version.VERSION_STRING)]
+[assembly: AssemblyVersion(NibbleTextureViewer.Version.VERSION_STRING)]
+[assembly: AssemblyFileVersion(NibbleTextureViewer.Version.VERSION_STRING)]
 

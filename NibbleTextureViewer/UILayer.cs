@@ -4,7 +4,7 @@ using ImGuiNET;
 using OpenTK.Windowing.Common;
 using System;
 
-namespace SimpleTextureRenderer
+namespace NibbleTextureViewer
 {
     public delegate void CloseWindowEventHandler(object sender, string data);
     
@@ -19,9 +19,13 @@ namespace SimpleTextureRenderer
         private AppImGuiManager _ImGuiManager;
         private TextureRenderer _winRef;
         public Texture _texture; //Also keep texture Reference here
-        private bool ConsumesInput = false;
         private int depth_id = 0;
         private int mipmap_id = 0;
+        private bool c_red = true;
+        private bool c_green = true;
+        private bool c_blue = true;
+        private bool c_alpha = true;
+        private string currentDirectory = "";
 
         //Imgui stuff
         private bool IsOpenFileDialogOpen = false;
@@ -42,16 +46,6 @@ namespace SimpleTextureRenderer
             if (_texture != null)
                 _texture.Dispose();
             _texture = tex;
-        }
-
-        public void SetTextureDepth(int id)
-        {
-            depth_id = id;
-        }
-
-        public void SetMipmap(int id)
-        {
-            mipmap_id = id;
         }
 
         public override void OnRenderFrameUpdate(ref Queue<object> data, double dt)
@@ -154,11 +148,31 @@ namespace SimpleTextureRenderer
                     ImGui.NextColumn();
                     ImGui.Combo("##1", ref mipmap_id, opts, _texture.MipMapCount, 12);
 
+                    //Channel Flags
+                    ImGui.NextColumn();
+                    ImGui.Text("Channels:");
+
+                    ImGui.NextColumn();
+                    ImGui.Checkbox("R##c_red", ref c_red);
+                    ImGui.SameLine();
+                    ImGui.Checkbox("G##c_green", ref c_green);
+                    ImGui.SameLine();
+                    ImGui.Checkbox("B##c_blue", ref c_blue);
+                    ImGui.SameLine();
+                    ImGui.Checkbox("A##c_alpha", ref c_alpha);
+
+
+                    NbCore.Math.NbVector4 channelToggle = new NbCore.Math.NbVector4();
+                    channelToggle.X = c_red ? 1.0f : 0.0f;
+                    channelToggle.Y = c_green ? 1.0f : 0.0f;
+                    channelToggle.Z = c_blue ? 1.0f : 0.0f;
+                    channelToggle.W = c_alpha ? 1.0f : 0.0f;
+
                     ImGui.Columns(1);
 
                     var io = ImGui.GetIO();
                     ConsumeInputEvent?.Invoke(this, io.WantCaptureMouse);
-                    RenderTextureDataChanged?.Invoke(this, new() { depth_id = depth_id, mipmap_id = mipmap_id });
+                    RenderTextureDataChanged?.Invoke(this, new() { depth_id = depth_id, mipmap_id = mipmap_id, channelToggle = channelToggle });
                     ImGui.End();
                 }
 
@@ -201,13 +215,12 @@ namespace SimpleTextureRenderer
 
             //Process Modals
             bool oldOpenDialogStatus = IsOpenFileDialogOpen;
-            string filePath = "";
-            _ImGuiManager.ProcessModals(_winRef, ref filePath, ref IsOpenFileDialogOpen);
+            _ImGuiManager.ProcessModals(_winRef, ref currentDirectory, ref IsOpenFileDialogOpen);
 
             if (oldOpenDialogStatus == true && IsOpenFileDialogOpen == false)
             {
                 //Trigger OpenFileEvent
-                OpenFileEvent?.Invoke(this, filePath);
+                OpenFileEvent?.Invoke(this, currentDirectory);
                 oldOpenDialogStatus = false;
                 
             }

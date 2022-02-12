@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SimpleTextureRenderer
+namespace NibbleTextureViewer
 {
     /// <summary>Version Utilities</summary>
     public static class Version
@@ -18,7 +18,7 @@ namespace SimpleTextureRenderer
         /// <summary>Shorthand for AssemblyVersion.Revision</summary>
         public static int Prerelease => AssemblyVersion.Revision;
 
-        /// <summary>The libMBIN assembly version.</summary>
+        /// <summary>The NibbleTextureViewer assembly version.</summary>
         public static System.Version AssemblyVersion => new System.Version(VERSION_STRING);
 
         /// <summary>
