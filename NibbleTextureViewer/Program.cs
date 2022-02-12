@@ -12,7 +12,7 @@ using OpenTK.Windowing.Common;
 using ImGuiNET;
 using System.Collections.Generic;
 
-namespace SimpleTextureRenderer
+namespace NibbleTextureViewer
 {
     public class TextureRenderer : OpenTK.Windowing.Desktop.GameWindow
     {
@@ -34,7 +34,7 @@ namespace SimpleTextureRenderer
         public TextureRenderer(): base(OpenTK.Windowing.Desktop.GameWindowSettings.Default,
             OpenTK.Windowing.Desktop.NativeWindowSettings.Default)
         {
-            Title = "DDS Texture Viewer v1.0";
+            Title = "Nibble Texture Viewer " + Version.GetString();
             VSync = VSyncMode.On;
             RenderFrequency = 30;
             

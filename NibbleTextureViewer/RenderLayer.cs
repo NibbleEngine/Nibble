@@ -5,12 +5,13 @@ using NbCore;
 using NbCore.Platform.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
 
-namespace SimpleTextureRenderer
+namespace NibbleTextureViewer
 {
     public struct RenderTextureData
     {
         public int depth_id;
         public int mipmap_id;
+        public NbCore.Math.NbVector4 channelToggle;
     }
 
     public class RenderLayer : ApplicationLayer
@@ -19,8 +20,7 @@ namespace SimpleTextureRenderer
         private NbCore.Math.NbVector2i _size;
         private NbCore.Math.NbVector2 offset;
         private float _scale = 1.0f;
-        private int depth_id = 0;
-        private int mipmap_id = 0;
+        private RenderTextureData _renderData;
         private NbShader _shaderArray;
         private NbShader _shaderSingle;
         private bool _captureInput = true;
@@ -71,8 +71,7 @@ namespace SimpleTextureRenderer
 
         public void OnRenderTextureDataChanged(object sender, RenderTextureData data)
         {
-            depth_id = data.depth_id;
-            mipmap_id = data.mipmap_id;
+            _renderData = data;
         }
 
         protected override void Dispose(bool disposing)
@@ -110,16 +109,6 @@ namespace SimpleTextureRenderer
         public void OnResize(ResizeEventArgs args)
         {
             _size = new NbCore.Math.NbVector2i(args.Width, args.Height);
-        }
-
-        public void SetTextureDepth(int id)
-        {
-            depth_id = id;
-        }
-
-        public void SetMipmap(int id)
-        {
-            mipmap_id = id;
         }
 
         public override void OnFrameUpdate(ref Queue<object> data, double dt)
@@ -179,11 +168,12 @@ namespace SimpleTextureRenderer
                     TextureID = _texture.texID
                 });
 
-                _shader.CurrentState.AddUniform("texture_depth", (float) depth_id);
-                _shader.CurrentState.AddUniform("mipmap", (float) mipmap_id);
+                _shader.CurrentState.AddUniform("texture_depth", (float)_renderData.depth_id);
+                _shader.CurrentState.AddUniform("mipmap", (float)_renderData.mipmap_id);
                 _shader.CurrentState.AddUniform("aspect_ratio", (float) _texture.Height / _texture.Width);
                 _shader.CurrentState.AddUniform("scale", _scale);
                 _shader.CurrentState.AddUniform("offset", offset);
+                _shader.CurrentState.AddUniform("channelToggle", _renderData.channelToggle);
 
                 renderer.EnableShaderProgram(_shader);
 

@@ -14,15 +14,19 @@ uniform sampler2D InTex;
 #endif
 uniform float texture_depth;
 uniform float mipmap;
+uniform vec4 channelToggle;
 
 in vec2 uv0;
 out vec4 fragColour; 
 
 void main()
 {
+    vec4 color = vec4(0.0);
     #ifdef _F55_MULTITEXTURE
-        fragColour = textureLod(InTex, vec3(uv0, texture_depth), mipmap);
+        color = textureLod(InTex, vec3(uv0, texture_depth), mipmap);
     #else
-        fragColour = textureLod(InTex, uv0, mipmap);
+        color = textureLod(InTex, uv0, mipmap);
     #endif
+
+    fragColour = channelToggle * color;
 }

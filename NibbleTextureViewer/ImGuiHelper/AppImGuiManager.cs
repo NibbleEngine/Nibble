@@ -4,7 +4,7 @@ using ImGuiNET;
 using NbCore;
 using NbCore.UI.ImGui;
 
-namespace SimpleTextureRenderer
+namespace NibbleTextureViewer
 {
     public class AppImGuiManager : ImGuiManager
     {
