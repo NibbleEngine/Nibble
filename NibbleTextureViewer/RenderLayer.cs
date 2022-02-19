@@ -16,7 +16,7 @@ namespace NibbleTextureViewer
 
     public class RenderLayer : ApplicationLayer
     {
-        private Texture _texture;
+        private NbTexture _texture;
         private NbCore.Math.NbVector2i _size;
         private NbCore.Math.NbVector2 offset;
         private float _scale = 1.0f;
@@ -94,10 +94,8 @@ namespace NibbleTextureViewer
             //Console.WriteLine($"CAPTURE INPUT IN RENDER LAYER: {_captureInput}");
         }
 
-        public void SetTexture(Texture tex)
+        public void SetTexture(NbTexture tex)
         {
-            if (_texture != null)
-                _texture.Dispose();
             _texture = tex;
         }
 
@@ -139,7 +137,7 @@ namespace NibbleTextureViewer
             if (_texture != null)
             {
                 NbShader _shader;
-                if (_texture.target == NbTextureTarget.Texture2D)
+                if (_texture.Data.target == NbTextureTarget.Texture2D)
                     _shader = _shaderSingle;
                 else
                     _shader = _shaderArray;
@@ -150,7 +148,7 @@ namespace NibbleTextureViewer
                     //Process Input:
                     if (mouseState.IsButtonDown(NbMouseButton.LEFT))
                     {
-                        offset.X += mouseState.PositionDelta.X / (_size.X * ((float)_texture.Width / _texture.Height));
+                        offset.X += mouseState.PositionDelta.X / (_size.X * ((float)_texture.Data.Width / _texture.Data.Height));
                         offset.Y += mouseState.PositionDelta.Y / _size.Y;
                     }
 
@@ -164,13 +162,13 @@ namespace NibbleTextureViewer
 
                 _shader.CurrentState.AddSampler("InTex", new()
                 {
-                    Target = _texture.target,
+                    Target = _texture.Data.target,
                     TextureID = _texture.texID
                 });
 
                 _shader.CurrentState.AddUniform("texture_depth", (float)_renderData.depth_id);
                 _shader.CurrentState.AddUniform("mipmap", (float)_renderData.mipmap_id);
-                _shader.CurrentState.AddUniform("aspect_ratio", (float) _texture.Height / _texture.Width);
+                _shader.CurrentState.AddUniform("aspect_ratio", (float) _texture.Data.Height / _texture.Data.Width);
                 _shader.CurrentState.AddUniform("scale", _scale);
                 _shader.CurrentState.AddUniform("offset", offset);
                 _shader.CurrentState.AddUniform("channelToggle", _renderData.channelToggle);

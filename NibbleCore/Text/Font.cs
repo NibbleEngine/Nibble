@@ -122,8 +122,8 @@ namespace NbCore.Text
             }
 
             //Generate texture
-            Texture tex = new Texture();
-            tex.target = NbTextureTarget.Texture2DArray;
+            NbTexture tex = new NbTexture();
+            tex.Data.target = NbTextureTarget.Texture2DArray;
             tex.texID = genGLTexture(img_data);
 
             //Generate Sampler
@@ -167,8 +167,8 @@ namespace NbCore.Text
             }
 
             //Generate texture
-            Texture tex = new Texture();
-            tex.target = NbTextureTarget.Texture2DArray;
+            NbTexture tex = new NbTexture();
+            tex.Data.target = NbTextureTarget.Texture2DArray;
             tex.texID = genGLTexture(img_data);
 
             //Generate Sampler

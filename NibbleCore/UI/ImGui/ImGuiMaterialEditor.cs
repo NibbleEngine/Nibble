@@ -214,15 +214,15 @@ namespace NbCore.UI.ImGui
                             ImGuiNET.ImGui.TableSetColumnIndex(0);
                             ImGuiNET.ImGui.Text("Preview");
                             ImGuiNET.ImGui.TableSetColumnIndex(1);
-                            Texture samplerTex = current_sampler.GetTexture();
-                            if (samplerTex is not null && samplerTex.target != NbTextureTarget.Texture2DArray)
+                            NbTexture samplerTex = current_sampler.GetTexture();
+                            if (samplerTex is not null && samplerTex.Data.target != NbTextureTarget.Texture2DArray)
                             {
                                 ImGuiNET.ImGui.Image((IntPtr)samplerTex.texID, new Vector2(64, 64));
 
                                 if (ImGuiNET.ImGui.IsItemHovered())
                                 {
                                     ImGuiNET.ImGui.BeginTooltip();
-                                    if (samplerTex.target != NbTextureTarget.Texture2DArray)
+                                    if (samplerTex.Data.target != NbTextureTarget.Texture2DArray)
                                         ImGuiNET.ImGui.Image((IntPtr)samplerTex.texID, new Vector2(512, 512));
                                     ImGuiNET.ImGui.Text(current_sampler.Name);
                                     ImGuiNET.ImGui.Text(current_sampler.Map);
@@ -232,7 +232,7 @@ namespace NbCore.UI.ImGui
 
                             //Texture Selector
                             //Get All Textures
-                            List<Texture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
+                            List<NbTexture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
                             string[] textureItems = new string[textureList.Count];
                             for (int j = 0; j < textureItems.Length; j++)
                                 textureItems[j] = textureList[j].Path == "" ? "Texture_" + j : textureList[j].Path;

@@ -5,9 +5,9 @@ using NbCore.Managers;
 
 namespace NbCore
 {
-    public class TextureManager : EntityManager<Texture>
+    public class TextureManager : EntityManager<NbTexture>
     {
-        Dictionary<string, Texture> TextureMap = new();
+        Dictionary<string, NbTexture> TextureMap = new();
         
         public TextureManager()
         {
@@ -22,7 +22,7 @@ namespace NbCore
 
         public void DeleteTextures()
         {
-            foreach (Texture p in Entities)
+            foreach (NbTexture p in Entities)
                 p.Dispose();
         }
 
@@ -31,7 +31,7 @@ namespace NbCore
             return TextureMap.ContainsKey(name);
         }
 
-        public bool AddTexture(Texture t)
+        public bool AddTexture(NbTexture t)
         {
             if (!HasTexture(t.Path))
             {
@@ -43,7 +43,7 @@ namespace NbCore
             
         }
 
-        public Texture Get(string name)
+        public NbTexture Get(string name)
         {
             return TextureMap[name];
         }

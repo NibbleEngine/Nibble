@@ -79,7 +79,7 @@ namespace NbCore.UI.ImGui
             TextureEditor?.Draw();
         }
 
-        public virtual void SetActiveTexture(Texture t)
+        public virtual void SetActiveTexture(NbTexture t)
         {
             TextureEditor.SetTexture(t);
         }

@@ -9,7 +9,7 @@ namespace NbCore.UI.ImGui
 {
     public class ImGuiTextureEditor
     {
-        private Texture _ActiveTexture = null;
+        private NbTexture _ActiveTexture = null;
         private int _SelectedId = -1;
         private string texture_path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
         private OpenFileDialog openFileDialog;
@@ -23,7 +23,7 @@ namespace NbCore.UI.ImGui
         public void Draw()
         {
             //Items
-            List<Texture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
+            List<NbTexture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
             string[] items = new string[textureList.Count];
             for (int i = 0; i < items.Length; i++)
                 items[i] = textureList[i].Path == "" ? "Texture_" + i : textureList[i].Path; 
@@ -43,7 +43,7 @@ namespace NbCore.UI.ImGui
             if (openFileDialog.Draw(new() { X = 640, Y = 480 }))
             {
                 texture_path = System.IO.Path.GetDirectoryName(openFileDialog.GetSelectedFile());
-                Texture tex = new(openFileDialog.GetSelectedFile(), true);
+                NbTexture tex = new(openFileDialog.GetSelectedFile());
                 RenderState.engineRef.RegisterEntity(tex);
                 SetTexture(tex);
             }
@@ -60,10 +60,10 @@ namespace NbCore.UI.ImGui
             }
 
 
-            if (_ActiveTexture.texID != -1 && _ActiveTexture.target != NbTextureTarget.Texture2DArray)
+            if (_ActiveTexture.texID != -1 && _ActiveTexture.Data.target != NbTextureTarget.Texture2DArray)
             {
                 ImGuiCore.SetNextItemWidth(-1);
-                float image_aspect = (float)_ActiveTexture.Width / _ActiveTexture.Height;
+                float image_aspect = (float)_ActiveTexture.Data.Width / _ActiveTexture.Data.Height;
                 var avail_size = ImGuiCore.GetContentRegionAvail();
                 avail_size.X = System.Math.Min(avail_size.X, avail_size.Y);
                 avail_size.Y = System.Math.Min(avail_size.X, avail_size.Y);
@@ -94,14 +94,14 @@ namespace NbCore.UI.ImGui
                 ImGuiCore.Text("Width");
                 ImGuiCore.TableSetColumnIndex(1);
                 ImGuiCore.SetNextItemWidth(-1);
-                ImGuiCore.Text(_ActiveTexture.Width.ToString());
+                ImGuiCore.Text(_ActiveTexture.Data.Width.ToString());
 
                 ImGuiCore.TableNextRow();
                 ImGuiCore.TableSetColumnIndex(0);
                 ImGuiCore.Text("Height");
                 ImGuiCore.TableSetColumnIndex(1);
                 ImGuiCore.SetNextItemWidth(-1);
-                ImGuiCore.Text(_ActiveTexture.Height.ToString());
+                ImGuiCore.Text(_ActiveTexture.Data.Height.ToString());
 
                 ImGuiCore.EndTable();
 
@@ -109,10 +109,10 @@ namespace NbCore.UI.ImGui
 
         }
 
-        public void SetTexture(Texture tex)
+        public void SetTexture(NbTexture tex)
         {
             _ActiveTexture = tex;
-            List<Texture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
+            List<NbTexture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
             _SelectedId = textureList.IndexOf(tex);
         }
     }

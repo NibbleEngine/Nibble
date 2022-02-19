@@ -20,6 +20,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Components\TransformData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\DDSImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ApplicationLayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\NbImage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\PNGImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SceneGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ShaderCommons.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Events\EventData.cs" />
@@ -95,7 +97,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLLightBufferManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\Entity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLInstancedMesh.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\Texture.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\NbTexture.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLMeshBufferManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Managers\TextureManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Text\Font.cs" />

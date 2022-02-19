@@ -1,27 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace NbCore {
 
-	public abstract class ImageData
-    {
-		public byte[] Data;
-    }
-
-
-	public class DDSImage : ImageData {
+	public class DDSImage : NbTextureData
+	{
 		private const int DDPF_ALPHAPIXELS = 0x00000001;
 		private const int DDPF_ALPHA = 0x00000002;
 		private const int DDPF_FOURCC = 0x00000004;
 		private const int DDPF_RGB = 0x00000040;
 		private const int DDPF_YUV = 0x00000200;
 		private const int DDPF_LUMINANCE = 0x00020000;
-		private const int DDSD_MIPMAPCOUNT    =       0x00020000;
+		private const int DDSD_MIPMAPCOUNT = 0x00020000;
 		private const int FOURCC_DXT1 = 0x31545844;
 		private const int FOURCC_DX10 = 0x30315844;
 		private const int FOURCC_DXT5 = 0x35545844;
@@ -35,62 +28,118 @@ namespace NbCore {
 
 	    public DDSImage(byte[] rawdata) {
             using MemoryStream ms = new MemoryStream(rawdata); using (BinaryReader r = new BinaryReader(ms))
+			{
+				dwMagic = r.ReadInt32();
+				if (dwMagic != 0x20534444)
+				{
+					throw new Exception("This is not a DDS!");
+				}
+
+				header = ReadHeader(r);
+
+				if (((header.ddspf.dwFlags & DDPF_FOURCC) != 0) && (header.ddspf.dwFourCC == FOURCC_DX10 /*DX10*/))
+				{
+					header10 = Read_DDS_HEADER10(r);
+					//Override PitchOrLinearSize in case of BC7 textures
+					switch (header10.dxgiFormat)
+					{
+						case DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM:
+							header.dwPitchOrLinearSize = header.dwWidth * header.dwHeight;
+							break;
+						default:
+							break;
+					}
+				}
+
+				int mipMapCount = 1;
+				if ((header.dwFlags & DDSD_MIPMAPCOUNT) != 0)
+					mipMapCount = header.dwMipMapCount;
+
+				Data = r.ReadBytes((int)(r.BaseStream.Length - r.BaseStream.Position)); //Read everything
+
+			}
+
+			//Save Attributes
+			Width = header.dwWidth;
+			Height = header.dwHeight;
+			MipMapCount = header.dwMipMapCount;
+			Depth = header.dwDepth;
+			blockSize = 16;
+
+			if (Depth > 1)
+				target = NbTextureTarget.Texture2DArray;
+			else
+				target = NbTextureTarget.Texture2D;
+
+			bool compressed = false;
+			switch (header.ddspf.dwFourCC)
+			{
+				//DXT1
+				case (0x31545844):
+					pif = NbTextureInternalFormat.DXT1;
+					compressed = true;
+					blockSize = 8;
+					break;
+				//DXT5
+				case (0x35545844):
+					pif = NbTextureInternalFormat.DXT5;
+					compressed = true;
+					break;
+				//ATI2A2XY
+				case (0x32495441):
+					pif = NbTextureInternalFormat.RGTC2; //Normal maps are probably never srgb
+					compressed = true;
+					break;
+				//DXT10 HEADER
+				case (0x30315844):
+					{
+						switch (header10.dxgiFormat)
+						{
+							case (DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM):
+								pif = NbTextureInternalFormat.BC7;
+								compressed = true;
+								break;
+							default:
+								throw new ApplicationException("Unimplemented DX10 Texture Pixel format");
+						}
+						break;
+					}
+				default:
+					throw new ApplicationException($"Unimplemented Pixel format {header.ddspf.dwFourCC}");
+			}
+
+			//Recalculate PitchOrlinearSize
+			if (compressed)
             {
-                dwMagic = r.ReadInt32();
-                if (dwMagic != 0x20534444)
-                {
-                    throw new Exception("This is not a DDS!");
-                }
+				header.dwPitchOrLinearSize = Width * Height * blockSize / 16;
+			} else if (header.dwPitchOrLinearSize == 0)
+			{
+				Debug.Fail("0 size texture data, check what is going on");
+			}
+			
+		}
 
-                Read_DDS_HEADER(header, r);
+		public override MemoryStream Export()
+		{
+			MemoryStream ms = new MemoryStream();
 
-                if (((header.ddspf.dwFlags & DDPF_FOURCC) != 0) && (header.ddspf.dwFourCC == FOURCC_DX10 /*DX10*/))
-                {
-                    header10 = new DDS_HEADER_DXT10();
-                    Read_DDS_HEADER10(header10, r);
-                    //Override PitchOrLinearSize in case of BC7 textures
-                    switch (header10.dxgiFormat)
-                    {
-                        case DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM:
-                            header.dwPitchOrLinearSize = header.dwWidth * header.dwHeight;
-                            break;
-                        default:
-                            break;
-                    }
-                }
+			using (BinaryWriter r = new BinaryWriter(ms, Encoding.Default, true))
+            {
+				r.Write(dwMagic);
+				WriteHeader(r);
 
-                int mipMapCount = 1;
-                if ((header.dwFlags & DDSD_MIPMAPCOUNT) != 0)
-                    mipMapCount = header.dwMipMapCount;
+				if (((header.ddspf.dwFlags & DDPF_FOURCC) != 0) && (header.ddspf.dwFourCC == FOURCC_DX10 /*DX10*/))
+				{
+					WriteHeader10(r);
+				}
 
-                if (header.dwPitchOrLinearSize == 0)
-                    Debug.Fail("0 size texture data, check what is going on");
+				r.Write(Data);
+			}
 
-                Data = r.ReadBytes((int)(r.BaseStream.Length - r.BaseStream.Position)); //Read everything
-                                                                                         //I don't need decoded images
-                                                                                         //images = new Bitmap[mipMapCount];
-                                                                                         //for (int i = 0; i < mipMapCount; ++i) {
-                                                                                         //	// Version .2 changes <AmaroK86>
-                                                                                         //	int w = (int)(header.dwWidth / Math.Pow(2, i));
-                                                                                         //	int h = (int)(header.dwHeight / Math.Pow(2, i));
-				//	if ((header.ddspf.dwFlags & DDPF_RGB) != 0) {
-                //		images[i]= readLinearImage(bdata, w, h);
-                //	} else if ((header.ddspf.dwFlags & DDPF_FOURCC) != 0) {
-                //		images[i] = readBlockImage(bdata, w, h);
-                //	} else if ((header.ddspf.dwFlags & DDPF_FOURCC) == 0 &&
-                //				header.ddspf.dwRGBBitCount == 0x10 &&
-                //				header.ddspf.dwRBitMask == 0xFF &&
-                //				header.ddspf.dwGBitMask == 0xFF00 &&
-                //				header.ddspf.dwBBitMask == 0x00 &&
-                //				header.ddspf.dwABitMask == 0x00) {
-                //		images[i] = UncompressV8U8(bdata, w, h);// V8U8 normalmap format
-                //	}
-                //}
+			return ms;
+		}
 
-            }
-        }
-
-  //      private Bitmap readBlockImage(byte[] data, int w, int h) {
+		//private Bitmap readBlockImage(byte[] data, int w, int h) {
 		//	switch (header.ddspf.dwFourCC) {
 		//		case FOURCC_DXT1:
 		//			return UncompressDXT1(data, w, h);
@@ -312,36 +361,156 @@ namespace NbCore {
 		//	return res;
 		//}
 
-		private void Read_DDS_HEADER(DDS_HEADER h, BinaryReader r) {
-			h.dwSize = r.ReadInt32();
-			h.dwFlags = r.ReadInt32();
-			h.dwHeight = r.ReadInt32();
-			h.dwWidth = r.ReadInt32();
-			h.dwPitchOrLinearSize = r.ReadInt32();
-			h.dwDepth = System.Math.Max(r.ReadInt32(), 1);
-            //Hack for handling unused mipmaps
-            h.dwMipMapCount = System.Math.Max(r.ReadInt32(), 1); 
-			for (int i = 0; i < 11; ++i) {
-				h.dwReserved1[i] = r.ReadInt32();
+		public int getLayerSize()
+        {
+			int size = 0;
+			int w = Width;
+			int h = Height;
+			for (int i = 0; i < MipMapCount; i++)
+            {
+				size += System.Math.Max(w * h * blockSize / 16, blockSize);
+				w /= 2;
+				h /= 2;
 			}
-			Read_DDS_PIXELFORMAT(h.ddspf, r);
+			return size;
+        }
+
+		public static bool ReplaceTextureLayer(DDSImage new_image, DDSImage target, int depth_id)
+		{
+			//At first do a sanity check between the two images
+
+			if (new_image.header.dwMipMapCount != target.header.dwMipMapCount)
+			{
+				//Callbacks.Log($"Incorrect MipmapCount for the new image. Correct Value : { target.header.dwMipMapCount}", LogVerbosityLevel.WARNING);
+				return false;
+			}
+
+			if (new_image.header.dwWidth != target.header.dwWidth)
+			{
+				//Callbacks.Log($"Incorrect Width for the new image. Correct Value : { target.header.dwWidth}", LogVerbosityLevel.WARNING);
+				return false;
+			}
+
+			if (new_image.header.dwHeight != target.header.dwHeight)
+			{
+				//Callbacks.Log($"Incorrect Height for the new image. Correct Value : { target.header.dwHeight}", LogVerbosityLevel.WARNING);
+				return false;
+			}
+
+			if (new_image.header.ddspf.dwFourCC != target.header.ddspf.dwFourCC)
+			{
+				//Callbacks.Log($"Incorrect FORMAT for the new image. Correct Value : { target.header.ddspf.dwFourCC}", LogVerbosityLevel.WARNING);
+				return false;
+			}
+
+			switch (new_image.header.ddspf.dwFourCC)
+			{
+				//DXT1
+				case (0x31545844):
+					break;
+			}
+
+			int new_image_offset = 0;
+			int target_image_offset = 0;
+			int temp_size = target.header.dwPitchOrLinearSize;
+			int depth_count = target.header.dwDepth;
+			int w = new_image.header.dwWidth;
+			int h = new_image.header.dwHeight;
+			for (int i = 0; i < target.header.dwMipMapCount; i++)
+			{
+				target_image_offset += temp_size * depth_id;
+				byte[] temp_data = new byte[temp_size];
+				Buffer.BlockCopy(new_image.Data, new_image_offset, temp_data, 0, temp_size);
+				Buffer.BlockCopy(temp_data, 0, target.Data, target_image_offset, temp_size);
+
+				target_image_offset += temp_size * (depth_count - depth_id);
+				new_image_offset += temp_size;
+
+				w = System.Math.Max(w >> 1, 1);
+				h = System.Math.Max(h >> 1, 1);
+
+				temp_size = System.Math.Max(1, (w + 3) / 4) * System.Math.Max(1, (h + 3) / 4) * target.blockSize;
+				//This works only for square textures
+				//temp_size = Math.Max(temp_size/4, blocksize);
+			}
+
+			return true;
+		}
+
+
+		private DDS_HEADER ReadHeader(BinaryReader r) {
+
+			DDS_HEADER h = new DDS_HEADER()
+			{
+				dwSize = r.ReadInt32(),
+				dwFlags = r.ReadInt32(),
+				dwHeight = r.ReadInt32(),
+				dwWidth = r.ReadInt32(),
+				dwPitchOrLinearSize = r.ReadInt32(),
+				dwDepth = System.Math.Max(r.ReadInt32(), 1),
+				//Hack for handling unused mipmaps
+				dwMipMapCount = r.ReadInt32()
+			};
+
+			for (int i = 0; i < 11; ++i)
+				h.dwReserved1[i] = r.ReadInt32();
+
+			h.ddspf = ReadPixelFormat(r);
 			h.dwCaps = r.ReadInt32();
 			h.dwCaps2 = r.ReadInt32();
 			h.dwCaps3 = r.ReadInt32();
 			h.dwCaps4 = r.ReadInt32();
 			h.dwReserved2 = r.ReadInt32();
+
+			return h;
 		}
 
-        private void Read_DDS_HEADER10(DDS_HEADER_DXT10 h, BinaryReader r)
+		private void WriteHeader(BinaryWriter bw)
+		{
+			bw.Write(header.dwSize);
+			bw.Write(header.dwFlags);
+			bw.Write(header.dwHeight);
+			bw.Write(header.dwWidth);
+			bw.Write(header.dwPitchOrLinearSize);
+			bw.Write(header.dwDepth);
+			bw.Write(header.dwMipMapCount);
+
+			for (int i = 0; i < 11; ++i)
+				bw.Write(header.dwReserved1[i]);
+
+			WritePixelFormat(bw);
+
+			bw.Write(header.dwCaps);
+			bw.Write(header.dwCaps2);
+			bw.Write(header.dwCaps3);
+			bw.Write(header.dwCaps4);
+			bw.Write(header.dwReserved2);
+		}
+		
+		private DDS_HEADER_DXT10 Read_DDS_HEADER10(BinaryReader r)
         {
-            h.dxgiFormat = (DXGI_FORMAT) r.ReadInt32();
-            h.resourceDimension = (D3D10_RESOURCE_DIMENSION) r.ReadInt32();
-            h.miscFlag = r.ReadUInt32();
-            h.arraySize = r.ReadUInt32();
-            h.miscFlags2 = r.ReadUInt32();
+			DDS_HEADER_DXT10 h = new()
+			{
+				dxgiFormat = (DXGI_FORMAT) r.ReadInt32(),
+				resourceDimension = (D3D10_RESOURCE_DIMENSION) r.ReadInt32(),
+				miscFlag = r.ReadUInt32(),
+				arraySize = r.ReadUInt32(),
+				miscFlags2 = r.ReadUInt32()
+			};
+			return h;
         }
 
-		private void Read_DDS_PIXELFORMAT(DDS_PIXELFORMAT p, BinaryReader r) {
+		private void WriteHeader10(BinaryWriter bw)
+        {
+			bw.Write((int) header10.dxgiFormat);
+			bw.Write((int) header10.resourceDimension);
+			bw.Write((int) header10.miscFlag);
+			bw.Write((int) header10.arraySize);
+			bw.Write((int) header10.miscFlags2);
+		}
+
+		private DDS_PIXELFORMAT ReadPixelFormat(BinaryReader r) {
+			DDS_PIXELFORMAT p = new DDS_PIXELFORMAT();
 			p.dwSize = r.ReadInt32();
 			p.dwFlags = r.ReadInt32();
 			p.dwFourCC = r.ReadInt32();
@@ -362,6 +531,19 @@ namespace NbCore {
 			p.dwGBitMask = r.ReadInt32();
 			p.dwBBitMask = r.ReadInt32();
 			p.dwABitMask = r.ReadInt32();
+			return p;
+		}
+
+		private void WritePixelFormat(BinaryWriter bw)
+        {
+			bw.Write(header.ddspf.dwSize);
+			bw.Write(header.ddspf.dwFlags);
+			bw.Write(header.ddspf.dwFourCC);
+			bw.Write(header.ddspf.dwRGBBitCount);
+			bw.Write(header.ddspf.dwRBitMask);
+			bw.Write(header.ddspf.dwGBitMask);
+			bw.Write(header.ddspf.dwBBitMask);
+			bw.Write(header.ddspf.dwABitMask);
 		}
 	
 		public byte[] GetMipMapData(int depth, int mip_id)
@@ -416,6 +598,8 @@ namespace NbCore {
 
 			Buffer.BlockCopy(data, 0, Data, offset, temp_size);
 			return true;
+
+
 		}
 
 	}

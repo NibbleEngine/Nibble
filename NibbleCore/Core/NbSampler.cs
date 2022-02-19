@@ -11,7 +11,7 @@ namespace NbCore
     {
         public string Name = "";
         public string Map = "";
-        private Texture Tex = null;
+        private NbTexture Tex = null;
         public bool IsCube = false;
         public bool IsSRGB = true;
         public bool UseCompression = false;
@@ -46,14 +46,14 @@ namespace NbCore
             return newsampler;
         }
 
-        public void SetTexture(Texture tex)
+        public void SetTexture(NbTexture tex)
         {
             Tex = tex;
             State.TextureID = tex.texID;
-            State.Target = tex.target;
+            State.Target = tex.Data.target;
         }
 
-        public Texture GetTexture()
+        public NbTexture GetTexture()
         {
             return Tex;
         }

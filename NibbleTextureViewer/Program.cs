@@ -17,10 +17,8 @@ namespace NibbleTextureViewer
     public class TextureRenderer : OpenTK.Windowing.Desktop.GameWindow
     {
         private Engine _engine;
-        private int mipmap_id = 0;
-        private int depth_id = 0;
+        private NbTexture _texture; //Texture handle
         private NbCore.Math.NbVector2 offset = new(0.0f);
-        private GLSLShaderConfig shader;
         
         //Mouse States
         private NbMouseState currentMouseState = new();
@@ -100,9 +98,27 @@ namespace NibbleTextureViewer
 
         private void OpenFile(object sender, string filepath)
         {
-            Texture tex = new Texture(filepath, true);
-            _renderLayer.SetTexture(tex);
-            _UILayer.SetTexture(tex);
+            if (_texture != null)
+                _texture.Dispose();
+            
+            _texture = new NbTexture(filepath);
+            _engine.renderSys.Renderer.GenerateTexture(_texture);
+            _engine.renderSys.Renderer.UploadTexture(_texture);
+
+
+            _renderLayer.SetTexture(_texture);
+            _UILayer.SetTexture(_texture);
+        }
+
+        private void ImportTextureLayer(object sender, string filepath, int depth_id)
+        {
+            //Layer Texture
+            NbTexture layer = new NbTexture(filepath);
+            DDSImage.ReplaceTextureLayer((DDSImage) layer.Data,
+                                         (DDSImage) _texture.Data, 
+                                         depth_id);
+            layer.Dispose();
+            _engine.renderSys.Renderer.UploadTexture(_texture);
         }
 
         protected override void OnLoad()
@@ -127,6 +143,7 @@ namespace NibbleTextureViewer
             //Subscribe to layer events
             _UILayer.CloseWindowEvent += OnCloseWindowEvent;
             _UILayer.OpenFileEvent += OpenFile;
+            _UILayer.ImportLayerEvent += ImportTextureLayer;
             _UILayer.ConsumeInputEvent += _renderLayer.CaptureInput;
             _UILayer.RenderTextureDataChanged += _renderLayer.OnRenderTextureDataChanged;
             Resize += _UILayer.OnResize;
