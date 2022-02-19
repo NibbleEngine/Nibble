@@ -33,6 +33,10 @@ namespace NbCore.Platform.Graphics
         public void AttachSSBOToShaderBindingPoint(NbShader shader_conf, string block_name, int binding_point);
         public void ShaderReport(NbShader shader);
 
+        //Texture Upload
+        public void GenerateTexture(NbTexture tex);
+        public void UploadTexture(NbTexture tex);
+
         //Mesh Buffer Methods
         public void PrepareMeshBuffers();
         public void UnbindMeshBuffers();

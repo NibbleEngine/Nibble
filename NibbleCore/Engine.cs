@@ -323,7 +323,7 @@ namespace NbCore
             }
         }
         
-        public void RegisterEntity(Texture tex)
+        public void RegisterEntity(NbTexture tex)
         {
             if (registrySys.RegisterEntity(tex))
             {
@@ -340,7 +340,7 @@ namespace NbCore
                 
                 foreach (NbSampler sampl in mat.Samplers)
                 {
-                    Texture tex = sampl.GetTexture();
+                    NbTexture tex = sampl.GetTexture();
                     if (tex != null)
                         RegisterEntity(tex);
                 }
@@ -442,13 +442,13 @@ namespace NbCore
         #region EngineQueries
 
         //Asset Setters
-        public void AddTexture(Texture tex)
+        public void AddTexture(NbTexture tex)
         {
             renderSys.TextureMgr.AddTexture(tex);
         }
 
         //Asset Getter
-        public Texture GetTexture(string name)
+        public NbTexture GetTexture(string name)
         {
             return renderSys.TextureMgr.Get(name);
         }
@@ -870,19 +870,22 @@ namespace NbCore
         
         #region GLRelatedRequests
 
-        public Texture AddTexture(string filepath)
+        public NbTexture AddTexture(string filepath, bool keepData = false)
         {
             byte[] data = File.ReadAllBytes(filepath);
-            return AddTexture(data, Path.GetFileName(filepath));
+            return AddTexture(data, Path.GetFileName(filepath), keepData);
         }
         
-        public Texture AddTexture(byte[] data, string name)
+        public NbTexture AddTexture(byte[] data, string name, bool keepData= false)
         {
             //TODO: Possibly move that to a separate rendering thread
-            Texture tex = new();
+            NbTexture tex = new();
             tex.Path = name;
             string ext = Path.GetExtension(name).ToUpper();
             tex.textureInit(data, ext); //Manually load data
+            renderSys.Renderer.UploadTexture(tex);
+            if (!keepData)
+                tex.Data = null;
             renderSys.TextureMgr.AddTexture(tex);
             return tex;
         }

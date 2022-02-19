@@ -7,28 +7,31 @@ using System;
 namespace NibbleTextureViewer
 {
     public delegate void CloseWindowEventHandler(object sender, string data);
-    
+    public delegate void ImportLayerEventHandler(object sender, string image_path, int depth_id);
 
     public class UILayer : ApplicationLayer
     {
         public event CloseWindowEventHandler CloseWindowEvent;
         public event EventHandler<RenderTextureData> RenderTextureDataChanged;
         public event EventHandler<string> OpenFileEvent;
+        public event ImportLayerEventHandler ImportLayerEvent;
         public event EventHandler<bool> ConsumeInputEvent;
         
         private AppImGuiManager _ImGuiManager;
         private TextureRenderer _winRef;
-        public Texture _texture; //Also keep texture Reference here
+        public NbTexture _texture; //Also keep texture Reference here
         private int depth_id = 0;
         private int mipmap_id = 0;
         private bool c_red = true;
         private bool c_green = true;
         private bool c_blue = true;
         private bool c_alpha = true;
-        private string currentDirectory = "";
+        //private string currentDirectory = "E:\\SSD_SteamLibrary1\\steamapps\\common\\No Man's Sky\\GAMEDATA\\TEXTURES\\MULTITEXTURES\\BASEBUILDING";
+        private string currentDirectory = "D:\\Downloads";
 
         //Imgui stuff
         private bool IsOpenFileDialogOpen = false;
+        private int OpenFileRequestID = -1; // 1: for Open File, 2: for Layer import
         
         public UILayer(TextureRenderer win, Engine engine) : base(engine)
         {
@@ -41,10 +44,8 @@ namespace NibbleTextureViewer
             _ImGuiManager.Resize(args.Width, args.Height);
         }
 
-        public void SetTexture(Texture tex)
+        public void SetTexture(NbTexture tex)
         {
-            if (_texture != null)
-                _texture.Dispose();
             _texture = tex;
         }
 
@@ -63,7 +64,7 @@ namespace NibbleTextureViewer
             _ImGuiManager.Render();
         }
 
-        private void DrawUI(Texture texture)
+        private void DrawUI(NbTexture texture)
         {
             //Draw Main MenuBar
             if (ImGui.BeginMainMenuBar())
@@ -74,6 +75,12 @@ namespace NibbleTextureViewer
                     {
                         _ImGuiManager.ShowOpenFileDialog();
                         IsOpenFileDialogOpen = true;
+                        OpenFileRequestID = 1;
+                    }
+
+                    if (ImGui.MenuItem("Export"))
+                    {
+                        texture.Export("test.dds");
                     }
 
                     if (ImGui.MenuItem("Close"))
@@ -81,6 +88,7 @@ namespace NibbleTextureViewer
                         //Trigger WindowCloseEvent
                         CloseWindowEvent?.Invoke(this, "UI LAYER TRIGGERED THIS EVENT");
                     }
+                    
                     ImGui.EndMenu();
                 }
 
@@ -101,13 +109,13 @@ namespace NibbleTextureViewer
                     ImGui.Text("MipMapCount");
                     ImGui.Text("Format");
                     ImGui.NextColumn();
-                    ImGui.Text(_texture.Width.ToString());
-                    ImGui.Text(_texture.Height.ToString());
-                    ImGui.Text(_texture.Depth.ToString());
-                    ImGui.Text(_texture.MipMapCount.ToString());
+                    ImGui.Text(_texture.Data.Width.ToString());
+                    ImGui.Text(_texture.Data.Height.ToString());
+                    ImGui.Text(_texture.Data.Depth.ToString());
+                    ImGui.Text(_texture.Data.MipMapCount.ToString());
 
                     //Make format output a bit friendlier
-                    switch (_texture.pif)
+                    switch (_texture.Data.pif)
                     {
                         case NbTextureInternalFormat.DXT5:
                             ImGui.Text("DXT5");
@@ -132,21 +140,28 @@ namespace NibbleTextureViewer
                     ImGui.Text("Active Depth:");
                     ImGui.NextColumn();
 
-
-                    string[] opts = new string[_texture.Depth];
+                    string[] opts = new string[_texture.Data.Depth];
                     for (int i = 0; i < opts.Length; i++)
                         opts[i] = i.ToString();
-                    ImGui.Combo("##0", ref depth_id, opts, _texture.Depth, 12);
+                    ImGui.Combo("##0", ref depth_id, opts, _texture.Data.Depth, 12);
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("Import Layer"))
+                    {
+                        _ImGuiManager.ShowOpenFileDialog();
+                        IsOpenFileDialogOpen = true;
+                        OpenFileRequestID = 2;
+                    }
 
                     ImGui.NextColumn();
                     ImGui.Text("Active Mipmap:");
 
-                    opts = new string[_texture.MipMapCount];
+                    opts = new string[_texture.Data.MipMapCount];
                     for (int i = 0; i < opts.Length; i++)
                         opts[i] = i.ToString();
 
                     ImGui.NextColumn();
-                    ImGui.Combo("##1", ref mipmap_id, opts, _texture.MipMapCount, 12);
+                    ImGui.Combo("##1", ref mipmap_id, opts, _texture.Data.MipMapCount, 12);
 
                     //Channel Flags
                     ImGui.NextColumn();
@@ -220,7 +235,10 @@ namespace NibbleTextureViewer
             if (oldOpenDialogStatus == true && IsOpenFileDialogOpen == false)
             {
                 //Trigger OpenFileEvent
-                OpenFileEvent?.Invoke(this, currentDirectory);
+                if (OpenFileRequestID == 1)
+                    OpenFileEvent?.Invoke(this, currentDirectory);
+                else if (OpenFileRequestID == 2)
+                    ImportLayerEvent?.Invoke(this, currentDirectory, depth_id);
                 oldOpenDialogStatus = false;
                 
             }

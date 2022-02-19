@@ -13,6 +13,14 @@
 		<!--RestoreProjectStyle>PackageReference</RestoreProjectStyle-->
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+      <DefineConstants>$(DefineConstants)TRACE;OPENGL</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+      <DefineConstants>$(DefineConstants)TRACE;OPENGL</DefineConstants>
+    </PropertyGroup>
+
     <ItemGroup>
       <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

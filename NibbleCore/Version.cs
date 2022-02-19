@@ -8,16 +8,16 @@ namespace NbCore
     public static class Version
     {
 
-        internal const string VERSION_STRING = "1.0.91.0";
+        internal const string VERSION_STRING = "1.1.0.0";
 
         /// <summary>Shorthand for AssemblyVersion.Major</summary>
-        public static int Major => AssemblyVersion.Major;
+        public static int Major => AssemblyVersion.Major; //Software Version
         /// <summary>Shorthand for AssemblyVersion.Minor</summary>
-        public static int Minor => AssemblyVersion.Minor;
+        public static int Minor => AssemblyVersion.Minor; //Increase when changes are backwards incompatible compatible
         /// <summary>Shorthand for AssemblyVersion.Build</summary>
-        public static int Release => AssemblyVersion.Build;
+        public static int Release => AssemblyVersion.Build; //Increase when small features or QOL elements are introduced but they are backwards compatible
         /// <summary>Shorthand for AssemblyVersion.Revision</summary>
-        public static int Prerelease => AssemblyVersion.Revision;
+        public static int Prerelease => AssemblyVersion.Revision; //Bug fixes
 
         /// <summary>The libMBIN assembly version.</summary>
         public static System.Version AssemblyVersion => new System.Version(VERSION_STRING);

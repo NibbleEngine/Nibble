@@ -8,6 +8,7 @@ using NbCore.Math;
 using NbCore.Common;
 using NbCore.Platform.Graphics;
 using OpenTK.Graphics.OpenGL4;
+using SixLabors.ImageSharp;
 using System.Linq;
 
 namespace NbCore.Platform.Graphics.OpenGL
@@ -86,6 +87,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             { NbTextureInternalFormat.DXT5, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext },
             { NbTextureInternalFormat.RGTC2, InternalFormat.CompressedRgRgtc2 },
             { NbTextureInternalFormat.BC7, InternalFormat.CompressedSrgbAlphaBptcUnorm },
+            { NbTextureInternalFormat.RGBA, InternalFormat.Rgba}
         };
 
         //UBO structs
@@ -426,11 +428,6 @@ namespace NbCore.Platform.Graphics.OpenGL
             MeshMap[mesh.Hash] = imesh;
         }
 
-        public void RenderMesh()
-        {
-            throw new NotImplementedException();
-        }
-
         private GLInstancedMesh GenerateAPIMesh(NbMesh mesh)
         {
             GLInstancedMesh imesh = new(mesh);
@@ -456,10 +453,13 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindBuffer(BufferTarget.UniformBuffer, 0); //Unbind UBOs
         }
 
+
+        #region RENDERING
+
         public void RenderQuad(NbMesh quadMesh, NbShader shader, NbShaderState state)
         {
             GLInstancedMesh glmesh = MeshMap[quadMesh.Hash];
-            
+
             GL.UseProgram(shader.ProgramID);
             GL.BindVertexArray(glmesh.vao.vao_id);
 
@@ -470,7 +470,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             int i = 0;
             foreach (KeyValuePair<string, NbSamplerState> sstate in state.Samplers)
             {
-                GL.Uniform1(shader.uniformLocations[sstate.Key].loc , sstate.Value.SamplerID);
+                GL.Uniform1(shader.uniformLocations[sstate.Key].loc, sstate.Value.SamplerID);
                 GL.ActiveTexture(TextureUnit.Texture0 + i);
                 GL.BindTexture(TextureTargetMap[sstate.Value.Target], sstate.Value.TextureID);
             }
@@ -478,7 +478,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             //Floats
             foreach (KeyValuePair<string, float> pair in state.Floats)
             {
-                GL.Uniform1(shader.uniformLocations[pair.Key].loc, (float) pair.Value);
+                GL.Uniform1(shader.uniformLocations[pair.Key].loc, (float)pair.Value);
             }
 
             //Vec2s
@@ -508,7 +508,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.DrawElements(PrimitiveType.Triangles, glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, (IntPtr)0);
             GL.BindVertexArray(0);
             GL.Enable(EnableCap.DepthTest);
-            
+
         }
 
         public void RenderMesh(NbMesh mesh)
@@ -528,82 +528,6 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindVertexArray(0);
         }
 
-        //Fetch main VAO
-        public static GLVao generateVAO(NbMesh mesh)
-        {
-            //Generate VAO
-            GLVao vao = new();
-            vao.vao_id = GL.GenVertexArray();
-            GL.BindVertexArray(vao.vao_id);
-
-            //Generate VBOs
-            int[] vbo_buffers = new int[2];
-            GL.GenBuffers(2, vbo_buffers);
-
-            vao.vertex_buffer_object = vbo_buffers[0];
-            vao.element_buffer_object = vbo_buffers[1];
-
-            //Bind vertex buffer
-            int size;
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vao.vertex_buffer_object);
-            //Upload Vertex Buffer
-            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)mesh.Data.VertexBuffer.Length,
-                mesh.Data.VertexBuffer, BufferUsageHint.StaticDraw);
-            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize,
-                out size);
-
-            Common.Callbacks.Assert(size == mesh.Data.VertexBufferStride * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics + 1),
-                "Mesh metadata does not match the vertex buffer size from the geometry file");
-
-            //Assign VertexAttribPointers
-            for (int i = 0; i < mesh.Data.buffers.Length; i++)
-            {
-                bufInfo buf = mesh.Data.buffers[i];
-                VertexAttribPointerType buftype = VertexAttribPointerType.Float; //default
-                switch (buf.type)
-                {
-                    case NbPrimitiveDataType.Double:
-                        buftype = VertexAttribPointerType.Double;
-                        break;
-                    case NbPrimitiveDataType.UnsignedByte:
-                        buftype = VertexAttribPointerType.UnsignedByte;
-                        break;
-                    case NbPrimitiveDataType.Float:
-                        buftype = VertexAttribPointerType.Float;
-                        break;
-                    case NbPrimitiveDataType.HalfFloat:
-                        buftype = VertexAttribPointerType.HalfFloat;
-                        break;
-                    case NbPrimitiveDataType.Int2101010Rev:
-                        buftype = VertexAttribPointerType.Int2101010Rev;
-                        break;
-                    default:
-                        throw new NotImplementedException();
-                }
-
-                GL.VertexAttribPointer(buf.semantic, buf.count, buftype, buf.normalize, (int) buf.stride, buf.offset);
-                GL.EnableVertexAttribArray(buf.semantic);
-            }
-
-            //Upload index buffer
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, vao.element_buffer_object);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)mesh.Data.IndexBuffer.Length,
-                mesh.Data.IndexBuffer, BufferUsageHint.StaticDraw);
-            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize,
-                out size);
-            Common.Callbacks.Assert(size == mesh.Data.IndexBuffer.Length,
-                "Mesh metadata does not match the index buffer size from the geometry file");
-
-            //Unbind
-            GL.BindVertexArray(0);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-            for (int i = 0; i < mesh.Data.buffers.Length; i++)
-                GL.DisableVertexAttribArray(mesh.Data.buffers[i].semantic);
-
-            return vao;
-        }
-
         public void RenderMesh(NbMesh mesh, MeshMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.Hash]; //Fetch GL Mesh
@@ -612,13 +536,13 @@ namespace NbCore.Platform.Graphics.OpenGL
 
             //Bind Mesh Buffer
             GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
-                (IntPtr) glmesh.UBO_offset, glmesh.UBO_aligned_size);
+                (IntPtr)glmesh.UBO_offset, glmesh.UBO_aligned_size);
 
             SetShaderAndUniforms(mat); //Set Shader and material uniforms
-            
+
             GL.BindVertexArray(glmesh.vao.vao_id);
             GL.DrawElementsInstanced(PrimitiveType.Triangles,
-                glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, IntPtr.Zero, 
+                glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, IntPtr.Zero,
                 glmesh.Mesh.InstanceCount);
             GL.BindVertexArray(0);
         }
@@ -634,7 +558,7 @@ namespace NbCore.Platform.Graphics.OpenGL
                 (IntPtr)(glmesh.UBO_offset), glmesh.UBO_aligned_size);
 
             SetShaderAndUniforms(mat);
-            
+
             GL.BindVertexArray(glmesh.vao.vao_id);
             GL.DrawElementsInstanced(PrimitiveType.Lines, 6,
                 glmesh.IndicesLength, IntPtr.Zero,
@@ -653,7 +577,7 @@ namespace NbCore.Platform.Graphics.OpenGL
                 (IntPtr)(glmesh.UBO_offset), glmesh.UBO_aligned_size);
 
             SetShaderAndUniforms(mat);
-            
+
             GL.BindVertexArray(glmesh.vao.vao_id);
             GL.PointSize(5.0f);
             GL.DrawArrays(PrimitiveType.Lines, 0, mesh.MetaData.BatchCount);
@@ -676,14 +600,14 @@ namespace NbCore.Platform.Graphics.OpenGL
             //Step 2: Render Elements
             GL.PointSize(8.0f);
             GL.BindVertexArray(glmesh.vao.vao_id);
-            
+
             //TODO: make sure that primitive collisions have the vertrstartphysics set to 0
-    
+
             GL.DrawElementsInstancedBaseVertex(PrimitiveType.Points, glmesh.Mesh.MetaData.BatchCount,
                 DrawElementsType.UnsignedShort, IntPtr.Zero, glmesh.Mesh.InstanceCount, -glmesh.Mesh.MetaData.VertrStartGraphics);
             GL.DrawElementsInstancedBaseVertex(PrimitiveType.Triangles, glmesh.Mesh.MetaData.BatchCount,
                 DrawElementsType.UnsignedShort, IntPtr.Zero, glmesh.Mesh.InstanceCount, -glmesh.Mesh.MetaData.VertrStartGraphics);
-            
+
             GL.BindVertexArray(0);
         }
 
@@ -698,7 +622,7 @@ namespace NbCore.Platform.Graphics.OpenGL
                 (IntPtr)(glmesh.UBO_offset), glmesh.UBO_aligned_size);
 
             SetShaderAndUniforms(mat);
-            
+
             GL.BindVertexArray(glmesh.vao.vao_id);
             GL.PointSize(5.0f);
             GL.DrawArraysInstanced(PrimitiveType.Lines, 0, 2, mesh.InstanceCount);
@@ -800,7 +724,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.DeleteBuffer(eb_bbox);
 
         }
-    
+
         public static void renderBHull(GLInstancedMesh mesh)
         {
             if (mesh.bHullVao == null) return;
@@ -809,15 +733,286 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindVertexArray(mesh.bHullVao.vao_id);
 
             GL.DrawElementsBaseVertex(PrimitiveType.Points, mesh.Mesh.MetaData.BatchCount,
-                mesh.IndicesLength, 
+                mesh.IndicesLength,
                 IntPtr.Zero, -mesh.Mesh.MetaData.VertrStartPhysics);
             GL.DrawElementsBaseVertex(PrimitiveType.Triangles, mesh.Mesh.MetaData.BatchCount,
-                mesh.IndicesLength, 
+                mesh.IndicesLength,
                 IntPtr.Zero, -mesh.Mesh.MetaData.VertrStartPhysics);
             GL.BindVertexArray(0);
         }
 
 
+        #endregion
+
+
+        #region TextureMethods
+
+        public static NbTexture CreateTexture(PixelInternalFormat fmt, int w, int h, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
+        {
+            NbTexture tex = new();
+            tex.texID = GL.GenTexture();
+            tex.Data = new NbTextureData()
+            {
+                Width = w,
+                Height = h,
+                target = NbTextureTarget.Texture2D
+            };
+
+            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
+            GL.TexImage2D(TextureTargetMap[tex.Data.target], 0, fmt, w, h, 0, pix_fmt, pix_type, IntPtr.Zero);
+
+            if (generate_mipmaps)
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+            return tex;
+        }
+
+        public static NbTexture CreateTexture(PixelInternalFormat fmt, int w, int h, int d, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
+        {
+            NbTexture tex = new();
+            tex.texID = GL.GenTexture();
+            tex.Data.target = NbTextureTarget.Texture2DArray;
+            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
+            GL.TexImage3D(TextureTargetMap[tex.Data.target], 0, fmt, w, h, d, 0, pix_fmt, pix_type, IntPtr.Zero);
+
+            if (generate_mipmaps)
+                GL.GenerateMipmap(GenerateMipmapTarget.Texture2DArray);
+
+            return tex;
+        }
+
+        public static void setupTextureParameters(NbTexture tex, int wrapMode, int magFilter, int minFilter, float af_amount)
+        {
+            TextureTarget gl_target = TextureTargetMap[tex.Data.target];
+            GL.BindTexture(gl_target, tex.texID);
+            GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, wrapMode);
+            GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, wrapMode);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, magFilter);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, minFilter);
+            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, 4.0f);
+
+            //Use anisotropic filtering
+            af_amount = System.Math.Max(af_amount, GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy));
+            GL.TexParameter(gl_target, (TextureParameterName)0x84FE, af_amount);
+        }
+
+
+
+        public static void DumpTexture(NbTexture tex, string name)
+        {
+            var pixels = new byte[4 * tex.Data.Width * tex.Data.Height];
+            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
+            GL.GetTexImage(TextureTargetMap[tex.Data.target], 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
+
+            Image<SixLabors.ImageSharp.PixelFormats.Rgba32> test = 
+                Image.LoadPixelData<SixLabors.ImageSharp.PixelFormats.Rgba32>(pixels, tex.Data.Width, tex.Data.Height);
+            test.SaveAsPng("Temp//framebuffer_raw_" + name + ".png");
+        }
+
+        public void GenerateTexture(NbTexture tex)
+        {
+            //Upload to GPU
+            tex.texID = GL.GenTexture();
+
+            TextureTarget gl_target = TextureTargetMap[tex.Data.target];
+            InternalFormat gl_pif = InternalFormatMap[tex.Data.pif];
+
+            int mm_count = tex.Data.MipMapCount;
+
+            GL.BindTexture(gl_target, tex.texID);
+            //TODO: REmove all parameter settings from here, and make it possible to set them using other API calls
+            //When manually loading mipmaps, levels should be loaded first
+            GL.TexParameter(gl_target, TextureParameterName.TextureBaseLevel, 0);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMaxLevel, mm_count - 1);
+            GL.TextureParameter(tex.texID, TextureParameterName.TextureMaxLod, mm_count - 1);
+
+            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
+            GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            if (mm_count > 1)
+                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.NearestMipmapLinear);
+            else
+                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            //Console.WriteLine(GL.GetError());
+
+            //Use anisotropic filtering
+            float af_amount = GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy);
+            af_amount = (float)System.Math.Max(af_amount, 4.0f);
+            //GL.TexParameter(TextureTarget.Texture2D,  (TextureParameterName) 0x84FE, af_amount);
+            GL.GetTexParameter(gl_target, GetTextureParameter.TextureMaxLevel, out int max_level);
+            GL.GetTexParameter(gl_target, GetTextureParameter.TextureBaseLevel, out int base_level);
+
+            int maxsize = System.Math.Max(tex.Data.Height, tex.Data.Width);
+            int p = (int)System.Math.Floor(System.Math.Log(maxsize, 2)) + base_level;
+            int q = System.Math.Min(p, max_level);
+
+#if (DEBUGNONO)
+            //Get all mipmaps
+            temp_size = ddsImage.header.dwPitchOrLinearSize;
+            for (int i = 0; i < q; i++)
+            {
+                //Get lowest calculated mipmap
+                byte[] pixels = new byte[temp_size];
+                
+                //Save to disk
+                GL.GetCompressedTexImage(TextureTarget.Texture2D, i, pixels);
+                File.WriteAllBytes("Temp\\level" + i.ToString(), pixels);
+                temp_size = Math.Max(temp_size / 4, 16);
+            }
+#endif
+
+#if (DUMP_TEXTURESNONO)
+            Sampler.dump_texture(name.Split('\\').Last().Split('/').Last(), width, height);
+#endif
+            //avgColor = getAvgColor(pixels);
+        }
+
+        private void UploadTextureData(int tex_id, PNGImage tex_data)
+        {
+            TextureTarget gl_target = TextureTargetMap[tex_data.target];
+            InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
+            
+            GL.BindTexture(gl_target, tex_id);
+            
+            unsafe
+            {
+                fixed (void* ptr = tex_data.Data)
+                {
+                    GL.TexImage2D(gl_target, 0, (PixelInternalFormat) gl_pif, tex_data.Width, tex_data.Height, 0,
+                    PixelFormat.Bgra, PixelType.UnsignedByte, (IntPtr) ptr);
+                }
+            }
+
+            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+
+            //Cleanup
+            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0); //Unbind texture PBO
+        }
+
+        private void UploadTextureData(int tex_id, DDSImage tex_data)
+        {
+            //Temp Variables
+            int w = tex_data.Width;
+            int h = tex_data.Height;
+            int mm_count = System.Math.Max(1, tex_data.MipMapCount); //Fix the counter to 1 to handle textures with single mipmaps
+            int depth_count = System.Math.Max(1, tex_data.Depth); //Fix the counter to 1 to fit the texture in a 3D container
+            int temp_size = tex_data.header.dwPitchOrLinearSize;
+
+            TextureTarget gl_target = TextureTargetMap[tex_data.target];
+            InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
+            GL.BindTexture(gl_target, tex_id);
+            
+            int offset = 0;
+            for (int i = 0; i < mm_count; i++)
+            {
+                byte[] temp_data = new byte[temp_size * depth_count];
+                System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size * depth_count);
+                if (depth_count > 1)
+                    GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, depth_count, 0, temp_size * depth_count, temp_data);
+                else
+                    GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_size * depth_count, temp_data);
+                offset += temp_size * depth_count;
+
+                w = System.Math.Max(w >> 1, 1);
+                h = System.Math.Max(h >> 1, 1);
+
+                temp_size = System.Math.Max(1, (w + 3) / 4) * System.Math.Max(1, (h + 3) / 4) * tex_data.blockSize;
+                //This works only for square textures
+                //temp_size = Math.Max(temp_size/4, blocksize);
+            }
+        }
+
+        public void UploadTexture(NbTexture tex)
+        {
+            if (tex.Data is DDSImage)
+                UploadTextureData(tex.texID, tex.Data as DDSImage);
+            else if (tex.Data is PNGImage)
+                UploadTextureData(tex.texID, tex.Data as PNGImage);
+
+        }
+
+        #endregion
+
+
+        //Fetch main VAO
+        public static GLVao generateVAO(NbMesh mesh)
+        {
+            //Generate VAO
+            GLVao vao = new();
+            vao.vao_id = GL.GenVertexArray();
+            GL.BindVertexArray(vao.vao_id);
+
+            //Generate VBOs
+            int[] vbo_buffers = new int[2];
+            GL.GenBuffers(2, vbo_buffers);
+
+            vao.vertex_buffer_object = vbo_buffers[0];
+            vao.element_buffer_object = vbo_buffers[1];
+
+            //Bind vertex buffer
+            int size;
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vao.vertex_buffer_object);
+            //Upload Vertex Buffer
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)mesh.Data.VertexBuffer.Length,
+                mesh.Data.VertexBuffer, BufferUsageHint.StaticDraw);
+            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize,
+                out size);
+
+            Common.Callbacks.Assert(size == mesh.Data.VertexBufferStride * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics + 1),
+                "Mesh metadata does not match the vertex buffer size from the geometry file");
+
+            //Assign VertexAttribPointers
+            for (int i = 0; i < mesh.Data.buffers.Length; i++)
+            {
+                bufInfo buf = mesh.Data.buffers[i];
+                VertexAttribPointerType buftype = VertexAttribPointerType.Float; //default
+                switch (buf.type)
+                {
+                    case NbPrimitiveDataType.Double:
+                        buftype = VertexAttribPointerType.Double;
+                        break;
+                    case NbPrimitiveDataType.UnsignedByte:
+                        buftype = VertexAttribPointerType.UnsignedByte;
+                        break;
+                    case NbPrimitiveDataType.Float:
+                        buftype = VertexAttribPointerType.Float;
+                        break;
+                    case NbPrimitiveDataType.HalfFloat:
+                        buftype = VertexAttribPointerType.HalfFloat;
+                        break;
+                    case NbPrimitiveDataType.Int2101010Rev:
+                        buftype = VertexAttribPointerType.Int2101010Rev;
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+
+                GL.VertexAttribPointer(buf.semantic, buf.count, buftype, buf.normalize, (int) buf.stride, buf.offset);
+                GL.EnableVertexAttribArray(buf.semantic);
+            }
+
+            //Upload index buffer
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, vao.element_buffer_object);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)mesh.Data.IndexBuffer.Length,
+                mesh.Data.IndexBuffer, BufferUsageHint.StaticDraw);
+            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize,
+                out size);
+            Common.Callbacks.Assert(size == mesh.Data.IndexBuffer.Length,
+                "Mesh metadata does not match the index buffer size from the geometry file");
+
+            //Unbind
+            GL.BindVertexArray(0);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            for (int i = 0; i < mesh.Data.buffers.Length; i++)
+                GL.DisableVertexAttribArray(mesh.Data.buffers[i].semantic);
+
+            return vao;
+        }
+
+        
         private void UploadUniform(NbUniform uf)
         {
             switch (uf.State.Type)
@@ -1266,51 +1461,7 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         #region TextureMethods
 
-        public static Texture CreateTexture(PixelInternalFormat fmt, int w, int h, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
-        {
-            Texture tex = new();
-            tex.texID = GL.GenTexture();
-            tex.target = NbTextureTarget.Texture2D;
-            tex.Width = w;
-            tex.Height = h;
-            GL.BindTexture(TextureTargetMap[tex.target], tex.texID);
-            GL.TexImage2D(TextureTargetMap[tex.target], 0, fmt, w, h, 0, pix_fmt, pix_type, IntPtr.Zero);
-
-            if (generate_mipmaps)
-                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            return tex;
-        }
-
-        public static Texture CreateTexture(PixelInternalFormat fmt, int w, int h, int d, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
-        {
-            Texture tex = new();
-            tex.texID = GL.GenTexture();
-            tex.target = NbTextureTarget.Texture2DArray;
-            GL.BindTexture(TextureTargetMap[tex.target], tex.texID);
-            GL.TexImage3D(TextureTargetMap[tex.target], 0, fmt, w, h, d, 0, pix_fmt, pix_type, IntPtr.Zero);
-
-            if (generate_mipmaps)
-                GL.GenerateMipmap(GenerateMipmapTarget.Texture2DArray);
-
-            return tex;
-        }
-
-        public static void setupTextureParameters(Texture tex, int wrapMode, int magFilter, int minFilter, float af_amount)
-        {
-
-            GL.BindTexture(TextureTargetMap[tex.target], tex.texID);
-            GL.TexParameter(TextureTargetMap[tex.target], TextureParameterName.TextureWrapS, wrapMode);
-            GL.TexParameter(TextureTargetMap[tex.target], TextureParameterName.TextureWrapT, wrapMode);
-            GL.TexParameter(TextureTargetMap[tex.target], TextureParameterName.TextureMagFilter, magFilter);
-            GL.TexParameter(TextureTargetMap[tex.target], TextureParameterName.TextureMinFilter, minFilter);
-            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, 4.0f);
-
-            //Use anisotropic filtering
-            af_amount = System.Math.Max(af_amount, GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy));
-            GL.TexParameter(TextureTargetMap[tex.target], (TextureParameterName)0x84FE, af_amount);
-        }
-
+        
         #endregion
 
     }
