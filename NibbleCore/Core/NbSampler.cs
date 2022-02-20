@@ -48,9 +48,13 @@ namespace NbCore
 
         public void SetTexture(NbTexture tex)
         {
-            Tex = tex;
-            State.TextureID = tex.texID;
-            State.Target = tex.Data.target;
+            if (Tex == null || Tex != tex)
+            {
+                Tex = tex;
+                State.TextureID = tex.texID;
+                State.Target = tex.Data.target;
+                tex.Refs++;
+            }
         }
 
         public NbTexture GetTexture()

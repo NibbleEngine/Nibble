@@ -24,7 +24,7 @@ namespace NbCore.Systems
         {
             return EntityMap[ID];
         }
-        
+
         public Entity GetEntity(EntityType type, long ID)
         {
             return EntityTypeList[type].Find(x=> x.GetID() == ID);

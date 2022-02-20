@@ -63,7 +63,7 @@ namespace NbCore.Platform.Graphics
     };
 
     
-    public class GraphicsAPI : IGraphicsApi
+    public class GraphicsAPI
     {
         private const string RendererName = "OPENGL_RENDERER";
         private int activeProgramID = -1;
@@ -100,7 +100,7 @@ namespace NbCore.Platform.Graphics
 
         private DebugProc GLDebug;
 
-        private void Log(string msg, LogVerbosityLevel lvl)
+        private static void Log(string msg, LogVerbosityLevel lvl)
         {
             Callbacks.Log(string.Format("* {0} : {1}", RendererName, msg), lvl);
         }
@@ -927,7 +927,7 @@ namespace NbCore.Platform.Graphics
 
         public static void UploadTexture(NbTexture tex)
         {
-            Callbacks.Assert(tex.texID < 0, "Invalid texture ID");
+            Callbacks.Assert(tex.texID >= 0, "Invalid texture ID");
             if (tex.Data is DDSImage)
                 UploadTextureData(tex.texID, tex.Data as DDSImage);
             else if (tex.Data is PNGImage)
@@ -1126,7 +1126,7 @@ namespace NbCore.Platform.Graphics
                 GL.ShaderStorageBlockBinding(shader.ProgramID, ssbo_index, binding_point);
         }
 
-        public bool CompileShaderSource(NbShader shader, GLSLShaderConfig shaderConf, 
+        public static bool CompileShaderSource(NbShader shader, GLSLShaderConfig shaderConf, 
             NbShaderSourceType type, ref int object_id, ref string temp_log, string append_text = "")
         {
             GLSLShaderSource _source = shaderConf.Sources[type];
@@ -1172,12 +1172,12 @@ namespace NbCore.Platform.Graphics
             return CompileShader(ref shader, mat.ShaderConfig, mat);
         }
 
-        public bool CompileShader(ref NbShader shader, GLSLShaderConfig config)
+        public static bool CompileShader(ref NbShader shader, GLSLShaderConfig config)
         {
             return CompileShader(ref shader, config, "");
         }
 
-        public bool CompileShader(ref NbShader shader, GLSLShaderConfig config, MeshMaterial mat)
+        public static bool CompileShader(ref NbShader shader, GLSLShaderConfig config, MeshMaterial mat)
         {
             string extradirectives = "";
             for (int i = 0; i < mat.Flags.Count; i++)
@@ -1190,7 +1190,7 @@ namespace NbCore.Platform.Graphics
         }
 
         //Shader Creation
-        public bool CompileShader(ref NbShader shader, GLSLShaderConfig config, string extradirectives = "")
+        public static bool CompileShader(ref NbShader shader, GLSLShaderConfig config, string extradirectives = "")
         {
             bool gsflag = config.Sources.ContainsKey(NbShaderSourceType.GeometryShader);
 
@@ -1262,7 +1262,7 @@ namespace NbCore.Platform.Graphics
             return true;
         }
 
-        public void ShaderCompilationLog(NbShader shader)
+        public static void ShaderCompilationLog(NbShader shader)
         {
             string log_file = "shader_compilation_log.out";
 
@@ -1281,7 +1281,7 @@ namespace NbCore.Platform.Graphics
             //Console.WriteLine(conf.log);
         }
 
-        private void loadActiveUniforms(NbShader shader)
+        private static void loadActiveUniforms(NbShader shader)
         {
             GL.GetProgram(shader.ProgramID, GetProgramParameterName.ActiveUniforms, out int active_uniforms_count);
 

@@ -8,6 +8,7 @@ namespace NbCore
     {
         public abstract Component Clone();
         public abstract void CopyFrom(Component c);
+        public Entity RefEntity = null;
 
         #region IDisposable Support
 

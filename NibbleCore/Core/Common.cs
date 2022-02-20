@@ -297,8 +297,11 @@ namespace NbCore.Common
         public static void DefaultAssert(bool status, string msg)
         {
             if (!status)
-                Callbacks.Log(msg, LogVerbosityLevel.ERROR);
-            System.Diagnostics.Trace.Assert(status);
+            {
+                Log(new System.Diagnostics.StackTrace().ToString(), LogVerbosityLevel.ERROR);
+                throw new Exception(msg);
+            }
+            
         }
 
         //Resource Handler
