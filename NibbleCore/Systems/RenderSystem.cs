@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
-using NbCore.Platform.Graphics.OpenGL; //TODO: Abstract
+
+#if OPENGL
+using NbCore.Platform.Graphics.OpenGL; 
+#endif
+
 using NbCore;
 using NbCore.Common;
 using NbCore.Platform.Graphics;
@@ -40,7 +44,7 @@ namespace NbCore.Systems
         //This is used during group population
         readonly Dictionary<int, NbMeshGroup> OpenMeshGroups = new(); 
 
-        public IGraphicsApi Renderer;
+        public GraphicsAPI Renderer;
 
         //Entity Managers used by the rendering system
         public readonly ObjectManager<NbMeshData> MeshDataMgr = new();
@@ -96,7 +100,9 @@ namespace NbCore.Systems
             NbMeshGroup group = new()
             {
                 ID = 0,
-                GroupTBO1Data = new float[256 * 16],
+                GroupTBO1Data = new NbMatrix4[256],
+                PrevFrameJointData = new NbMatrix4[256],
+                NextFrameJointData = new NbMatrix4[256],
                 GroupTBO1 = Renderer.CreateGroupBuffer(),
                 boneRemapIndices = new int[1],
                 Meshes = new()
@@ -187,9 +193,6 @@ namespace NbCore.Systems
             ShaderMgr.CleanUp();
             
         }
-
-        
-
 
         public NbShader GetMaterialShader(MeshMaterial mat)
         {
@@ -374,15 +377,20 @@ namespace NbCore.Systems
         {
             mg.ID = MeshGroups.Count;
             mg.GroupTBO1 = Renderer.CreateGroupBuffer();
-            mg.GroupTBO1Data = new float[256 * 16];
+            
+            mg.GroupTBO1Data = new NbMatrix4[System.Math.Max(1,mg.JointBindingDataList.Count)];
+            mg.PrevFrameJointData = new NbMatrix4[System.Math.Max(1, mg.JointBindingDataList.Count)];
+            mg.NextFrameJointData = new NbMatrix4[System.Math.Max(1, mg.JointBindingDataList.Count)];
 
             //Copy any existing data to the bytearray
             for (int i = 0; i < mg.JointBindingDataList.Count; i++)
             {
-                NbMatrix4 temp_matrix = mg.JointBindingDataList[i].invBindMatrix * mg.JointBindingDataList[i].BindMatrix;
+                NbMatrix4 temp_matrix = mg.JointBindingDataList[i].invBindMatrix;
+                mg.GroupTBO1Data[i] = temp_matrix;
+                mg.PrevFrameJointData[i] = temp_matrix;
+                mg.NextFrameJointData[i] = temp_matrix;
                 //This does not work for all models (e.g. the astronaut)
                 //I suspect that its just an issue with the model, this matrix multiplication should bring the model to its binding pose
-                MathUtils.insertMatToArray16(mg.GroupTBO1Data, 16 * i, temp_matrix);
             }
             
             MeshGroups.Add(mg);
@@ -416,10 +424,10 @@ namespace NbCore.Systems
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, mg.GroupTBO1);
             
             //Upload skinning data
-            GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, mg.GroupTBO1Data.Length * 4, mg.GroupTBO1Data);
-            //Upload remap data
-            //TODO: BRING BACK
-            //GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero + mg.GroupTBO1Data.Length * 4, mg.boneRemapIndices.Length * 4, mg.boneRemapIndices);
+            unsafe
+            {
+                GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, mg.GroupTBO1Data.Length * sizeof(NbMatrix4), mg.GroupTBO1Data);
+            }
         }
 
         #endregion

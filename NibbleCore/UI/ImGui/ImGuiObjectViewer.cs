@@ -389,6 +389,7 @@ namespace NbCore.UI.ImGui
                                 if (ImGuiCore.Button(button_title))
                                 {
                                     anim.IsPlaying = !anim.IsPlaying;
+                                    ac.AnimGroup.ActiveAnimation = anim;
                                 };
                                 ImGuiCore.TableSetColumnIndex(2);
                                 ImGuiCore.Checkbox("##Override" + anim.animData.MetaData.Name, ref anim.Override);

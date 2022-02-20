@@ -9,17 +9,19 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<AssemblyName>Nibble</AssemblyName>
+		<Configurations>OpenGL_DEBUG;OPENGL_RELEASE</Configurations>
 		<!--CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies-->
 		<!--RestoreProjectStyle>PackageReference</RestoreProjectStyle-->
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-      <DefineConstants>$(DefineConstants)TRACE;OPENGL</DefineConstants>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='OpenGL_DEBUG|AnyCPU'">
+      <DefineConstants>$(DefineConstants)TRACE;DEBUG;OPENGL</DefineConstants>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-      <DefineConstants>$(DefineConstants)TRACE;OPENGL</DefineConstants>
-    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='OpenGL_RELEASE|AnyCPU'">
+		<DefineConstants>$(DefineConstants)TRACE;OPENGL</DefineConstants>
+		<Optimize>True</Optimize>
+	</PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="MathNet.Numerics" Version="4.15.0" />

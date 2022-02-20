@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -9,7 +10,7 @@ namespace NbCore
     {
         public PNGImage(byte[] data)
         {
-            MemoryStream ms = new MemoryStream(Data);
+            MemoryStream ms = new MemoryStream(data);
 
             //Load the image from file
             Image<Bgra32> bmpTexture = Image.Load<Bgra32>(ms);
@@ -20,10 +21,14 @@ namespace NbCore
             Span<Bgra32> pixels;
             bmpTexture.TryGetSinglePixelSpan(out pixels);
             
-            unsafe
+            unsafe 
             {
-                Data = new byte[pixels.Length * sizeof(Bgra32)];
-                Buffer.BlockCopy(pixels.ToArray(), 0, Data, 0, Data.Length);
+                var bytes = MemoryMarshal.AsBytes(pixels);
+                Data = new byte[bytes.Length];
+                using (ms = new MemoryStream(Data))
+                {
+                    ms.Write(bytes);
+                }
             }
             
             Width = bmpTexture.Width;

@@ -13,10 +13,14 @@ namespace NbCore
         public int ActiveLOD;
         public List<float> LODDistances;
         public int GroupTBO1;
-        public float[] GroupTBO1Data; //used to store position, rotation and scale vectors
+        //Following arrays store matrices
+        public NbMatrix4[] NextFrameJointData; 
+        public NbMatrix4[] PrevFrameJointData;
+        public float FrameInterolationCoeff = 0.0f;
+        public NbMatrix4[] GroupTBO1Data; //use this for rendering
         public int[] boneRemapIndices;
         public List<JointBindingData> JointBindingDataList;
-
+        
         public NbMeshGroup()
         {
             JointBindingDataList = new List<JointBindingData>();
@@ -25,10 +29,5 @@ namespace NbCore
         }
     }
 
-    public class NbAnimationGroup
-    {
-        public SceneGraphNode AnimationRoot; //Reference node to be able to search for joints
-        public NbMeshGroup RefMeshGroup = null; //Referenced group of animated meshes
-        public List<Animation> Animations = new();
-    }
+    
 }

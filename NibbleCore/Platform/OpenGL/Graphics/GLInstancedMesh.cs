@@ -47,15 +47,11 @@ namespace NbCore
 
         public GLInstancedMesh(NbMesh mesh)
         {
-            vao =  GraphicsAPI.generateVAO(mesh);
+            vao =  Platform.Graphics.GraphicsAPI.generateVAO(mesh);
             Mesh = mesh;
         }
-
-
     }
-
-
-
+    
     //    public class Mesh : Model
     //    {
     //        public GLInstancedMesh meshVao;
