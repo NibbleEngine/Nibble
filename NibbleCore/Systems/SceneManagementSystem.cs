@@ -93,7 +93,6 @@ namespace NbCore.Systems
                     EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 3, mc.InstanceUniforms[3].Values);
                     mc.IsUpdated = false;
                 }
-
             }
 
             //Process Lights

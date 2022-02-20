@@ -102,14 +102,13 @@ namespace NibbleTextureViewer
                 _texture.Dispose();
             
             _texture = new NbTexture(filepath);
-            _engine.renderSys.Renderer.GenerateTexture(_texture);
-            _engine.renderSys.Renderer.UploadTexture(_texture);
-
-
+            NbCore.Platform.Graphics.GraphicsAPI.GenerateTexture(_texture);
+            NbCore.Platform.Graphics.GraphicsAPI.UploadTexture(_texture);
+            
             _renderLayer.SetTexture(_texture);
             _UILayer.SetTexture(_texture);
         }
-
+        
         private void ImportTextureLayer(object sender, string filepath, int depth_id)
         {
             //Layer Texture
@@ -118,7 +117,7 @@ namespace NibbleTextureViewer
                                          (DDSImage) _texture.Data, 
                                          depth_id);
             layer.Dispose();
-            _engine.renderSys.Renderer.UploadTexture(_texture);
+            NbCore.Platform.Graphics.GraphicsAPI.UploadTexture(_texture);
         }
 
         protected override void OnLoad()

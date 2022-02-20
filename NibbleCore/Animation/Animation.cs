@@ -14,10 +14,10 @@ namespace NbCore
     {
         public AnimationData animData; //Static Animation Data
         public int ActiveFrameIndex = 0;
-        private float animationTime = 0.0f;
+        public float AnimationTime = 0.0f;
+        public float FrameDuration = 0.0f;
         //private float LERP_coeff = 0.0f;
         public bool loaded = false;
-        public bool IsUpdated = false;
         public bool IsPlaying = false;
         public bool Override = false; //Used to manually manipulate animation
         
@@ -41,7 +41,6 @@ namespace NbCore
             if (frame_id != ActiveFrameIndex)
             {
                 ActiveFrameIndex = frame_id;
-                IsUpdated = true;
             }   
         }
 
@@ -60,19 +59,14 @@ namespace NbCore
 
         public void Update(float dt)
         {
-            float frameDuration = 1.0f / 60.0f; //Seconds
-            frameDuration /= animData.MetaData.Speed;
-
-            animationTime += dt;
-            if (animationTime > frameDuration)
-            {
-                Progress();
-            }
-               
-            animationTime %= frameDuration;
+            FrameDuration = 1.0f / 60.0f; //Seconds
+            FrameDuration /= animData.MetaData.Speed;
+            
+            AnimationTime += dt;
+            AnimationTime %= FrameDuration;
         }
 
-        private void Progress() 
+        public void Progress() 
         {
             int activeFrameCount = (animData.MetaData.FrameEnd == 0 ? animData.FrameCount : System.Math.Min(animData.MetaData.FrameEnd, animData.FrameCount)) - (animData.MetaData.FrameStart != 0 ? animData.MetaData.FrameStart : 0);
             //Assuming a fixed frequency of 60 fps for the animations
@@ -86,7 +80,6 @@ namespace NbCore
             {
                 //Advance frames
                 ActiveFrameIndex = (ActiveFrameIndex + 1) % activeFrameCount;
-                IsUpdated = true;
             }
             
         }

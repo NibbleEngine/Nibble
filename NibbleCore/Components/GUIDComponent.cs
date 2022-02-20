@@ -20,7 +20,7 @@ namespace NbCore
         public GUIDComponent()
         {
             testID = test_counter++;
-            if (testID == 10)
+            if (testID == 0x61)
                 Console.WriteLine("break");
         }
         

@@ -57,7 +57,7 @@ namespace NbCore
             Data = textureInit(data, ext);
         }
 
-        public NbTextureData textureInit(byte[] imageData, string ext)
+        private NbTextureData textureInit(byte[] imageData, string ext)
         {
             switch (ext)
             {

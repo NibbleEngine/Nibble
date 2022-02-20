@@ -225,7 +225,7 @@ namespace NbCore
                             continue;
                         }
 
-                        if (testNibbleVersion.Major != NibbleName.Version.Major)
+                        if (testNibbleVersion.Major != NibbleName.Version.Major || testNibbleVersion.Minor != NibbleName.Version.Minor)
                         {
                             Callbacks.Log($"Plugin incompatible with Nibble.dll Version {NibbleName.Version}. Plugin was build against : {testNibbleVersion}.",
                                 LogVerbosityLevel.WARNING);
@@ -870,23 +870,21 @@ namespace NbCore
         
         #region GLRelatedRequests
 
-        public NbTexture AddTexture(string filepath, bool keepData = false)
+        public NbTexture CreateTexture(string filepath, bool keepData = false)
         {
             byte[] data = File.ReadAllBytes(filepath);
-            return AddTexture(data, Path.GetFileName(filepath), keepData);
+            return CreateTexture(data, Path.GetFileName(filepath), keepData);
         }
         
-        public NbTexture AddTexture(byte[] data, string name, bool keepData= false)
+        public NbTexture CreateTexture(byte[] data, string name, bool keepData= false)
         {
             //TODO: Possibly move that to a separate rendering thread
-            NbTexture tex = new();
-            tex.Path = name;
-            string ext = Path.GetExtension(name).ToUpper();
-            tex.textureInit(data, ext); //Manually load data
-            renderSys.Renderer.UploadTexture(tex);
+            NbTexture tex = new(name, data);
+            Platform.Graphics.GraphicsAPI.GenerateTexture(tex);
+            Platform.Graphics.GraphicsAPI.UploadTexture(tex);
             if (!keepData)
-                tex.Data = null;
-            renderSys.TextureMgr.AddTexture(tex);
+                tex.Data.Data = null;
+            //renderSys.TextureMgr.AddTexture(tex);
             return tex;
         }
 

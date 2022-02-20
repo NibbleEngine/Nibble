@@ -15,6 +15,8 @@ namespace NbCore.Systems
         public readonly ObjectManager<AnimationData> AnimDataMgr = new();
         //Organize animations in groups
         public List<NbAnimationGroup> AnimationGroups = new();
+        //Properties
+        public static double updateInterval = 1.0 / 60; //Default Update interval of 60hz
         
         public AnimationSystem() : base(EngineSystemEnum.ANIMATION_SYSTEM)
         {
@@ -42,45 +44,48 @@ namespace NbCore.Systems
         {
             foreach (NbAnimationGroup group in AnimationGroups)
             {
-                foreach (Animation a in group.Animations)
+                if (group.ActiveAnimation is null)
+                    continue;
+                
+                group.ActiveAnimation.Update((float) dt);
+                float interpolationCoeff = (float)(group.ActiveAnimation.AnimationTime / group.ActiveAnimation.FrameDuration);
+                
+                int jointCount = group.RefMeshGroup.JointBindingDataList.Count;
+                for (int i = 0; i < jointCount; i++)
                 {
-                    SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
-
-                    //if (a.IsPlaying)
-                    {
-                        //Update data to the meshgroups
-                        foreach (var node in a.animData.Nodes)
-                        {
-                            SceneGraphNode joint;
-                            if (node.EndsWith("JNT"))
-                            {
-                                string temp_name = node;
-                                if (node.Contains("End"))
-                                    temp_name = temp_name.Replace("JNT", "");
-                                joint = sc.JointNodes[temp_name];
-                            }
-                            else
-                            {
-                                joint = sc.GetNodeByName(node);
-                            }
-                            
-                            if (joint == null)
-                                continue;
-                            
-                            if (joint.Type == SceneNodeType.JOINT)
-                            {
-                                //TransformControllers are only available on dynamic entities....
-                                TransformController tc = EngineRef.transformSys.GetEntityTransformController(joint);
-                                JointComponent jc = joint.GetComponent<JointComponent>() as JointComponent;
-                                int actualJointIndex = jc.JointIndex;
-                                NbMatrix4 invBindMatrix = group.RefMeshGroup.JointBindingDataList[actualJointIndex].invBindMatrix;
-                                NbMatrix4 nodeTransform = invBindMatrix * tc.GetActor().WorldTransformMat;
-                                MathUtils.insertMatToArray16(group.RefMeshGroup.GroupTBO1Data, 16 * actualJointIndex, nodeTransform);
-                            } 
-                        }
-
-                    }
+                    NbMatrix4 prev = group.RefMeshGroup.PrevFrameJointData[i];
+                    NbMatrix4 next = group.RefMeshGroup.NextFrameJointData[i];
+                    group.RefMeshGroup.GroupTBO1Data[i] = (1.0f - interpolationCoeff) * prev + interpolationCoeff * next;
                 }
+            }
+        }
+
+        public void OnPostFrameUpdate()
+        {
+            foreach (NbAnimationGroup group in AnimationGroups)
+            {
+                if (group.ActiveAnimation is null)
+                    continue;
+
+                //Swap frame data
+                NbMatrix4[] temp = group.RefMeshGroup.PrevFrameJointData;
+                group.RefMeshGroup.PrevFrameJointData = group.RefMeshGroup.NextFrameJointData;
+                group.RefMeshGroup.NextFrameJointData = temp;
+
+                SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
+                
+                foreach (string node in sc.JointNodes.Keys)
+                {
+                    SceneGraphNode joint = sc.JointNodes[node];
+                    JointComponent jc = joint.GetComponent<JointComponent>() as JointComponent;
+                    TransformComponent tc = joint.GetComponent<TransformComponent>() as TransformComponent;
+
+                    int actualJointIndex = jc.JointIndex;
+
+                    NbMatrix4 invBindMatrix = group.RefMeshGroup.JointBindingDataList[actualJointIndex].invBindMatrix;
+                    group.RefMeshGroup.NextFrameJointData[actualJointIndex] = invBindMatrix * tc.Data.WorldTransformMat;
+                }
+
                 
             }
         }
@@ -89,34 +94,33 @@ namespace NbCore.Systems
         {
             foreach (NbAnimationGroup group in AnimationGroups)
             {
-                foreach (Animation a in group.Animations)
+                if (group.ActiveAnimation is null)
+                    continue;
+                
+                if (group.ActiveAnimation.IsPlaying)
                 {
-                    if (a.IsPlaying)
-                        a.Update((float)dt);
+                    group.ActiveAnimation.Progress();
 
-                    if (a.IsUpdated)
+                    SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
+                    //Update data to the meshgroups
+                    foreach (string node in sc.JointNodes.Keys)
                     {
-                        //Update data to the meshgroups
-                        foreach (string node in a.animData.Nodes)
-                        {
-                            NbVector3 nodePosition = a.GetNodeTranslation(node);
-                            NbQuaternion nodeRotation = a.GetNodeRotation(node);
-                            NbVector3 nodeScale = a.GetNodeScale(node);
+                        SceneGraphNode joint = sc.JointNodes[node];
+                        JointComponent jc = joint.GetComponent<JointComponent>() as JointComponent;
+                        TransformComponent tc = joint.GetComponent<TransformComponent>() as TransformComponent;
 
-                            //Get Node
-                            SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
-                            SceneGraphNode joint = sc.JointNodes[node];
-                            if (joint != null && joint.Type == SceneNodeType.JOINT)
-                            {
-                                TransformController tc = EngineRef.transformSys.GetEntityTransformController(joint);
-                                //Add future state
-                                tc.AddFutureState(nodePosition, nodeRotation, nodeScale);
-                            }
-                                
-                        }
-                        a.IsUpdated = false;
+                        NbVector3 nodePosition = group.ActiveAnimation.GetNodeTranslation(node);
+                        NbQuaternion nodeRotation = group.ActiveAnimation.GetNodeRotation(node);
+                        NbVector3 nodeScale = group.ActiveAnimation.GetNodeScale(node);
+
+                        tc.Data.localRotation = nodeRotation;
+                        tc.Data.localScale = nodeScale;
+                        tc.Data.localTranslation = nodePosition;
+
                     }
+                    EngineRef.RequestEntityTransformUpdate(group.AnimationRoot);
                 }
+                
             }
             
         }

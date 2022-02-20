@@ -1,3 +1,4 @@
+#if (OPENGL)
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -6,12 +7,11 @@ using NbCore;
 using NbCore.Systems;
 using NbCore.Math;
 using NbCore.Common;
-using NbCore.Platform.Graphics;
-using OpenTK.Graphics.OpenGL4;
 using SixLabors.ImageSharp;
-using System.Linq;
+using NbCore.Platform.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL4;
 
-namespace NbCore.Platform.Graphics.OpenGL
+namespace NbCore.Platform.Graphics
 {
     //Framebuffer Structs
     [StructLayout(LayoutKind.Explicit)]
@@ -62,6 +62,7 @@ namespace NbCore.Platform.Graphics.OpenGL
         public static readonly int SizeInBytes = 8592;
     };
 
+    
     public class GraphicsAPI : IGraphicsApi
     {
         private const string RendererName = "OPENGL_RENDERER";
@@ -809,7 +810,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             test.SaveAsPng("Temp//framebuffer_raw_" + name + ".png");
         }
 
-        public void GenerateTexture(NbTexture tex)
+        public static void GenerateTexture(NbTexture tex)
         {
             //Upload to GPU
             tex.texID = GL.GenTexture();
@@ -868,7 +869,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             //avgColor = getAvgColor(pixels);
         }
 
-        private void UploadTextureData(int tex_id, PNGImage tex_data)
+        private static void UploadTextureData(int tex_id, PNGImage tex_data)
         {
             TextureTarget gl_target = TextureTargetMap[tex_data.target];
             InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
@@ -891,7 +892,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0); //Unbind texture PBO
         }
 
-        private void UploadTextureData(int tex_id, DDSImage tex_data)
+        private static void UploadTextureData(int tex_id, DDSImage tex_data)
         {
             //Temp Variables
             int w = tex_data.Width;
@@ -924,13 +925,13 @@ namespace NbCore.Platform.Graphics.OpenGL
             }
         }
 
-        public void UploadTexture(NbTexture tex)
+        public static void UploadTexture(NbTexture tex)
         {
+            Callbacks.Assert(tex.texID < 0, "Invalid texture ID");
             if (tex.Data is DDSImage)
                 UploadTextureData(tex.texID, tex.Data as DDSImage);
             else if (tex.Data is PNGImage)
                 UploadTextureData(tex.texID, tex.Data as PNGImage);
-
         }
 
         #endregion
@@ -1406,11 +1407,6 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         }
 
-
-
-
-
-
         public void AddRenderInstance(ref MeshComponent mc, TransformData td)
         {
             GLMeshBufferManager.AddRenderInstance(ref mc, td);
@@ -1466,3 +1462,5 @@ namespace NbCore.Platform.Graphics.OpenGL
 
     }
 }
+
+#endif

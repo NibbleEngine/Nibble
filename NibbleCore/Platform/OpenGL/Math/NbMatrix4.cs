@@ -259,6 +259,19 @@ namespace NbCore.Math
             }  
         }
 
+        public static NbMatrix4 operator *(float a, NbMatrix4 b)
+        {
+            return new NbMatrix4()
+            {
+                _Value = Matrix4.Mult(b._Value, a)
+            };
+        }
+
+        public static NbMatrix4 operator *(NbMatrix4 b, float a)
+        {
+            return a * b;
+        }
+
         public static NbMatrix4 operator *(NbMatrix4 a, NbMatrix4 b)
         {
             return new NbMatrix4()

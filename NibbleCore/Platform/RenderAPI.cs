@@ -34,8 +34,8 @@ namespace NbCore.Platform.Graphics
         public void ShaderReport(NbShader shader);
 
         //Texture Upload
-        public void GenerateTexture(NbTexture tex);
-        public void UploadTexture(NbTexture tex);
+        //public void GenerateTexture(NbTexture tex);
+        //public void UploadTexture(NbTexture tex);
 
         //Mesh Buffer Methods
         public void PrepareMeshBuffers();

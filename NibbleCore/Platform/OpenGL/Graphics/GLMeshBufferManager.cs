@@ -96,7 +96,8 @@ namespace NbCore.Platform.Graphics.OpenGL
             SetInstanceWorldMatInv(mesh, mc.InstanceID, actualWorldMatInv);
             SetInstanceNormalMat(mesh, mc.InstanceID, NbMatrix4.Transpose(actualWorldMatInv));
             SetInstanceUniform4(mesh, mc.InstanceID, 0, new NbVector4(mesh.MetaData.FirstSkinMat, 0.0f, 0.0f, 0.0f));
-            SetInstanceBoneRemap(mesh, mc.InstanceID, mesh.MetaData.BoneRemapIndices);
+            if (mesh.MetaData.BoneRemapIndices != null)
+                SetInstanceBoneRemap(mesh, mc.InstanceID, mesh.MetaData.BoneRemapIndices);
             mesh.InstanceCount++;
         }
         

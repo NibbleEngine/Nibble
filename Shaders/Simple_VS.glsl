@@ -81,7 +81,6 @@ void main()
         lWorldMat += blendWeights.y * boneMatricesTBO[index.y];
         lWorldMat += blendWeights.z * boneMatricesTBO[index.z];
         lWorldMat += blendWeights.w * boneMatricesTBO[index.w];
-        //wPos.y += boneMatricesTBO[index.x];
     #endif
 
     wPos = lWorldMat * vPosition; //Calculate world Position
