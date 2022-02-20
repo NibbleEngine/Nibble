@@ -25,6 +25,7 @@ using Font = NbCore.Text.Font;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Linq;
+using System.Diagnostics;
 
 namespace NbCore
 {
@@ -301,7 +302,7 @@ namespace NbCore
 
         public void ImportScene(SceneGraphNode scene)
         {
-            RegisterSceneGraphNode(scene);
+            RegisterEntity(scene);
             RequestEntityTransformUpdate(scene);
 
             scene.SetParent(GetActiveSceneGraph().Root);
@@ -347,7 +348,22 @@ namespace NbCore
             }
         }
 
-        public void RegisterEntity(Entity e)
+        public void RegisterEntity(SceneGraphNode e, bool recurse = true)
+        {
+            //Add Entity to main registry
+            if (RegisterEntity((Entity) e))
+            {
+                sceneMgmtSys.AddNode(e);
+                
+                if (recurse)
+                {
+                    foreach (SceneGraphNode child in e.Children)
+                        RegisterEntity(child);
+                }
+            }
+        }
+
+        public bool RegisterEntity(Entity e)
         {
             //Add Entity to main registry
             if (registrySys.RegisterEntity(e))
@@ -382,18 +398,9 @@ namespace NbCore
 
                 }
 
-                if (e is SceneGraphNode)
-                    sceneMgmtSys.AddNode(e as SceneGraphNode);
-
-                //TODO Register to the rest systems if necessary
+                return true;
             }
-        }
-
-        public void RegisterSceneGraphNode(SceneGraphNode node)
-        {
-            RegisterEntity(node);
-            foreach (SceneGraphNode child in node.Children)
-                RegisterSceneGraphNode(child);
+            return false;
         }
 
         public void DestroyEntity(MeshMaterial mat)
@@ -445,6 +452,11 @@ namespace NbCore
         public void AddTexture(NbTexture tex)
         {
             renderSys.TextureMgr.AddTexture(tex);
+        }
+
+        public Entity GetEntityByID(long id)
+        {
+            return registrySys.GetEntity(id);
         }
 
         //Asset Getter
@@ -995,7 +1007,7 @@ namespace NbCore
             {
                 shader = new();
                 
-                if (!renderSys.Renderer.CompileShader(ref shader, mat.ShaderConfig, mat))
+                if (!Platform.Graphics.GraphicsAPI.CompileShader(ref shader, mat.ShaderConfig, mat))
                     return null;
                 //Attach UBO binding Points
                 renderSys.Renderer.AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_FRAME", 0);

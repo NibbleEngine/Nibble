@@ -87,6 +87,7 @@ namespace NbCore
             if (HasComponent(t))
                 return;
             _componentMap[t] = comp;
+            comp.RefEntity = this;
         }
 
         public void RemoveComponent<T>()

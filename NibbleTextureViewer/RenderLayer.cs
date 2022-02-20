@@ -62,10 +62,10 @@ namespace NibbleTextureViewer
                 NbShaderMode.DEFAULT, "MultiTexTexture");
 
             _shaderArray = new();
-            EngineRef.renderSys.Renderer.CompileShader(ref _shaderArray, conf_multitex);
+            NbCore.Platform.Graphics.GraphicsAPI.CompileShader(ref _shaderArray, conf_multitex);
 
             _shaderSingle = new();
-            EngineRef.renderSys.Renderer.CompileShader(ref _shaderSingle, conf);
+            NbCore.Platform.Graphics.GraphicsAPI.CompileShader(ref _shaderSingle, conf);
 
         }
 
@@ -118,7 +118,7 @@ namespace NibbleTextureViewer
         {
             //First argument should be the input state
             NbMouseState mouseState = (NbMouseState) data.Dequeue();
-            NbCore.Platform.Graphics.IGraphicsApi renderer = EngineRef.renderSys.Renderer;
+            NbCore.Platform.Graphics.GraphicsAPI renderer = EngineRef.renderSys.Renderer;
 
             //Compile updated shaders
             while (EngineRef.renderSys.ShaderMgr.CompilationQueue.Count > 0)

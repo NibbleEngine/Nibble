@@ -42,13 +42,12 @@ namespace NibbleOBJPlugin
         public override void Import(string filepath)
         {
             SceneGraphNode node = ParseObj(filepath);
-            EngineRef.RegisterSceneGraphNode(node);
+            EngineRef.RegisterEntity(node);
             EngineRef.RequestEntityTransformUpdate(node);
         }
 
         private NbMesh GenerateMesh(List<NbVector3> lverts, List<NbVector3i> ltris)
         {
-
             NbMeshData data = GenerateGeometryData(lverts, ltris);
             NbMeshMetaData metadata = GenerateGeometryMetaData(data);
 

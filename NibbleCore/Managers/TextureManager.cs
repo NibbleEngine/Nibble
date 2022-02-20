@@ -7,7 +7,7 @@ namespace NbCore
 {
     public class TextureManager : EntityManager<NbTexture>
     {
-        Dictionary<string, NbTexture> TextureMap = new();
+        public Dictionary<string, NbTexture> TextureMap = new();
         
         public TextureManager()
         {

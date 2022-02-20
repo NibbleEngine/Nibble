@@ -1310,9 +1310,9 @@ namespace NbCore.Systems
                 NbShader shader = ShaderMgr.CompilationQueue.Dequeue();
                 //TODO: FIX
                 if (shader.RefMaterial is null)
-                    Renderer.CompileShader(ref shader, shader.RefConfig);
+                    GraphicsAPI.CompileShader(ref shader, shader.RefConfig);
                 else
-                    Renderer.CompileShader(ref shader, shader.RefConfig, shader.RefMaterial);
+                    GraphicsAPI.CompileShader(ref shader, shader.RefConfig, shader.RefMaterial);
 
                 shader.IsUpdated?.Invoke();
             }

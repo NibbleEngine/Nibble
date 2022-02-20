@@ -21,7 +21,7 @@ namespace NbCore.Systems
             sceneGraph.ID = SceneGraphs.Count;
             //Create Root
             SceneGraphNode root = EngineRef.CreateSceneNode("DefaultRoot");
-            EngineRef.RegisterSceneGraphNode(root);
+            EngineRef.RegisterEntity(root);
             
             sceneGraph.Root = root;
             SceneGraphs.Add(sceneGraph);

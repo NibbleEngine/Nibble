@@ -5,10 +5,6 @@ using NbCore.Math;
 using System.IO;
 using NbCore.Common;
 
-#if OPENGL
-using NbCore.Platform.Graphics.OpenGL;
-#endif
-
 namespace NbCore
 {
     public enum NbTextureTarget
@@ -38,6 +34,7 @@ namespace NbCore
         public NbVector4 procColor;
         public NbVector3 avgColor;
         public NbTextureData Data;
+        public int Refs = 0;
         
         //Empty Initializer
         public NbTexture() :base(EntityType.Texture) { }
@@ -45,6 +42,7 @@ namespace NbCore
         public NbTexture(string path) :base(EntityType.Texture)
         {
             Path = path;
+
             byte[] byte_data = File.ReadAllBytes(Path);
             string ext = System.IO.Path.GetExtension(path).ToUpper();
             Data = textureInit(byte_data, ext);
