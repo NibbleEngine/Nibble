@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using NbCore.Common;
+using Newtonsoft.Json;
 
 namespace NbCore
 {
@@ -94,6 +95,61 @@ namespace NbCore
 
             foreach (SceneGraphNode child in n.Children)
                 AddNode(child);
+        }
+
+        public void Export(string output_file)
+        {
+            System.IO.StreamWriter sw = new(output_file);
+            JsonTextWriter writer = new JsonTextWriter(sw);
+            JsonSerializer serializer = new JsonSerializer();
+            writer.Formatting = Formatting.Indented;
+
+            writer.WriteStartObject();
+            
+            //Step A: Export ShaderSource Objects
+            List<GLSLShaderSource> sources = new();
+            List<GLSLShaderConfig> configs = new();
+            foreach (SceneGraphNode node in Nodes)
+            {
+                if (node.HasComponent<MeshComponent>())
+                {
+                    MeshComponent mc = node.GetComponent<MeshComponent>() as MeshComponent;
+
+                    if (mc.Mesh == null)
+                        continue;
+                    else if (mc.Mesh.Material == null)
+                        continue;
+
+                    var shader_config = mc.Mesh.Material.ShaderConfig;
+                    if (!configs.Contains(shader_config))
+                        configs.Add(shader_config);
+
+                    var shader_sources = mc.Mesh.Material.ShaderConfig.Sources;
+                    foreach (GLSLShaderSource s in shader_sources.Values)
+                    {
+                        if (s.SourceFilePath == "")
+                            continue;
+                        if (!sources.Contains(s))
+                            sources.Add(s);
+                    }
+                }
+            }
+
+            writer.WritePropertyName("SHADER_SOURCES");
+            writer.WriteStartArray();
+            foreach (GLSLShaderSource source in sources)
+                serializer.Serialize(writer, source);
+            writer.WriteEndArray();
+
+            //Step B: Export Shader Configurations
+            writer.WritePropertyName("SHADER_CONFIGS");
+            writer.WriteStartArray();
+            foreach (GLSLShaderConfig conf in configs)
+                serializer.Serialize(writer, conf);
+            writer.WriteEndArray();
+
+            writer.WriteEndObject();
+            writer.Close();
         }
 
         public void Clear()

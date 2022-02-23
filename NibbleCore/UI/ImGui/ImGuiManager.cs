@@ -18,7 +18,6 @@ namespace NbCore.UI.ImGui
         public GameWindow WindowRef = null;
         public Engine EngineRef = null;
         
-
         //ImguiPalette Colors
         //Blue
         public static System.Numerics.Vector4 DarkBlue = new(0.04f, 0.2f, 0.96f, 1.0f);

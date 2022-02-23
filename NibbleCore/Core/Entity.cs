@@ -136,7 +136,19 @@ namespace NbCore
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);
+#if DEBUG
             GC.SuppressFinalize(this);
+#endif
         }
+
+#if DEBUG
+        ~Entity()
+        {
+            // If this finalizer runs, someone somewhere failed to
+            // call Dispose, which means we've failed to leave
+            // a monitor!
+            System.Diagnostics.Debug.Fail("Undisposed lock. Object Type " + GetType().ToString());
+        }
+#endif
     }
 }
