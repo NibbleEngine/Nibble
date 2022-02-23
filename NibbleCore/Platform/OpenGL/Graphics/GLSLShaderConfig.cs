@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using Newtonsoft.Json;
 
 namespace NbCore
 {
+    [JsonConverter(typeof(GLSLShaderConfigConverter))]
     public class GLSLShaderConfig : Entity
     {
         public string Name = "";
@@ -63,6 +64,47 @@ namespace NbCore
             throw new NotImplementedException();
         }
 
+    }
+
+    public class GLSLShaderConfigConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return true;
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            GLSLShaderConfig conf = (GLSLShaderConfig)value;
+
+            writer.WriteStartObject();
+
+            writer.WritePropertyName("Name");
+            writer.WriteValue(conf.Name);
+
+            //Write Sources
+            foreach (var kp in conf.Sources)
+            {
+                writer.WritePropertyName(kp.Key.ToString());
+                writer.WriteValue(kp.Value.SourceFilePath);
+            }
+
+            writer.WritePropertyName("Directives");
+            writer.WriteStartArray();
+            foreach (string directive in conf.directives)
+            {
+                writer.WriteValue(directive);
+            }
+
+            writer.WriteEndArray();
+            
+            writer.WriteEndObject();
+        }
     }
 
 

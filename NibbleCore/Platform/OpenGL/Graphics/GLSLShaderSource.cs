@@ -3,28 +3,31 @@ using System.Collections.Generic;
 using System.IO;
 using NbCore.Common;
 using System.Reflection;
-
+using Newtonsoft.Json;
 
 namespace NbCore
 {
     public class GLSLShaderSource : Entity
     {
-        public string Name = "";
+        [JsonIgnore] public string Name = "";
         public NbShaderTextType SourceType;
         private List<GLSLShaderSource> _dynamicTextParts = new();
         private List<string> _staticTextParts = new();
         public string SourceFilePath = ""; //Path of the file where the source is fetched from
-        public string SourceText = ""; //Source Text as fetched from the source file
-        public string ResolvedText = ""; //Source Text after processing all dependencies
+        [JsonIgnore] public string SourceText = ""; //Source Text as fetched from the source file
+        [JsonIgnore] public string ResolvedText = ""; //Source Text after processing all dependencies
         private FileSystemWatcher _watcher;
         private HashSet<string> _watchFiles = new();
         private DateTime LastReadTime;
-        public bool Processed = false;
-        public bool Resolved = false;
-        
-        public HashSet<GLSLShaderSource> ReferencedSources = new(); //Keep source texts that the current text refers to
-        public HashSet<GLSLShaderSource> ReferencedBySources = new(); //Keep source texts that reference this source
-        public HashSet<GLSLShaderConfig> ReferencedByConfigs = new(); //Keeps track of all the Shaders that the current source is used by
+        [JsonIgnore] public bool Processed = false;
+        [JsonIgnore] public bool Resolved = false;
+
+        //Keep source texts that the current text refers to
+        [JsonIgnore] public HashSet<GLSLShaderSource> ReferencedSources = new();
+        //Keep source texts that reference this source
+        [JsonIgnore] public HashSet<GLSLShaderSource> ReferencedBySources = new();
+        //Keeps track of all the Shaders that the current source is used by
+        [JsonIgnore] public HashSet<GLSLShaderConfig> ReferencedByConfigs = new(); 
         
         //Static random generator used in temp file name generation
         private static readonly Random rand_gen = new(999991);
@@ -75,8 +78,6 @@ namespace NbCore
             _watcher = fw;
         }
 
-        
-        
         public void Process()
         {
             _dynamicTextParts.Clear();
@@ -183,7 +184,6 @@ namespace NbCore
 
             Resolved = true;
         }
-
 
         private void file_changed(object sender, FileSystemEventArgs e)
         {

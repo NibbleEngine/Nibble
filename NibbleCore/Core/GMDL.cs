@@ -61,6 +61,7 @@ namespace NbCore
         public uint vs_abs_offset;
         public uint is_size;
         public uint is_abs_offset;
+        public bool double_buffering;
     }
 
     public class GeomObject : Entity

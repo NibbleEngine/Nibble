@@ -14,15 +14,9 @@ namespace NbCore
 
         }
 
-        public override void CleanUp()
-        {
-            DeleteTextures();
-            base.CleanUp();
-        }
-
         public void DeleteTextures()
         {
-            foreach (NbTexture p in Entities)
+            foreach (NbTexture p in TextureMap.Values)
                 p.Dispose();
         }
 
@@ -40,12 +34,17 @@ namespace NbCore
             }
             else
                 return false;
-            
         }
 
         public NbTexture Get(string name)
         {
             return TextureMap[name];
+        }
+
+        public override void CleanUp()
+        {
+            TextureMap.Clear();
+            base.CleanUp();
         }
 
 
