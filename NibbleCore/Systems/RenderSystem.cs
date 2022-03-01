@@ -221,7 +221,7 @@ namespace NbCore.Systems
         {
             if (!e.HasComponent<MeshComponent>())
             {
-                Log(string.Format("Entity {0} should have a mesh component", e.GetID()), Common.LogVerbosityLevel.INFO);
+                Log(string.Format("Entity {0} should have a mesh component", e.GetID()), LogVerbosityLevel.INFO);
                 return;
             }
 

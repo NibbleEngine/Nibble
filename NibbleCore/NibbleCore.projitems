@@ -22,6 +22,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\ApplicationLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimationGroup.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbImage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\NbLogger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\PNGImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SceneGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ShaderCommons.cs" />
@@ -37,6 +38,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\NbShader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\TwosComplement.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiLog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiOpenFileDialog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Version.cs" />

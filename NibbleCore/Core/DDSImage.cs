@@ -381,25 +381,25 @@ namespace NbCore {
 
 			if (new_image.header.dwMipMapCount != target.header.dwMipMapCount)
 			{
-				//Callbacks.Log($"Incorrect MipmapCount for the new image. Correct Value : { target.header.dwMipMapCount}", LogVerbosityLevel.WARNING);
+				//Callbacks.Logger.Log($"Incorrect MipmapCount for the new image. Correct Value : { target.header.dwMipMapCount}", LogVerbosityLevel.WARNING);
 				return false;
 			}
 
 			if (new_image.header.dwWidth != target.header.dwWidth)
 			{
-				//Callbacks.Log($"Incorrect Width for the new image. Correct Value : { target.header.dwWidth}", LogVerbosityLevel.WARNING);
+				//Callbacks.Logger.Log($"Incorrect Width for the new image. Correct Value : { target.header.dwWidth}", LogVerbosityLevel.WARNING);
 				return false;
 			}
 
 			if (new_image.header.dwHeight != target.header.dwHeight)
 			{
-				//Callbacks.Log($"Incorrect Height for the new image. Correct Value : { target.header.dwHeight}", LogVerbosityLevel.WARNING);
+				//Callbacks.Logger.Log($"Incorrect Height for the new image. Correct Value : { target.header.dwHeight}", LogVerbosityLevel.WARNING);
 				return false;
 			}
 
 			if (new_image.header.ddspf.dwFourCC != target.header.ddspf.dwFourCC)
 			{
-				//Callbacks.Log($"Incorrect FORMAT for the new image. Correct Value : { target.header.ddspf.dwFourCC}", LogVerbosityLevel.WARNING);
+				//Callbacks.Logger.Log($"Incorrect FORMAT for the new image. Correct Value : { target.header.ddspf.dwFourCC}", LogVerbosityLevel.WARNING);
 				return false;
 			}
 

@@ -34,13 +34,13 @@ namespace NbCore.Systems
         {
             if (EntityDataMap.ContainsKey(e.GetID()))
             {
-                Log("Entity Already Registered", Common.LogVerbosityLevel.INFO);
+                Log("Entity Already Registered", LogVerbosityLevel.INFO);
                 return;
             }
 
             if (!e.HasComponent<TransformComponent>())
             {
-                Log(string.Format("Entity {0} should have a transform component", e.GetID()), Common.LogVerbosityLevel.INFO);
+                Log(string.Format("Entity {0} should have a transform component", e.GetID()), LogVerbosityLevel.INFO);
                 return;
             }
             
@@ -62,13 +62,13 @@ namespace NbCore.Systems
         {
             if (!e.HasComponent<TransformComponent>())
             {
-                Log($"Entity {e.GetID()} should has no transform component. Nothing to do...", Common.LogVerbosityLevel.INFO);
+                Log($"Entity {e.GetID()} should has no transform component. Nothing to do...", LogVerbosityLevel.INFO);
                 return;
             }
 
             if (!EntityDataMap.ContainsKey(e.GetID()))
             {
-                Log("Entity not Registered", Common.LogVerbosityLevel.INFO);
+                Log("Entity not Registered", LogVerbosityLevel.INFO);
                 return;
             }
 
@@ -139,7 +139,7 @@ namespace NbCore.Systems
                 UpdatedEntities.Enqueue(e);
             else
                 Log("Entity not registered to the transformation system", 
-                    Common.LogVerbosityLevel.WARNING);
+                    LogVerbosityLevel.WARNING);
         }
 
         public void RemoveDynamicEntity(Entity e)

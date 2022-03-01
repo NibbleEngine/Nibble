@@ -100,7 +100,7 @@ namespace NbCore
             Rotation = NbQuaternion.Slerp(PrevRotation, NextRotation, (float) InterpolationCoeff);
             Scale = NbVector3.Lerp(PrevScale, NextScale, (float) InterpolationCoeff);
 
-            //Callbacks.Log(string.Format("Interpolated Position {0} {1} {2}",
+            //Callbacks.Logger.Log(string.Format("Interpolated Position {0} {1} {2}",
             //                    Position.X, Position.Y, Position.Z, Time),
             //                    LogVerbosityLevel.INFO);
             
