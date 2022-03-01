@@ -238,22 +238,13 @@ namespace NbCore.Common
 
     }
 
-    public enum LogVerbosityLevel
-    {
-        HIDEBUG,
-        DEBUG,
-        INFO,
-        WARNING,
-        ERROR
-    }
-
     //Delegates - Function Types for Callbacks
     public delegate void UpdateStatusCallback(string msg);
     //public delegate void OpenAnimCallback(string filepath, Model animScene);
     //public delegate void OpenPoseCallback(string filepath, Model animScene);
     public delegate void ShowInfoMsg(string msg, string caption);
     public delegate void ShowErrorMsg(string msg, string caption);
-    public delegate void LogCallback(string msg, LogVerbosityLevel level);
+    public delegate void LogCallback(object sender, string msg, LogVerbosityLevel level);
     public delegate void AssertCallback(bool status, string msg);
     public delegate void SendRequestCallback(ref ThreadRequest req);
     public delegate byte[] GetResourceCallback(string resourceName);
@@ -261,13 +252,14 @@ namespace NbCore.Common
     public delegate Image GetBitMapResourceCallback(string resourceName);
     public delegate string GetTextResourceCallback(string resourceName);
     public delegate object GetResourceWithTypeCallback(string resourceName, out string resourceType);
+    
 
     public static class Callbacks
     {
         public static UpdateStatusCallback updateStatus = null;
         public static ShowInfoMsg showInfo = null;
         public static ShowErrorMsg showError = null;
-        public static LogCallback Log = null;
+        public static NbLogger Logger = null;
         public static AssertCallback Assert = null;
         public static SendRequestCallback issueRequestToGLControl = null;
         public static GetResourceCallback getResource = null;
@@ -275,11 +267,10 @@ namespace NbCore.Common
         public static GetBitMapResourceCallback getBitMapResource = null;
         public static GetTextResourceCallback getTextResource = null;
         public static GetResourceWithTypeCallback getResourceWithType = null;
-
-
+        
+        
         public static void SetDefaultCallbacks()
         {
-            Log = DefaultLog;
             Assert = DefaultAssert;
             getResource = DefaultGetResource;
             getResourceFromAssembly = DefaultGetResourceFromAssembly;
@@ -287,18 +278,12 @@ namespace NbCore.Common
             getBitMapResource = DefaultGetBitMapResource;
         }
 
-        //Default callbacks
-        public static void DefaultLog(string msg, LogVerbosityLevel lvl)
-        {
-            if (lvl >= RenderState.settings.LogVerbosity)
-                Console.WriteLine(msg);
-        }
-
         public static void DefaultAssert(bool status, string msg)
         {
             if (!status)
             {
-                Log(new System.Diagnostics.StackTrace().ToString(), LogVerbosityLevel.ERROR);
+                string trace = new System.Diagnostics.StackTrace().ToString();
+                Logger.Log(Assembly.GetCallingAssembly(), trace, LogVerbosityLevel.ERROR);
                 throw new Exception(msg);
             }
             
@@ -321,7 +306,7 @@ namespace NbCore.Common
                 data = _textStreamReader.ReadBytes((int) _textStreamReader.BaseStream.Length);
             } catch
             {
-                Callbacks.Log(string.Format("Unable to Fetch Resource {0}", resource_name), 
+                Logger.Log(Assembly.GetCallingAssembly(), string.Format("Unable to Fetch Resource {0}", resource_name), 
                     LogVerbosityLevel.ERROR);
             }
             

@@ -161,7 +161,7 @@ namespace NbCore
 
             //Console.WriteLine(string.Format("Camera Rotation {0} {1} {2} {3}",
             //                    rx.X, rx.Y, rx.Z, rx.W),
-            //                    Common.LogVerbosityLevel.INFO);
+            //                    LogVerbosityLevel.INFO);
 
             //Move Camera based on the impulse
 

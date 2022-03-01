@@ -36,11 +36,9 @@ namespace NbCore.Plugins
 
         public abstract void Draw(); //Used to draw plugin panels and popups
 
-        public virtual void Log(string message, LogVerbosityLevel level)
+        public virtual void Log(string message, LogVerbosityLevel lvl)
         {
-            string msg = string.Format("* {0} : {1} - {2}", 
-                Name.ToUpper(), level.ToString(), message);
-            Callbacks.Log(msg, level);
+            Callbacks.Logger.Log(Name.ToUpper(), message, lvl);
         }
 
     }

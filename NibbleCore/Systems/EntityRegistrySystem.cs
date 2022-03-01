@@ -45,7 +45,7 @@ namespace NbCore.Systems
 
             if (IsRegistered(e))
             {
-                Log("Entity already registered", Common.LogVerbosityLevel.INFO);
+                Log("Entity already registered", LogVerbosityLevel.INFO);
                 return false;
             }
             

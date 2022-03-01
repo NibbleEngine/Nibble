@@ -39,7 +39,6 @@ namespace NbCore.UI.ImGui
             for (int i = 0; i < items.Length; i++)
                 items[i] = materialList[i].Name == "" ? "Material_" + i : materialList[i].Name;
 
-
             if (ImGuiNET.ImGui.Combo("##1", ref _SelectedId, items, items.Length))
                 _ActiveMaterial = materialList[_SelectedId];
 

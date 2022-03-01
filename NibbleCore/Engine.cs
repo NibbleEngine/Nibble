@@ -221,15 +221,15 @@ namespace NbCore
 
                         if (testNibbleVersion == null)
                         {
-                            Callbacks.Log("Unable to fetch required Nibble.dll version. Plugin not loaded",
-                                LogVerbosityLevel.WARNING);
+                            string msg = "Unable to fetch required Nibble.dll version. Plugin not loaded";
+                            Callbacks.Logger.Log(this, msg, LogVerbosityLevel.WARNING);
                             continue;
                         }
 
                         if (testNibbleVersion.Major != NibbleName.Version.Major || testNibbleVersion.Minor != NibbleName.Version.Minor)
                         {
-                            Callbacks.Log($"Plugin incompatible with Nibble.dll Version {NibbleName.Version}. Plugin was build against : {testNibbleVersion}.",
-                                LogVerbosityLevel.WARNING);
+                            string msg = $"Plugin incompatible with Nibble.dll Version {NibbleName.Version}. Plugin was build against : {testNibbleVersion}.";
+                            Callbacks.Logger.Log(this, msg, LogVerbosityLevel.WARNING);
                             continue;
                         }
 

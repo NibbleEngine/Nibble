@@ -102,8 +102,9 @@ namespace NbCore.Platform.Graphics
 
         private static void Log(string msg, LogVerbosityLevel lvl)
         {
-            Callbacks.Log(string.Format("* {0} : {1}", RendererName, msg), lvl);
+            Callbacks.Logger.Log(RendererName.ToUpper(), msg, lvl);
         }
+
 
         private void GLDebugMessage(DebugSource source, DebugType type, int id, DebugSeverity severity, int length, IntPtr message, IntPtr userParam)
         {
@@ -282,7 +283,7 @@ namespace NbCore.Platform.Graphics
             WaitSyncStatus result = WaitSyncStatus.WaitFailed;
             while (result == WaitSyncStatus.TimeoutExpired || result == WaitSyncStatus.WaitFailed)
             {
-                //Callbacks.Log(result.ToString());
+                //Callbacks.Logger.Log(result.ToString());
                 //Console.WriteLine("Gamithike o dias");
                 result = GL.ClientWaitSync(multiBufferSyncStatuses[multiBufferActiveId], 0, 10);
             }
@@ -1213,8 +1214,9 @@ namespace NbCore.Platform.Graphics
                 bool status = CompileShaderSource(shader, config, pair.Key, ref object_id, ref temp_log, directivestring);
                 if (!status)
                 {
-                    Callbacks.Log("Error During Shader Compilation", LogVerbosityLevel.ERROR);
-                    Callbacks.Log(temp_log, LogVerbosityLevel.ERROR);
+                    Log("Error During Shader Compilation", 
+                        LogVerbosityLevel.ERROR);
+                    Log(temp_log, LogVerbosityLevel.ERROR); //Show only in console
                     return false;
                 }
                 
@@ -1253,7 +1255,7 @@ namespace NbCore.Platform.Graphics
             GL.GetProgram(shader.ProgramID, GetProgramParameterName.LinkStatus, out int status_code);
             if (status_code != 1)
             {
-                Callbacks.Log(shader.CompilationLog, LogVerbosityLevel.ERROR);
+                Log(shader.CompilationLog, LogVerbosityLevel.ERROR);
                 Callbacks.Assert(false, "Shader Compilation Error");
             }
             

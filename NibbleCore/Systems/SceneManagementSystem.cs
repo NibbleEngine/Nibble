@@ -62,7 +62,7 @@ namespace NbCore.Systems
                     if (td.IsOccluded && !td.WasOccluded)
                     {
                         //Remove Instance
-                        Log($"Removing Instance {n.Name}", Common.LogVerbosityLevel.DEBUG);
+                        Log($"Removing Instance {n.Name}", LogVerbosityLevel.DEBUG);
                         //TODO: Maybe it is  a good idea to keep queues for 
                         //instances that will be removed and instance that will be added
                         //which will be passed per frame update to the rendering system
@@ -71,7 +71,7 @@ namespace NbCore.Systems
                     }
                     else if (!td.IsOccluded && td.WasOccluded)
                     {
-                        Log($"Adding Instance {n.Name}", Common.LogVerbosityLevel.DEBUG);
+                        Log($"Adding Instance {n.Name}", LogVerbosityLevel.DEBUG);
                         EngineRef.renderSys.Renderer.AddRenderInstance(ref mc, td);
                     }
                     else if (!td.IsOccluded)
@@ -104,7 +104,7 @@ namespace NbCore.Systems
                 if (!lc.Data.IsRenderable && lc.InstanceID != -1)
                 {
                     //Remove Instance
-                    Log($"Removing Instance {n.Name}", Common.LogVerbosityLevel.DEBUG);
+                    Log($"Removing Instance {n.Name}", LogVerbosityLevel.DEBUG);
                     //TODO: Maybe it is  a good idea to keep queues for 
                     //instances that will be removed and instance that will be added
                     //which will be passed per frame update to the rendering system
@@ -113,7 +113,7 @@ namespace NbCore.Systems
                 }
                 else if (lc.Data.IsRenderable && lc.InstanceID == -1)
                 {
-                    Log($"Adding Instance {n.Name}", Common.LogVerbosityLevel.DEBUG);
+                    Log($"Adding Instance {n.Name}", LogVerbosityLevel.DEBUG);
                     EngineRef.renderSys.Renderer.AddLightRenderInstance(ref lc, td);
                 }
                 else if (lc.Data.IsRenderable)

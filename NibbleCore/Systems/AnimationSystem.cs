@@ -36,7 +36,7 @@ namespace NbCore.Systems
                 AnimMgr.Add(anim);
                 
                 if (!AnimDataMgr.Add((ulong)anim.animData.MetaData.GetHashCode(), anim.animData))
-                    Log("Animation Data already registered.", Common.LogVerbosityLevel.INFO);
+                    Log("Animation Data already registered.", LogVerbosityLevel.INFO);
             }
         }
 

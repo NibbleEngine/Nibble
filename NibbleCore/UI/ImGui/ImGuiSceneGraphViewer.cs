@@ -96,7 +96,8 @@ namespace NbCore.UI.ImGui
                     //Create and register locator node
                     new_node = _manager.EngineRef.CreateMeshNode("Sphere#1", nm);
                     entity_added = true;
-                    Callbacks.Log("Creating Sphere Mesh Node", LogVerbosityLevel.INFO);
+                    Callbacks.Logger.Log(this, "Creating Sphere Mesh Node", 
+                        LogVerbosityLevel.INFO);
                     ImGuiCore.CloseCurrentPopup();
                 }
                 ImGuiCore.EndPopup();
@@ -184,7 +185,8 @@ namespace NbCore.UI.ImGui
                     {
                         //Create and register locator node
                         new_node = _manager.EngineRef.CreateLocatorNode("Locator#1");
-                        Callbacks.Log("Creating Locator node", LogVerbosityLevel.INFO);
+                        Callbacks.Logger.Log(this, "Creating Locator node", 
+                            LogVerbosityLevel.INFO);
                         entity_added = true;
                     }
                     
@@ -193,7 +195,8 @@ namespace NbCore.UI.ImGui
                         //Create and register locator node
                         new_node = _manager.EngineRef.CreateLightNode("Light#1");
 
-                        Callbacks.Log("Creating Light node", LogVerbosityLevel.INFO);
+                        Callbacks.Logger.Log(this, "Creating Light node", 
+                            LogVerbosityLevel.INFO);
                         entity_added = true;
                     }
 
@@ -225,7 +228,7 @@ namespace NbCore.UI.ImGui
                         //Create and register locator node
                         new_node = _manager.EngineRef.CreateMeshNode("Box#1", nm);
                         entity_added = true;
-                        Callbacks.Log("Creating Box Mesh Node", LogVerbosityLevel.INFO);
+                        Callbacks.Logger.Log(this, "Creating Box Mesh Node", LogVerbosityLevel.INFO);
 
                     }
 
@@ -251,7 +254,7 @@ namespace NbCore.UI.ImGui
                         //Create and register locator node
                         new_node = _manager.EngineRef.CreateMeshNode("Quad#1", nm);
                         entity_added = true;
-                        Callbacks.Log("Creating Quad Mesh Node", LogVerbosityLevel.INFO);
+                        Callbacks.Logger.Log(this, "Creating Quad Mesh Node", LogVerbosityLevel.INFO);
                     }
 
                     ImGuiCore.EndMenu();

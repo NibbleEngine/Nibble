@@ -14,6 +14,7 @@ namespace NbCore.UI.ImGui
         private readonly ImGuiMaterialEditor MaterialEditor;
         private readonly ImGuiTextureEditor TextureEditor;
         private readonly ImGuiShaderEditor ShaderEditor;
+        private readonly ImGuiLog LogViewer;
         private ImGuiController _controller;
         public GameWindow WindowRef = null;
         public Engine EngineRef = null;
@@ -39,6 +40,7 @@ namespace NbCore.UI.ImGui
             MaterialEditor = new();
             ShaderEditor = new();
             TextureEditor = new();
+            LogViewer = new();
         }
 
         //Resize available imgui space
@@ -70,6 +72,17 @@ namespace NbCore.UI.ImGui
         public virtual void SendChar(char e)
         {
             _controller.PressChar(e);
+        }
+
+        //Logger
+        public virtual void DrawLogger()
+        {
+            LogViewer?.Draw();
+        }
+
+        public virtual void Log(LogElement msg)
+        {
+            LogViewer?.AddLog(msg);
         }
 
         //Texture Viewer Related Methods

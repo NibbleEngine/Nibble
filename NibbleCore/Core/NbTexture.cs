@@ -84,7 +84,8 @@ namespace NbCore
         {
             if (Data is null)
             {
-                Callbacks.Log("No Texture Data in memory", LogVerbosityLevel.ERROR);
+                string msg = "No Texture Data in memory";
+                Callbacks.Logger.Log(this, msg, LogVerbosityLevel.ERROR);
                 return;
             }
 

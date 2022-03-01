@@ -35,9 +35,7 @@ namespace NbCore.Systems
 
         public void Log(string msg, LogVerbosityLevel lvl)
         {
-            string outmsg = string.Format("* {0} : {1} - {2}",
-                systemName.ToUpper(), lvl.ToString(), msg);
-            Callbacks.Log(outmsg, lvl);
+            Callbacks.Logger.Log(systemName.ToUpper(), msg, lvl);
         }
         
         public EngineSystemEnum GetSystemType()
