@@ -77,9 +77,11 @@ namespace NbCore.Platform.Graphics
 
         public static readonly Dictionary<NbTextureTarget, TextureTarget> TextureTargetMap = new()
         {
-            {NbTextureTarget.Texture1D , TextureTarget.Texture1D},
-            {NbTextureTarget.Texture2D , TextureTarget.Texture2D},
-            {NbTextureTarget.Texture2DArray , TextureTarget.Texture2DArray }
+            { NbTextureTarget.Texture1D , TextureTarget.Texture1D},
+            { NbTextureTarget.Texture2D , TextureTarget.Texture2D},
+            { NbTextureTarget.Texture3D, TextureTarget.Texture3D },
+            { NbTextureTarget.Texture2DArray , TextureTarget.Texture2DArray},
+            { NbTextureTarget.TextureCubeMap, TextureTarget.TextureCubeMap}
         };
 
         public static readonly Dictionary<NbTextureInternalFormat, InternalFormat> InternalFormatMap = new()
@@ -142,6 +144,8 @@ namespace NbCore.Platform.Graphics
 #endif
             //Default Enables
             EnableBlend();
+            
+            
             
             //Setup per Frame UBOs
             setupFrameUBO();
@@ -831,7 +835,8 @@ namespace NbCore.Platform.Graphics
             //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+            GL.TexParameter(gl_target, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
             if (mm_count > 1)
                 GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.NearestMipmapLinear);
             else
@@ -893,44 +898,70 @@ namespace NbCore.Platform.Graphics
             GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0); //Unbind texture PBO
         }
 
+
         private static void UploadTextureData(int tex_id, DDSImage tex_data)
         {
             //Temp Variables
             int w = tex_data.Width;
             int h = tex_data.Height;
+            int d = System.Math.Max(1, tex_data.Depth);
             int mm_count = System.Math.Max(1, tex_data.MipMapCount); //Fix the counter to 1 to handle textures with single mipmaps
-            int depth_count = System.Math.Max(1, tex_data.Depth); //Fix the counter to 1 to fit the texture in a 3D container
-            int temp_size = tex_data.header.dwPitchOrLinearSize;
+            int face_count = tex_data.Faces;
 
+            //Calculate size of the top layer
+            int temp_size = w * h * d * face_count * tex_data.blockSize / 16;
+            
             TextureTarget gl_target = TextureTargetMap[tex_data.target];
             InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
             GL.BindTexture(gl_target, tex_id);
             
             int offset = 0;
-            for (int i = 0; i < mm_count; i++)
+            for (int i = 0; i < 2; i++)
             {
-                byte[] temp_data = new byte[temp_size * depth_count];
-                System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size * depth_count);
-                if (depth_count > 1)
-                    GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, depth_count, 0, temp_size * depth_count, temp_data);
-                else
-                    GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_size * depth_count, temp_data);
-                offset += temp_size * depth_count;
+                byte[] temp_data = new byte[temp_size];
+                System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size);
+                
+                switch (gl_target)
+                {
+                    case TextureTarget.Texture3D:
+                        //GL.CompressedTexImage3D(gl_target, i, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext, w, h, d, 0, temp_size, temp_data);
+                        break;
+                    case TextureTarget.Texture2DArray:
+                        GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, d, 0, temp_size, temp_data);
+                        break;
+                    default:
+                        GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_size, temp_data);
+                        break;
+                }
+                
+                offset += temp_size;
 
                 w = System.Math.Max(w >> 1, 1);
                 h = System.Math.Max(h >> 1, 1);
+                d = System.Math.Max(d >> 1, 1);
 
-                temp_size = System.Math.Max(1, (w + 3) / 4) * System.Math.Max(1, (h + 3) / 4) * tex_data.blockSize;
+                temp_size = face_count * d * System.Math.Max(1, (w + 3) / 4) * 
+                            System.Math.Max(1, (h + 3) / 4) * tex_data.blockSize;
+
+                
+                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapLinear);
+                GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+                
+                GL.GenerateTextureMipmap(tex_id);
+                //GL.TexParameter(gl_target, TextureParameterName.TextureMaxLevel, 1.0f);
                 //This works only for square textures
                 //temp_size = Math.Max(temp_size/4, blocksize);
             }
+
         }
 
         public static void UploadTexture(NbTexture tex)
         {
             Callbacks.Assert(tex.texID >= 0, "Invalid texture ID");
-            if (tex.Data is DDSImage)
+            if (tex.Data is DDSImage) 
+            {
                 UploadTextureData(tex.texID, tex.Data as DDSImage);
+            }
             else if (tex.Data is PNGImage)
                 UploadTextureData(tex.texID, tex.Data as PNGImage);
         }
@@ -1258,7 +1289,14 @@ namespace NbCore.Platform.Graphics
                 Log(shader.CompilationLog, LogVerbosityLevel.ERROR);
                 Callbacks.Assert(false, "Shader Compilation Error");
             }
-            
+
+            //Save Shader to config references
+            if (!config.ReferencedByShaders.Contains(shader))
+            {
+                config.ReferencedByShaders.Add(shader);
+                shader.RefConfig = config;
+            }
+                
             ShaderCompilationLog(shader);
             loadActiveUniforms(shader);
             return true;
@@ -1333,6 +1371,9 @@ namespace NbCore.Platform.Graphics
                             break;
                         case ActiveUniformType.Sampler2D:
                             fmt.type = NbUniformType.Sampler2D;
+                            break;
+                        case ActiveUniformType.Sampler3D:
+                            fmt.type = NbUniformType.Sampler3D;
                             break;
                         case ActiveUniformType.Sampler2DArray:
                             fmt.type = NbUniformType.Sampler2DArray;

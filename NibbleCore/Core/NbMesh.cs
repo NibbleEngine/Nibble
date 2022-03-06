@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System;
 using NbCore.Math;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
 
 namespace NbCore
 {
@@ -36,6 +37,7 @@ namespace NbCore
         public float isSelected;
     };
 
+    [NbSerializable]
     public class NbMesh : Entity
     {
         public ulong Hash;
@@ -77,6 +79,24 @@ namespace NbCore
                 _disposed = true;
                 base.Dispose(disposing);
             }
+        }
+
+
+        public void Serialize(JsonTextWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().FullName);
+
+            writer.WritePropertyName("Hash");
+            writer.WriteValue(Hash);
+            writer.WritePropertyName("MeshType");
+            writer.WriteValue(Type);
+            writer.WritePropertyName("MetaData");
+            IO.NbSerializer.WriteField(typeof(NbMesh).GetField("MetaData"), this, writer);
+            writer.WritePropertyName("MeshDataHash");
+            writer.WriteValue(Data.Hash);
+            writer.WriteEndObject();
         }
     }
 }

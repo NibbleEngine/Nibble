@@ -9,10 +9,14 @@
 	<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	<BaseOutputPath>..\Build</BaseOutputPath>
 	<SelfContained>false</SelfContained>
+	<Configurations>Release;OpenGL_DEBUG</Configurations>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <PlatformTarget>x64</PlatformTarget>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='OpenGL_DEBUG|AnyCPU'">
+	  <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	  <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	  <PlatformTarget>x64</PlatformTarget>
+	  <DefineConstants>$(DefineConstants)TRACE;OPENGL</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -24,9 +28,11 @@
     <EmbeddedResource Include="$(SolutionDir)Resources\default_mask.dds" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\NibbleDLL\NibbleDLL.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\NibbleDLL\NibbleDLL.csproj" Condition="$(Configuration)=='OpenGL_DEBUG'">
+			<SetConfiguration>Configuration=OpenGL_DEBUG</SetConfiguration>
+		</ProjectReference>
+	</ItemGroup>
   
   
   <ItemGroup>

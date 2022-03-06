@@ -6,6 +6,9 @@ using System.Text;
 
 namespace NbCore {
 
+	//This class should be abstracted and based on the game we should provide
+	//different loaders since everyone is using completely custom assets.
+	//This is created based on NMS DDS format
 	public class DDSImage : NbTextureData
 	{
 		private const int DDPF_ALPHAPIXELS = 0x00000001;
@@ -51,10 +54,6 @@ namespace NbCore {
 					}
 				}
 
-				int mipMapCount = 1;
-				if ((header.dwFlags & DDSD_MIPMAPCOUNT) != 0)
-					mipMapCount = header.dwMipMapCount;
-
 				Data = r.ReadBytes((int)(r.BaseStream.Length - r.BaseStream.Position)); //Read everything
 
 			}
@@ -62,15 +61,37 @@ namespace NbCore {
 			//Save Attributes
 			Width = header.dwWidth;
 			Height = header.dwHeight;
-			MipMapCount = header.dwMipMapCount;
 			Depth = header.dwDepth;
+			MipMapCount = header.dwMipMapCount;
 			blockSize = 16;
 
-			if (Depth > 1)
+			if (header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_VOLUME))
+            {
+				Depth = header.dwDepth;
 				target = NbTextureTarget.Texture2DArray;
-			else
-				target = NbTextureTarget.Texture2D;
+				Faces = 1;
+			} else if (header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_POSITIVEX) ||
+					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_NEGATIVEX) ||
+					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_POSITIVEY) ||
+					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_NEGATIVEY) ||
+					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_POSITIVEZ) ||
+					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_NEGATIVEZ))
+            {
+				Common.Callbacks.Assert(false, "Inconsistent flag");
+				
+            } else
+            {
+				if (Depth > 1)
+					target = NbTextureTarget.Texture2DArray;
+				else if (Depth == 0)
+					Common.Callbacks.Assert(false, "Zero Depth Investigate...");
+				else
+					target = NbTextureTarget.Texture2D;
 
+				Faces = Depth;
+				Depth = 0;
+			}
+			
 			bool compressed = false;
 			switch (header.ddspf.dwFourCC)
 			{
@@ -108,15 +129,6 @@ namespace NbCore {
 					throw new ApplicationException($"Unimplemented Pixel format {header.ddspf.dwFourCC}");
 			}
 
-			//Recalculate PitchOrlinearSize
-			if (compressed)
-            {
-				header.dwPitchOrLinearSize = Width * Height * blockSize / 16;
-			} else if (header.dwPitchOrLinearSize == 0)
-			{
-				Debug.Fail("0 size texture data, check what is going on");
-			}
-			
 		}
 
 		public override MemoryStream Export()
@@ -443,12 +455,11 @@ namespace NbCore {
 			DDS_HEADER h = new DDS_HEADER()
 			{
 				dwSize = r.ReadInt32(),
-				dwFlags = r.ReadInt32(),
+				dwFlags = (DWFLAGS) r.ReadInt32(),
 				dwHeight = r.ReadInt32(),
 				dwWidth = r.ReadInt32(),
 				dwPitchOrLinearSize = r.ReadInt32(),
 				dwDepth = System.Math.Max(r.ReadInt32(), 1),
-				//Hack for handling unused mipmaps
 				dwMipMapCount = r.ReadInt32()
 			};
 
@@ -456,8 +467,8 @@ namespace NbCore {
 				h.dwReserved1[i] = r.ReadInt32();
 
 			h.ddspf = ReadPixelFormat(r);
-			h.dwCaps = r.ReadInt32();
-			h.dwCaps2 = r.ReadInt32();
+			h.dwCaps = (DDSCAPS) r.ReadInt32();
+			h.dwCaps2 = (DDSCAPS2) r.ReadInt32();
 			h.dwCaps3 = r.ReadInt32();
 			h.dwCaps4 = r.ReadInt32();
 			h.dwReserved2 = r.ReadInt32();
@@ -468,10 +479,12 @@ namespace NbCore {
 		private void WriteHeader(BinaryWriter bw)
 		{
 			bw.Write(header.dwSize);
-			bw.Write(header.dwFlags);
+			bw.Write((int) header.dwFlags);
 			bw.Write(header.dwHeight);
 			bw.Write(header.dwWidth);
-			bw.Write(header.dwPitchOrLinearSize);
+            //Calculate pitch
+            int pitch = System.Math.Max(1, ((header.dwWidth + 3) / 4)) * blockSize;
+			bw.Write(pitch);
 			bw.Write(header.dwDepth);
 			bw.Write(header.dwMipMapCount);
 
@@ -480,8 +493,8 @@ namespace NbCore {
 
 			WritePixelFormat(bw);
 
-			bw.Write(header.dwCaps);
-			bw.Write(header.dwCaps2);
+			bw.Write((int) header.dwCaps);
+			bw.Write((int) header.dwCaps2);
 			bw.Write(header.dwCaps3);
 			bw.Write(header.dwCaps4);
 			bw.Write(header.dwReserved2);
@@ -604,16 +617,43 @@ namespace NbCore {
 
 	}
 
+	[Flags]
+	public enum DWFLAGS
+    {
+		DDSD_CAPS = 0x1,
+		DDSD_HEIGHT = 0x2,
+		DDSD_WIDTH = 0x4,
+		DDSD_PITCH = 0x8,
+		DDSD_PIXELFORMAT = 0x1000,
+		DDSD_MIPMAPCOUNT = 0x20000,
+		DDSD_LINEARSIZE = 0x80000,
+		DDSD_DEPTH = 0x800000
+	}
+
+	[Flags]
+	public enum DDSCAPS
+    {
+		DDSCAPS_COMPLEX = 0x8,
+		DDSCAPS_TEXTURE = 0x1000,
+		DDSCAPS_MIPMAP = 0x400000
+    }
+
+	[Flags]
+	public enum DDSCAPS2
+	{
+		DDSCAPS2_CUBEMAP = 0x200,
+		DDSCAPS2_CUBEMAP_POSITIVEX = 0x400,
+		DDSCAPS2_CUBEMAP_NEGATIVEX = 0x800,
+		DDSCAPS2_CUBEMAP_POSITIVEY = 0x1000,
+		DDSCAPS2_CUBEMAP_NEGATIVEY = 0x2000,
+		DDSCAPS2_CUBEMAP_POSITIVEZ = 0x4000,
+		DDSCAPS2_CUBEMAP_NEGATIVEZ = 0x8000,
+		DDSCAPS2_VOLUME = 0x200000
+	}
+
 	public class DDS_HEADER {
 		public int dwSize;
-		public int dwFlags;
-		/*	DDPF_ALPHAPIXELS   0x00000001 
-			DDPF_ALPHA   0x00000002 
-			DDPF_FOURCC   0x00000004 
-			DDPF_RGB   0x00000040 
-			DDPF_YUV   0x00000200 
-			DDPF_LUMINANCE   0x00020000 
-		 */
+		public DWFLAGS dwFlags;
 		public int dwHeight;
 		public int dwWidth;
 		public int dwPitchOrLinearSize;
@@ -621,8 +661,8 @@ namespace NbCore {
 		public int dwMipMapCount;
 		public int[] dwReserved1 = new int[11];
 		public DDS_PIXELFORMAT ddspf = new DDS_PIXELFORMAT();
-		public int dwCaps;
-		public int dwCaps2;
+		public DDSCAPS dwCaps;
+		public DDSCAPS2 dwCaps2;
 		public int dwCaps3;
 		public int dwCaps4;
 		public int dwReserved2;

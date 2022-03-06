@@ -12,6 +12,7 @@ namespace NbCore
         public int Width;
         public int Height;
         public int Depth;
+        public int Faces;
         public int MipMapCount;
         
         public virtual MemoryStream Export()

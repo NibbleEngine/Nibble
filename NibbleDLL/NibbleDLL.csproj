@@ -9,7 +9,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<AssemblyName>Nibble</AssemblyName>
-		<Configurations>OpenGL_DEBUG;OPENGL_RELEASE</Configurations>
+		<Configurations>OpenGL_DEBUG;OpenGL_RELEASE</Configurations>
 		<!--CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies-->
 		<!--RestoreProjectStyle>PackageReference</RestoreProjectStyle-->
     </PropertyGroup>

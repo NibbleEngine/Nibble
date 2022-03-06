@@ -1,14 +1,13 @@
 ﻿using System;
-using OpenTK.Mathematics;
 
 namespace NbCore
 {
     //TODO: Make sure that every entity (previous model) uses this component by default
 
     
-
     public unsafe class TransformComponent : Component {
 
+        [NbSerializable]
         public TransformData Data;
         public bool IsControllable = false;
 

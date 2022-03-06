@@ -142,6 +142,7 @@ namespace NbCore
     {
         Bool,
         Sampler2D,
+        Sampler3D,
         Sampler2DArray,
         Float,
         Vector2,

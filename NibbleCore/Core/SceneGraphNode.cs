@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using NbCore.Systems;
+using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using NbCore.Utils;
+using Newtonsoft.Json.Serialization;
 
 namespace NbCore
 {
@@ -23,10 +25,14 @@ namespace NbCore
         TEXT,
         UNKNOWN
     }
+
+    
     public class SceneGraphNode : Entity
     {
+        [NbSerializable]
         public new SceneNodeType Type = SceneNodeType.UNKNOWN;
         public bool IsSelected = false;
+        [NbSerializable]
         public string Name = "";
         public bool IsRenderable = true;
         public bool IsOpen = false;
@@ -35,6 +41,7 @@ namespace NbCore
         public Dictionary<string, string> Attributes = new();
         public SceneGraphNode Root = null;
         public SceneGraphNode Parent = null;
+        [NbSerializable]
         public List<SceneGraphNode> Children = new();
         
         //Disposable Stuff
@@ -188,5 +195,5 @@ namespace NbCore
         }
 
     }
-    
+
 }

@@ -297,9 +297,6 @@ namespace NbCore
             return f;
         }
 
-
-        
-
         public void ImportScene(SceneGraphNode scene)
         {
             RegisterEntity(scene);
@@ -907,7 +904,6 @@ namespace NbCore
             //Set Shader References
             shader.RefMaterial = mat;
             shader.RefConfig = mat.ShaderConfig;
-            shader.RefConfig.ReferencedByShaders.Add(shader);
             
             //Clear active uniforms and samplers from material
             mat.ActiveSamplers.Clear();
@@ -1027,6 +1023,129 @@ namespace NbCore
         }
 
         #endregion
+
+        #region IO
+
+        public void SerializeScene(SceneGraph g, string filepath)
+        {
+            StreamWriter sw = new(filepath);
+            Newtonsoft.Json.JsonTextWriter writer = new Newtonsoft.Json.JsonTextWriter(sw);
+            Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
+            writer.Formatting = Newtonsoft.Json.Formatting.Indented;
+
+            writer.WriteStartObject();
+
+            //Step A: Export SceneGraph
+            List<GLSLShaderSource> sources = new();
+            List<GLSLShaderConfig> configs = new();
+            List<MeshMaterial> materials = new();
+            List<NbTexture> textures = new();
+            List<NbMeshData> meshes = new();
+
+            foreach (SceneGraphNode node in g.Nodes)
+            {
+                if (node.HasComponent<MeshComponent>())
+                {
+                    MeshComponent mc = node.GetComponent<MeshComponent>() as MeshComponent;
+
+                    if (mc.Mesh == null)
+                        continue;
+                    else if (mc.Mesh.Material == null)
+                        continue;
+
+                    //Save Config
+                    var shader_config = mc.Mesh.Material.ShaderConfig;
+                    if (!configs.Contains(shader_config))
+                        configs.Add(shader_config);
+
+                    //Save Mesh
+                    if (!meshes.Contains(mc.Mesh.Data))
+                        meshes.Add(mc.Mesh.Data);
+
+                    //Save Material
+                    if (!materials.Contains(mc.Mesh.Material))
+                        materials.Add(mc.Mesh.Material);
+
+                    foreach (NbSampler sampler in mc.Mesh.Material.Samplers)
+                    {
+                        NbTexture tex = sampler.GetTexture();
+                        if (!textures.Contains(tex))
+                            textures.Add(tex);
+                    }
+
+
+                    var shader_sources = mc.Mesh.Material.ShaderConfig.Sources;
+                    foreach (GLSLShaderSource s in shader_sources.Values)
+                    {
+                        if (s.SourceFilePath == "")
+                            continue;
+                        if (!sources.Contains(s))
+                            sources.Add(s);
+                    }
+                }
+            }
+
+            //Step B: Export Shader Configurations
+            writer.WritePropertyName("SHADER_CONFIGS");
+            writer.WriteStartArray();
+            foreach (GLSLShaderConfig conf in configs)
+                IO.NbSerializer.Serialize(conf, writer);
+            writer.WriteEndArray();
+
+
+            //Step C: Export Materials
+            writer.WritePropertyName("MATERIALS");
+            writer.WriteStartArray();
+            foreach (MeshMaterial mat in materials)
+                IO.NbSerializer.Serialize(mat, writer);
+            writer.WriteEndArray();
+
+            //Step C: Export Materials
+            writer.WritePropertyName("TEXTURES");
+            writer.WriteStartArray();
+            foreach (NbTexture tex in textures)
+                IO.NbSerializer.Serialize(tex, writer);
+            writer.WriteEndArray();
+
+            //Step D: Export Materials
+            writer.WritePropertyName("MESHES");
+            writer.WriteStartArray();
+            foreach (NbMeshData mesh in meshes)
+                IO.NbSerializer.Serialize(mesh, writer);
+            writer.WriteEndArray();
+
+            //Step E: Export SceneGraph
+            writer.WritePropertyName("SCENEGRAPH");
+            IO.NbSerializer.Serialize(g.Root, writer);
+
+            writer.WriteEndObject();
+            writer.Close();
+        }
+
+        public void DeserializeScene(string filepath)
+        {
+            StreamReader sr = new(filepath);
+            Newtonsoft.Json.JsonTextReader reader = new Newtonsoft.Json.JsonTextReader(sr);
+            var serializer = new Newtonsoft.Json.JsonSerializer();
+
+            Newtonsoft.Json.Linq.JObject ob = serializer.Deserialize<Newtonsoft.Json.Linq.JObject>(reader);
+
+            //Parse Shader Sources
+            List<GLSLShaderConfig> configs = new();
+            
+            foreach (var s in ob["SHADER_CONFIGS"])
+            {
+                configs.Add((GLSLShaderConfig) IO.NbDeserializer.Deserialize(s));    
+            }
+
+            //SceneGraphNode root = null;
+            //ImportScene(root);
+            Console.WriteLine("DESERIALIZATION FINISHED!");
+        }
+
+
+        #endregion
+
 
 
         #region AssetDisposal

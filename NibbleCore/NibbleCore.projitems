@@ -29,6 +29,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Events\EventData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\GLVao.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbMeshGroup.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IO\NbSerializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Managers\AnimationManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Managers\NonEntityManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Input\KeyboardInput.cs" />

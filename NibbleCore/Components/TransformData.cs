@@ -8,15 +8,15 @@ namespace NbCore
 {
     public class TransformData
     {
-        public float TransX;
-        public float TransY;
-        public float TransZ;
-        public float RotX;
-        public float RotY;
-        public float RotZ;
-        public float ScaleX;
-        public float ScaleY;
-        public float ScaleZ;
+        [NbSerializable] public float TransX;
+        [NbSerializable] public float TransY;
+        [NbSerializable] public float TransZ;
+        [NbSerializable] public float RotX;
+        [NbSerializable] public float RotY;
+        [NbSerializable] public float RotZ;
+        [NbSerializable] public float ScaleX;
+        [NbSerializable] public float ScaleY;
+        [NbSerializable] public float ScaleZ;
 
         //Raw values 
         public NbVector3 localTranslation

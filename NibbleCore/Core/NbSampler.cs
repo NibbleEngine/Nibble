@@ -1,20 +1,21 @@
-using OpenTK.Graphics.OpenGL4;
-using OpenTK.Mathematics;
-using System;
-using System.Drawing;
-using NbCore.Common;
-using System.Linq;
+
 
 namespace NbCore
 {
     public class NbSampler
     {
+        [NbSerializable]
         public string Name = "";
+        [NbSerializable]
         public string Map = "";
         private NbTexture Tex = null;
+        [NbSerializable]
         public bool IsCube = false;
+        [NbSerializable]
         public bool IsSRGB = true;
+        [NbSerializable]
         public bool UseCompression = false;
+        [NbSerializable]
         public bool UseMipMaps = false;
         public NbSamplerState State;
         public bool isProcGen = false; //TODO : to be removed once we are done with the stupid proc gen texture parsing
@@ -63,4 +64,6 @@ namespace NbCore
         }
         
     }
+
+    
 }

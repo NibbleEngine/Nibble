@@ -7,27 +7,31 @@ using Newtonsoft.Json;
 
 namespace NbCore
 {
+    [NbDeserializable]
     public class GLSLShaderSource : Entity
     {
-        [JsonIgnore] public string Name = "";
+        public string Name = "";
         public NbShaderTextType SourceType;
         private List<GLSLShaderSource> _dynamicTextParts = new();
         private List<string> _staticTextParts = new();
+        [NbSerializable]
         public string SourceFilePath = ""; //Path of the file where the source is fetched from
-        [JsonIgnore] public string SourceText = ""; //Source Text as fetched from the source file
-        [JsonIgnore] public string ResolvedText = ""; //Source Text after processing all dependencies
+        public string SourceText = ""; //Source Text as fetched from the source file
+        public string ResolvedText = ""; //Source Text after processing all dependencies
+        [NbSerializable]
+        public bool HasWatcher;
         private FileSystemWatcher _watcher;
         private HashSet<string> _watchFiles = new();
         private DateTime LastReadTime;
-        [JsonIgnore] public bool Processed = false;
-        [JsonIgnore] public bool Resolved = false;
+        public bool Processed = false;
+        public bool Resolved = false;
 
         //Keep source texts that the current text refers to
-        [JsonIgnore] public HashSet<GLSLShaderSource> ReferencedSources = new();
+        public HashSet<GLSLShaderSource> ReferencedSources = new();
         //Keep source texts that reference this source
-        [JsonIgnore] public HashSet<GLSLShaderSource> ReferencedBySources = new();
+        public HashSet<GLSLShaderSource> ReferencedBySources = new();
         //Keeps track of all the Shaders that the current source is used by
-        [JsonIgnore] public HashSet<GLSLShaderConfig> ReferencedByConfigs = new(); 
+        public HashSet<GLSLShaderConfig> ReferencedByConfigs = new(); 
         
         //Static random generator used in temp file name generation
         private static readonly Random rand_gen = new(999991);
@@ -55,7 +59,7 @@ namespace NbCore
         public GLSLShaderSource(string filepath, bool watchFile) : base(EntityType.ShaderSource)
         {
             SourceType = NbShaderTextType.Dynamic;
-
+            HasWatcher = watchFile;
             SourceFilePath = Utils.FileUtils.FixPath(filepath);
             SourceText = File.ReadAllText(SourceFilePath);
             LastReadTime = DateTime.Now;
@@ -373,6 +377,17 @@ namespace NbCore
                 base.Dispose(disposing);
             }
         }
+    
+    
+        public static GLSLShaderSource Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            //Parse path
+            string filepath = token.Value<string>("SourceFilePath");
+            bool haswatcher = token.Value<bool>("HasWatcher");
+
+            return new GLSLShaderSource(filepath, haswatcher);
+        }
+    
     }
 
 }

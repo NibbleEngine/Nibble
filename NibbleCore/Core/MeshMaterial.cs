@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using NbCore.Platform.Graphics.OpenGL; //TODO: Abstract
 using NbCore.Common;
+using Newtonsoft.Json;
 
 namespace NbCore
 {
@@ -73,7 +74,8 @@ namespace NbCore
         _F63_DISSOLVE,
         _F64_,
     }
-    
+
+    [NbSerializable]
     public class MeshMaterial : Entity
     {
         public string Name = "";
@@ -247,7 +249,49 @@ namespace NbCore
         }
 
         
+        public void Serialize(JsonTextWriter writer)
+        {
+            writer.WriteStartObject();
+            
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().FullName);
+
+            writer.WritePropertyName("Name");
+            writer.WriteValue(Name);
+
+            writer.WritePropertyName("Class");
+            writer.WriteValue(Class);
+
+            writer.WritePropertyName("ShaderConfig");
+            writer.WriteValue(ShaderConfig?.Name);
+
+            //Write Flags
+            writer.WritePropertyName("Flags");
+            writer.WriteStartArray();
+            foreach (MaterialFlagEnum flag in Flags)
+                writer.WriteValue(flag);
+            writer.WriteEndArray();
+
+            //Write Uniforms
+            writer.WritePropertyName("Uniforms");
+            writer.WriteStartArray();
+            foreach (NbUniform kp in Uniforms)
+                IO.NbSerializer.Serialize(kp, writer);
+            writer.WriteEndArray();
+
+            //Write Samplers
+            writer.WritePropertyName("Samplers");
+            writer.WriteStartArray();
+            foreach (NbSampler kp in Samplers)
+                IO.NbSerializer.Serialize(kp, writer);
+            writer.WriteEndArray();
+
+            writer.WriteEndObject();
+        
+        }
+
 
     }
+
 
 }
