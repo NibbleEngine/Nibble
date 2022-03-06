@@ -11,7 +11,9 @@ namespace NbCore
     {
         Texture1D,
         Texture2D,
-        Texture2DArray
+        Texture3D,
+        Texture2DArray,
+        TextureCubeMap
     }
 
     public enum NbTextureInternalFormat
@@ -29,6 +31,7 @@ namespace NbCore
     {
         public int texID = -1;
         private bool disposed = false;
+        [NbSerializable]
         public string Path = "";
         public PaletteOpt palOpt;
         public NbVector4 procColor;

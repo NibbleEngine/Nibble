@@ -296,13 +296,13 @@ namespace NbCore
 
     public struct bufInfo
     {
-        public int semantic;
-        public NbPrimitiveDataType type;
-        public int count;
-        public uint stride;
-        public int offset;
-        public string sem_text;
-        public bool normalize;
+        [NbSerializable] public int semantic;
+        [NbSerializable] public NbPrimitiveDataType type;
+        [NbSerializable] public int count;
+        [NbSerializable] public uint stride;
+        [NbSerializable] public int offset;
+        [NbSerializable] public string sem_text;
+        [NbSerializable] public bool normalize;
 
         public bufInfo(int sem, NbPrimitiveDataType typ, int c, uint s, int off, string t, bool n)
         {

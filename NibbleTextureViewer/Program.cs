@@ -35,7 +35,8 @@ namespace NibbleTextureViewer
             Title = "Nibble Texture Viewer " + Version.GetString();
             VSync = VSyncMode.On;
             RenderFrequency = 30;
-            
+            Callbacks.Logger = new NbLogger();
+
         }
 
         private void OnCloseWindowEvent(object sender, string data)

@@ -6,6 +6,7 @@ namespace NbCore
 {
     public class JointComponent : Component
     {
+        [NbSerializable]
         public int JointIndex;
         
         public override Component Clone()

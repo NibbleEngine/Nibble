@@ -10,24 +10,22 @@ namespace NbCore
     public class NbMeshMetaData
     {
         //Mesh Properties
-        public ulong Hash;
-        public NbVector3 AABBMIN;
-        public NbVector3 AABBMAX;
-        public int VertrStartPhysics;
-        public int VertrEndPhysics;
-        public int VertrStartGraphics;
-        public int VertrEndGraphics;
-        public int BatchStartPhysics;
-        public int BatchStartGraphics;
-        public int BatchCount;
-        public int FirstSkinMat;
-        public int LastSkinMat;
-        public int LODLevel;
-        public int BoundHullStart;
-        public int BoundHullEnd;
+        [NbSerializable] public ulong Hash;
+        [NbSerializable] public NbVector3 AABBMIN;
+        [NbSerializable] public NbVector3 AABBMAX;
+        [NbSerializable] public int VertrStartPhysics;
+        [NbSerializable] public int VertrEndPhysics;
+        [NbSerializable] public int VertrStartGraphics;
+        [NbSerializable] public int VertrEndGraphics;
+        [NbSerializable] public int BatchStartPhysics;
+        [NbSerializable] public int BatchStartGraphics;
+        [NbSerializable] public int BatchCount;
+        [NbSerializable] public int FirstSkinMat;
+        [NbSerializable] public int LastSkinMat;
+        [NbSerializable] public int LODLevel;
+        [NbSerializable] public int BoundHullStart;
+        [NbSerializable] public int BoundHullEnd;
 
-        
-        
         //LOD Properties
         public int LODDistance1;
         public int LODDistance2;

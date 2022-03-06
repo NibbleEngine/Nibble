@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using NbCore;
-using NbCore.Platform.Graphics.OpenGL;
+#if OPENGL
+using NbCore.Platform.Graphics; 
+#endif
+
 using OpenTK.Windowing.Common;
 
 namespace NibbleTextureViewer
@@ -22,6 +25,7 @@ namespace NibbleTextureViewer
         private float _scale = 1.0f;
         private RenderTextureData _renderData;
         private NbShader _shaderArray;
+        private NbShader _shaderVolume;
         private NbShader _shaderSingle;
         private bool _captureInput = true;
 
@@ -61,11 +65,20 @@ namespace NibbleTextureViewer
                 null, null, null, new() { "_F55_MULTITEXTURE" }, 
                 NbShaderMode.DEFAULT, "MultiTexTexture");
 
+            GLSLShaderConfig conf_voltex = EngineRef.CreateShaderConfig(
+                EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_vs.glsl"),
+                EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_fs.glsl"),
+                null, null, null, new() { "_D_VOLUME_TEXTURE" },
+                NbShaderMode.DEFAULT, "VolumeTexture");
+
             _shaderArray = new();
-            NbCore.Platform.Graphics.GraphicsAPI.CompileShader(ref _shaderArray, conf_multitex);
+            GraphicsAPI.CompileShader(ref _shaderArray, conf_multitex);
 
             _shaderSingle = new();
-            NbCore.Platform.Graphics.GraphicsAPI.CompileShader(ref _shaderSingle, conf);
+            GraphicsAPI.CompileShader(ref _shaderSingle, conf);
+
+            _shaderVolume = new();
+            GraphicsAPI.CompileShader(ref _shaderVolume, conf_voltex);
 
         }
 
@@ -121,10 +134,17 @@ namespace NibbleTextureViewer
             NbCore.Platform.Graphics.GraphicsAPI renderer = EngineRef.renderSys.Renderer;
 
             //Compile updated shaders
+           //Re-Compile requested shaders
             while (EngineRef.renderSys.ShaderMgr.CompilationQueue.Count > 0)
             {
                 NbShader shader = EngineRef.renderSys.ShaderMgr.CompilationQueue.Dequeue();
-                //TODO: Recompile shader
+                //TODO: FIX
+                if (shader.RefMaterial is null)
+                    GraphicsAPI.CompileShader(ref shader, shader.RefConfig);
+                else
+                    GraphicsAPI.CompileShader(ref shader, shader.RefConfig, shader.RefMaterial);
+
+                shader.IsUpdated?.Invoke();
             }
 
             renderer.EnableBlend();
@@ -137,10 +157,12 @@ namespace NibbleTextureViewer
             if (_texture != null)
             {
                 NbShader _shader;
-                if (_texture.Data.target == NbTextureTarget.Texture2D)
-                    _shader = _shaderSingle;
-                else
+                if (_texture.Data.target == NbTextureTarget.Texture3D)
+                    _shader = _shaderVolume;
+                else if ((_texture.Data.target == NbTextureTarget.Texture2DArray))
                     _shader = _shaderArray;
+                else
+                    _shader = _shaderSingle;
 
 
                 if (_captureInput)

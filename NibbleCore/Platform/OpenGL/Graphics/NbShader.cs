@@ -68,6 +68,14 @@ namespace NbCore
                     state.Vec4s.Remove(arr4[i].Key);
             }
 
+            //Samplers
+            var arr5 = state.Samplers.ToArray();
+            for (int i = 0; i < arr5.Length; i++)
+            {
+                if (!uniformLocations.ContainsKey(arr5[i].Key))
+                    state.Samplers.Remove(arr5[i].Key);
+            }
+
         }
 
 

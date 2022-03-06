@@ -9,8 +9,7 @@ namespace NibbleTextureViewer
     public class AppImGuiManager : ImGuiManager
     {
         private bool show_open_file_dialog = false;
-        private string current_file_path = "";
-
+        
         public AppImGuiManager(GameWindow win, Engine engine) : base(win, engine)
         {
 

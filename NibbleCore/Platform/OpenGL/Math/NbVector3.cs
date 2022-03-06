@@ -1,7 +1,9 @@
 using OpenTK.Mathematics;
+using Newtonsoft.Json;
 
 namespace NbCore.Math
 {
+    [NbSerializable]
     public struct NbVector3
     {
         internal Vector3 _Value;
@@ -122,5 +124,19 @@ namespace NbCore.Math
         }
         
         public float Length => _Value.Length;
+
+        public void Serialize(JsonTextWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().FullName);
+            writer.WritePropertyName("X");
+            writer.WriteValue(_Value.X);
+            writer.WritePropertyName("Y");
+            writer.WriteValue(_Value.Y);
+            writer.WritePropertyName("Z");
+            writer.WriteValue(_Value.Z);
+            writer.WriteEndObject();
+        }
     }
 }

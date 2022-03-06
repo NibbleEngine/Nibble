@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace NbCore
 {
-    [JsonConverter(typeof(GLSLShaderConfigConverter))]
+    [NbSerializable, NbDeserializable]
     public class GLSLShaderConfig : Entity
     {
         public string Name = "";
@@ -57,55 +57,86 @@ namespace NbCore
             
         }
         
-
-
         public override GLSLShaderConfig Clone()
         {
             throw new NotImplementedException();
         }
 
-    }
-
-    public class GLSLShaderConfigConverter : JsonConverter
-    {
-        public override bool CanConvert(Type objectType)
+        public void Serialize(JsonWriter writer)
         {
-            return true;
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            GLSLShaderConfig conf = (GLSLShaderConfig)value;
-
             writer.WriteStartObject();
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().FullName);
 
             writer.WritePropertyName("Name");
-            writer.WriteValue(conf.Name);
+            writer.WriteValue(Name);
 
-            //Write Sources
-            foreach (var kp in conf.Sources)
+            writer.WritePropertyName("ShaderMode");
+            writer.WriteValue(ShaderMode);
+
+            writer.WritePropertyName("Sources");
+            writer.WriteStartArray();
+            foreach (var kvp in Sources)
             {
-                writer.WritePropertyName(kp.Key.ToString());
-                writer.WriteValue(kp.Value.SourceFilePath);
+                writer.WriteStartObject();
+                writer.WritePropertyName(kvp.Key.ToString());
+                writer.WriteValue(kvp.Value.SourceFilePath);
+                writer.WriteEndObject();
             }
+                
+            writer.WriteEndArray();
 
             writer.WritePropertyName("Directives");
             writer.WriteStartArray();
-            foreach (string directive in conf.directives)
-            {
-                writer.WriteValue(directive);
-            }
-
+            foreach (string d in directives)
+                writer.WriteValue(d);
             writer.WriteEndArray();
-            
+
+
             writer.WriteEndObject();
         }
-    }
 
+        public static GLSLShaderConfig Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            string name = token.Value<string>("Name");
+
+            GLSLShaderSource vs = null;
+            GLSLShaderSource fs = null;
+
+            foreach (var ct in token["Sources"])
+            {
+                if (ct["VertexShader"] != null)
+                {
+                    string path = ct.Value<string>("VertexShader");
+                    vs = Common.RenderState.engineRef.GetShaderSourceByFilePath(path);
+                    if (vs == null)
+                    {
+                        vs = new GLSLShaderSource(path, true);
+                    }
+                } else if (ct["FragmentShader"] != null)
+                {
+                    string path = ct.Value<string>("FragmentShader");
+                    fs = Common.RenderState.engineRef.GetShaderSourceByFilePath(path);
+                    if (fs == null)
+                    {
+                        fs = new GLSLShaderSource(path, true);
+                    }
+                }
+            }
+
+            //parse Directives
+            List<string> directives = new();
+            foreach (var ct in token["Directives"])
+                directives.Add(ct.ToString());
+
+            NbShaderMode mode = (NbShaderMode) token.Value<int>("ShaderMode");
+
+            GLSLShaderConfig config = new GLSLShaderConfig(vs, fs, null, null, null, directives, mode);
+            config.Name = name;
+            
+            return config;
+        }
+
+    }
 
 }

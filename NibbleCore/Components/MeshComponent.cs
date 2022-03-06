@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using OpenTK.Mathematics;
-using NbCore;
-using OpenTK.Graphics.OpenGL4;
-using System.IO;
+﻿using Newtonsoft.Json;
 
 namespace NbCore
 {
     public class MeshComponent : Component
     {
         //Store TkSceneNodeAttributes for Meshes
+        [NbSerializable]
         public NbMesh Mesh;
         public int InstanceID;
         public NbUniform[] InstanceUniforms;
