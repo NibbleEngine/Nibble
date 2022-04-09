@@ -36,7 +36,7 @@ namespace NbCore
             MipMapCount = 1;
             Depth = 1;
             target = NbTextureTarget.Texture2D;
-            pif = NbTextureInternalFormat.RGBA;
+            pif = NbTextureInternalFormat.RGBA8;
 
             ms.Close();
         }

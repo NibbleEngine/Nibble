@@ -26,8 +26,8 @@ namespace NibbleTextureViewer
         private bool c_green = true;
         private bool c_blue = true;
         private bool c_alpha = true;
-        //private string currentDirectory = "E:\\SSD_SteamLibrary1\\steamapps\\common\\No Man's Sky\\GAMEDATA\\TEXTURES\\MULTITEXTURES\\BASEBUILDING";
-        private string currentDirectory = "D:\\Downloads";
+        private string currentDirectory = "E:\\SSD_SteamLibrary1\\steamapps\\common\\No Man's Sky\\GAMEDATA\\TEXTURES\\COMMON\\WEAPONS\\MULTITOOL";
+        //private string currentDirectory = "D:\\Downloads";
 
         //Imgui stuff
         private bool IsOpenFileDialogOpen = false;

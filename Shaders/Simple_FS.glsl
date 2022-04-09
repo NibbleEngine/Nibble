@@ -252,7 +252,7 @@ void pbr_lighting(){
 	    #endif
 
 	    #ifdef _F16_DIFFUSE2MAP
-			vec4 lDiffuse2Vec4 = texture(mpCustomPerMaterial.gDiffuse2Map, vec3(lTexCoordsVec4.zw, 0.0));
+			vec4 lDiffuse2Vec4 = texture(mpCustomPerMaterial.gDiffuse2Map, lTexCoordsVec4.zw);
 			diffTex2Factor = lDiffuse2Vec4.a;
 
 			#ifndef _F17_MULTIPLYDIFFUSE2MAP

@@ -1305,16 +1305,10 @@ namespace NbCore.Systems
                 UpdateMeshGroupData(mg);
             
             //Re-Compile requested shaders
-            while (ShaderMgr.CompilationQueue.Count > 0)
+            while (ShaderMgr.ShaderCompilationQueue.Count > 0)
             {
-                NbShader shader = ShaderMgr.CompilationQueue.Dequeue();
-                //TODO: FIX
-                if (shader.RefMaterial is null)
-                    GraphicsAPI.CompileShader(ref shader, shader.RefConfig);
-                else
-                    GraphicsAPI.CompileShader(ref shader, shader.RefConfig, shader.RefMaterial);
-
-                shader.IsUpdated?.Invoke();
+                NbShader shader = ShaderMgr.ShaderCompilationQueue.Dequeue();
+                GraphicsAPI.RecompileShader(shader);
             }
             
             //Render Scene

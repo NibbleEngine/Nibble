@@ -203,8 +203,6 @@ namespace NibbleTextureViewer
             {
                 tx.Run();
             }
-            
-            Console.WriteLine("All Good");
         }
     }
 }

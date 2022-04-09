@@ -80,11 +80,10 @@ namespace NbCore
     {
         public string Name = "";
         public string Class = "";
-        public bool proc = false;
-        public string name_key = "";
+        public bool IsGeneric = false;
         public TextureManager texMgr;
-        public NbShader Shader;
         public GLSLShaderConfig ShaderConfig;
+        public NbShader Shader;
         public List<NbUniform> Uniforms = new();
         public List<NbSampler> Samplers = new();
         public Dictionary<string, NbSampler> SamplerMap = new();
@@ -197,12 +196,18 @@ namespace NbCore
 
         public void SetShader(NbShader shader)
         {
+            Shader?.RemoveReference();
             Shader = shader;
+            Shader.AddReference();
+            OnShaderUpdate();
             shader.IsUpdated += OnShaderUpdate;
         }
 
         public void OnShaderUpdate()
         {
+            ActiveSamplers.Clear();
+            ActiveUniforms.Clear();
+
             //Re-check samplers
             foreach (NbSampler s in Samplers)
                 UpdateSampler(s);

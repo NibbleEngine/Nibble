@@ -7,6 +7,8 @@ using Newtonsoft.Json;
 
 namespace NbCore
 {
+    public delegate void SourceUpdatedEventHandler();
+    
     [NbDeserializable]
     public class GLSLShaderSource : Entity
     {
@@ -25,6 +27,8 @@ namespace NbCore
         private DateTime LastReadTime;
         public bool Processed = false;
         public bool Resolved = false;
+
+        public SourceUpdatedEventHandler IsUpdated;
 
         //Keep source texts that the current text refers to
         public HashSet<GLSLShaderSource> ReferencedSources = new();
@@ -230,27 +234,9 @@ namespace NbCore
                         {
                             ps.Resolved = false;
                             ps.Resolve();
-
-                            //Recompile shader referenced by the parent sources
-                            foreach (GLSLShaderConfig sc in ps.ReferencedByConfigs)
-                            {
-                                foreach (NbShader ns in sc.ReferencedByShaders)
-                                {
-                                    RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(ns);
-                                }
-                                
-                            }
                         };
 
-                        //Recompile immediate referenced shaders
-                        foreach (GLSLShaderConfig sc in ReferencedByConfigs)
-                        {
-                            foreach (NbShader ns in sc.ReferencedByShaders)
-                            {
-                                RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(ns);
-                            }
-                        }
-
+                        IsUpdated?.Invoke(); //Invoke Source Updated Event
                     }
                     break;
                 }

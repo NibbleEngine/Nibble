@@ -84,56 +84,43 @@ namespace NbCore
 
     public struct NbShaderState
     {
-        //splitting per 2s,3s,4s is so fucking stupid. TODO: FIX it
-        public Dictionary<string, NbVector2> Vec2s;
-        public Dictionary<string, NbVector3> Vec3s;
-        public Dictionary<string, NbVector4> Vec4s;
-        public Dictionary<string, float> Floats;
-        public Dictionary<string, NbSamplerState> Samplers;
-
+        public Dictionary<string, object> Data;
+        
         public static NbShaderState Create()
         {
             NbShaderState state;
-            state.Vec2s = new();
-            state.Vec3s = new();
-            state.Vec4s = new();
-            state.Floats = new();
-            state.Samplers = new();
-
+            state.Data = new();
             return state;
         }
 
         public void AddUniform(string name, NbVector2 vec)
         {
-            Vec2s[name] = vec;
+            Data["Vec2:" + name] = vec;
         }
 
         public void AddUniform(string name, NbVector3 vec)
         {
-            Vec3s[name] = vec;
+            Data["Vec3:" + name] = vec;
         }
 
         public void AddUniform(string name, NbVector4 vec)
         {
-            Vec4s[name] = vec;
+            Data["Vec4:" + name] = vec;
         }
 
         public void AddUniform(string name, float val)
         {
-            Floats[name] = val;
+            Data["Float:" + name] = val;
         }
 
         public void AddSampler(string name, NbSamplerState val)
         {
-            Samplers[name] = val;
+            Data["Sampler:" + name] = val;
         }
 
         public void Clear()
         {
-            Vec3s.Clear();
-            Vec4s.Clear();
-            Floats.Clear();
-            Samplers.Clear();
+            Data.Clear();
         }
 
     }

@@ -87,10 +87,11 @@ namespace NbCore.Platform.Graphics
         public static readonly Dictionary<NbTextureInternalFormat, InternalFormat> InternalFormatMap = new()
         {
             { NbTextureInternalFormat.DXT1, InternalFormat.CompressedSrgbAlphaS3tcDxt1Ext },
+            { NbTextureInternalFormat.DXT3, InternalFormat.CompressedRgbaS3tcDxt3Ext },
             { NbTextureInternalFormat.DXT5, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext },
             { NbTextureInternalFormat.RGTC2, InternalFormat.CompressedRgRgtc2 },
             { NbTextureInternalFormat.BC7, InternalFormat.CompressedSrgbAlphaBptcUnorm },
-            { NbTextureInternalFormat.RGBA, InternalFormat.Rgba}
+            { NbTextureInternalFormat.RGBA8, InternalFormat.Rgba8}
         };
 
         //UBO structs
@@ -145,11 +146,8 @@ namespace NbCore.Platform.Graphics
             //Default Enables
             EnableBlend();
             
-            
-            
             //Setup per Frame UBOs
             setupFrameUBO();
-
 
             //Setup SSBOs
             setupSSBOs(2 * 1024 * 1024); //Init SSBOs to 2MB
@@ -471,41 +469,54 @@ namespace NbCore.Platform.Graphics
 
             //Filter State
             shader.FilterState(ref state);
+            
 
-            //Upload samplers
-            int i = 0;
-            foreach (KeyValuePair<string, NbSamplerState> sstate in state.Samplers)
-            {
-                GL.Uniform1(shader.uniformLocations[sstate.Key].loc, sstate.Value.SamplerID);
-                GL.ActiveTexture(TextureUnit.Texture0 + i);
-                GL.BindTexture(TextureTargetMap[sstate.Value.Target], sstate.Value.TextureID);
-            }
 
-            //Floats
-            foreach (KeyValuePair<string, float> pair in state.Floats)
+            int sampler_id = 0;
+            foreach (KeyValuePair<string, object> sstate in state.Data)
             {
-                GL.Uniform1(shader.uniformLocations[pair.Key].loc, (float)pair.Value);
-            }
+                string prefix = sstate.Key.Split(":")[0];
+                string key = sstate.Key.Split(":")[1];
 
-            //Vec2s
-            foreach (KeyValuePair<string, NbVector2> pair in state.Vec2s)
-            {
-                GL.Uniform2(shader.uniformLocations[pair.Key].loc,
-                    pair.Value.X, pair.Value.Y);
-            }
+                switch (prefix)
+                {
+                    case "Sampler":
+                        {
+                            //Upload sampler
+                            NbSamplerState nbSamplerState = (NbSamplerState) sstate.Value;
+                            GL.Uniform1(shader.uniformLocations[key].loc, nbSamplerState.SamplerID);
+                            GL.ActiveTexture(TextureUnit.Texture0 + sampler_id);
+                            GL.BindTexture(TextureTargetMap[nbSamplerState.Target], nbSamplerState.TextureID);
+                            sampler_id++;
+                            break;
+                        }
+                    case "Float":
+                        {
+                            float val = (float) sstate.Value;
+                            GL.Uniform1(shader.uniformLocations[key].loc, val);
+                            break;
+                        }
+                    case "Vec2":
+                        {
+                            NbVector2 vec = (NbVector2) sstate.Value;
+                            GL.Uniform2(shader.uniformLocations[key].loc, vec.X, vec.Y);
+                            break;
+                        }
+                    case "Vec3":
+                        {
+                            NbVector3 vec = (NbVector3) sstate.Value;
+                            GL.Uniform3(shader.uniformLocations[key].loc, vec.X, vec.Y, vec.Z);
+                            break;
+                        }
+                    case "Vec4":
+                        {
+                            NbVector4 vec = (NbVector4) sstate.Value;
+                            GL.Uniform4(shader.uniformLocations[key].loc, vec.X, vec.Y, vec.Z, vec.W);
+                            break;
+                        }
 
-            //Vec3s
-            foreach (KeyValuePair<string, NbVector3> pair in state.Vec3s)
-            {
-                GL.Uniform3(shader.uniformLocations[pair.Key].loc,
-                    pair.Value.X, pair.Value.Y, pair.Value.Z);
-            }
+                }
 
-            //Vec4s
-            foreach (KeyValuePair<string, NbVector4> pair in state.Vec4s)
-            {
-                GL.Uniform4(shader.uniformLocations[pair.Key].loc,
-                    pair.Value.X, pair.Value.Y, pair.Value.Z, pair.Value.W);
             }
 
             //Render quad
@@ -823,22 +834,20 @@ namespace NbCore.Platform.Graphics
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
             InternalFormat gl_pif = InternalFormatMap[tex.Data.pif];
 
-            int mm_count = tex.Data.MipMapCount;
+            int mm_count = System.Math.Max(tex.Data.MipMapCount, 1);
 
             GL.BindTexture(gl_target, tex.texID);
             //TODO: REmove all parameter settings from here, and make it possible to set them using other API calls
             //When manually loading mipmaps, levels should be loaded first
             GL.TexParameter(gl_target, TextureParameterName.TextureBaseLevel, 0);
-            GL.TexParameter(gl_target, TextureParameterName.TextureMaxLevel, mm_count - 1);
-            GL.TextureParameter(tex.texID, TextureParameterName.TextureMaxLod, mm_count - 1);
-
+            
             //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
             GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
             if (mm_count > 1)
-                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.NearestMipmapLinear);
+                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             else
                 GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             //Console.WriteLine(GL.GetError());
@@ -908,32 +917,64 @@ namespace NbCore.Platform.Graphics
             int mm_count = System.Math.Max(1, tex_data.MipMapCount); //Fix the counter to 1 to handle textures with single mipmaps
             int face_count = tex_data.Faces;
 
-            //Calculate size of the top layer
-            int temp_size = w * h * d * face_count * tex_data.blockSize / 16;
-            
             TextureTarget gl_target = TextureTargetMap[tex_data.target];
             InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
             GL.BindTexture(gl_target, tex_id);
             
             int offset = 0;
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 1; i++)
             {
-                byte[] temp_data = new byte[temp_size];
-                System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size);
-                
-                switch (gl_target)
+                int temp_size = 0;
+
+
+                if (tex_data.header.ddspf.dwFlags.HasFlag(DDS_PIXELFORMAT_DWFLAGS.DDPF_RGB))
                 {
-                    case TextureTarget.Texture3D:
-                        //GL.CompressedTexImage3D(gl_target, i, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext, w, h, d, 0, temp_size, temp_data);
-                        break;
-                    case TextureTarget.Texture2DArray:
-                        GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, d, 0, temp_size, temp_data);
-                        break;
-                    default:
-                        GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_size, temp_data);
-                        break;
-                }
+                    //Calculate size of the top layer
+                    temp_size = w * h * 4;
+                    byte[] temp_data = new byte[temp_size];
+                    System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size);
+
+
+                    //Figure out channel ordering
+                    PixelFormat pf = PixelFormat.Rgba;
+                    PixelInternalFormat pif = PixelInternalFormat.Rgba8;
+                    if (tex_data.header.ddspf.dwRBitMask == 0x000000FF &&
+                        tex_data.header.ddspf.dwGBitMask == 0x0000FF00 &&
+                        tex_data.header.ddspf.dwBBitMask == 0x00FF0000 &&
+                        tex_data.header.ddspf.dwABitMask == 0xFF000000)
+                    {
+                        pf = PixelFormat.Rgba;
+                    }
+                    else if (tex_data.header.ddspf.dwRBitMask == 0x00FF0000 &&
+                        tex_data.header.ddspf.dwGBitMask == 0x0000FF00 &&
+                        tex_data.header.ddspf.dwBBitMask == 0x000000FF &&
+                        tex_data.header.ddspf.dwABitMask == 0xFF000000)
+                    {
+                        pf = PixelFormat.Bgra;
+                    }
+
+                    GL.TexImage2D(gl_target, i, pif, w, h, 0, pf, PixelType.UnsignedByte, temp_data);
                 
+                } else 
+                {
+                    //Calculate size of the top layer
+                    temp_size = w * h * d * face_count * tex_data.blockSize / 16;
+                    byte[] temp_data = new byte[temp_size];
+                    System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size);
+                    switch (gl_target)
+                    {
+                        case TextureTarget.Texture3D:
+                            //GL.CompressedTexImage3D(gl_target, i, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext, w, h, d, 0, temp_size, temp_data);
+                            break;
+                        case TextureTarget.Texture2DArray:
+                            GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, d, 0, temp_size, temp_data);
+                            break;
+                        default:
+                            GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_size, temp_data);
+                            break;
+                    }
+                }
+
                 offset += temp_size;
 
                 w = System.Math.Max(w >> 1, 1);
@@ -943,15 +984,20 @@ namespace NbCore.Platform.Graphics
                 temp_size = face_count * d * System.Math.Max(1, (w + 3) / 4) * 
                             System.Math.Max(1, (h + 3) / 4) * tex_data.blockSize;
 
-                
-                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapLinear);
-                GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
-                
-                GL.GenerateTextureMipmap(tex_id);
-                //GL.TexParameter(gl_target, TextureParameterName.TextureMaxLevel, 1.0f);
-                //This works only for square textures
-                //temp_size = Math.Max(temp_size/4, blocksize);
             }
+
+            //GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.NearestMipmapLinear);
+            //GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+
+            GL.GenerateTextureMipmap(tex_id);
+
+            //GL.GetTexParameter(gl_target, GetTextureParameter.TextureMaxLod, out int out_mm);
+            //GL.TexParameter(gl_target, TextureParameterName.TextureMaxLevel, mm_count - 1);
+            //GL.TextureParameter(tex_id, TextureParameterName.TextureMaxLod, mm_count - 1);
+
+            //GL.TexParameter(gl_target, TextureParameterName.TextureMaxLevel, 1.0f);
+            //This works only for square textures
+            //temp_size = Math.Max(temp_size/4, blocksize);
 
         }
 
@@ -1198,19 +1244,32 @@ namespace NbCore.Platform.Graphics
             return true;
         }
 
-        public bool CompileShader(MeshMaterial mat)
+        public static bool RecompileShader(NbShader shader)
         {
-            NbShader shader = new();
-            return CompileShader(ref shader, mat.ShaderConfig, mat);
+            if (shader.GetMaterial() != null)
+            {
+                MeshMaterial mat = shader.GetMaterial();
+                string extradirectives = "";
+                for (int i = 0; i < mat.Flags.Count; i++)
+                {
+                    if (MeshMaterial.supported_flags.Contains(mat.Flags[i]))
+                        extradirectives += "#define " + mat.Flags[i].ToString().Split(".")[^1] + '\n';
+                }
+                return CompileShader(ref shader, mat.ShaderConfig, extradirectives);
+            }
+            else if (shader.GetShaderConfig() != null)
+            {
+                return CompileShader(ref shader, shader.GetShaderConfig(), "");
+            }
+                
+            return false;
         }
 
-        public static bool CompileShader(ref NbShader shader, GLSLShaderConfig config)
-        {
-            return CompileShader(ref shader, config, "");
-        }
 
-        public static bool CompileShader(ref NbShader shader, GLSLShaderConfig config, MeshMaterial mat)
+        public static bool CompileShader(out NbShader shader, MeshMaterial mat)
         {
+            shader = new();
+
             string extradirectives = "";
             for (int i = 0; i < mat.Flags.Count; i++)
             {
@@ -1218,8 +1277,15 @@ namespace NbCore.Platform.Graphics
                     extradirectives += "#define " + mat.Flags[i].ToString().Split(".")[^1] + '\n';
             }
 
-            return CompileShader(ref shader, config, extradirectives);
+            return CompileShader(ref shader, mat.ShaderConfig, extradirectives);
         }
+
+        public static bool CompileShader(out NbShader shader, GLSLShaderConfig conf)
+        {
+            shader = new();
+            return CompileShader(ref shader, conf, "");
+        }
+
 
         //Shader Creation
         public static bool CompileShader(ref NbShader shader, GLSLShaderConfig config, string extradirectives = "")
@@ -1290,15 +1356,9 @@ namespace NbCore.Platform.Graphics
                 Callbacks.Assert(false, "Shader Compilation Error");
             }
 
-            //Save Shader to config references
-            if (!config.ReferencedByShaders.Contains(shader))
-            {
-                config.ReferencedByShaders.Add(shader);
-                shader.RefConfig = config;
-            }
-                
             ShaderCompilationLog(shader);
             loadActiveUniforms(shader);
+            shader.IsUpdated?.Invoke();
             return true;
         }
 

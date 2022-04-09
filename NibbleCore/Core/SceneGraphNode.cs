@@ -74,8 +74,11 @@ namespace NbCore
                 case SceneNodeType.REFERENCE:
                     base.Type = EntityType.SceneNodeReference;
                     break;
+                case SceneNodeType.EMITTER:
+                    base.Type = EntityType.SceneNodeEmmiter;
+                    break;
                 default:
-                    throw new Exception("make sure to property initialize base type");
+                    throw new Exception($"make sure to property initialize base type: {base.Type}");
             }
         }
 

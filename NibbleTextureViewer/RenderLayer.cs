@@ -135,24 +135,16 @@ namespace NibbleTextureViewer
 
             //Compile updated shaders
            //Re-Compile requested shaders
-            while (EngineRef.renderSys.ShaderMgr.CompilationQueue.Count > 0)
+            while (EngineRef.renderSys.ShaderMgr.ShaderCompilationQueue.Count > 0)
             {
-                NbShader shader = EngineRef.renderSys.ShaderMgr.CompilationQueue.Dequeue();
-                //TODO: FIX
-                if (shader.RefMaterial is null)
-                    GraphicsAPI.CompileShader(ref shader, shader.RefConfig);
-                else
-                    GraphicsAPI.CompileShader(ref shader, shader.RefConfig, shader.RefMaterial);
-
-                shader.IsUpdated?.Invoke();
+                NbShader shader = EngineRef.renderSys.ShaderMgr.ShaderCompilationQueue.Dequeue();
+                GraphicsAPI.RecompileShader(shader);
             }
-
+            
             renderer.EnableBlend();
             renderer.Viewport(_size.X, _size.Y);
             renderer.ClearColor(new NbCore.Math.NbVector4(0.1f, 0.1f, 0.1f, 0.0f));
-            renderer.ClearDrawBuffer(NbCore.Platform.Graphics.NbBufferMask.Color |
-                                    NbCore.Platform.Graphics.NbBufferMask.Depth);
-
+            renderer.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
 
             if (_texture != null)
             {
@@ -189,7 +181,8 @@ namespace NibbleTextureViewer
                 });
 
                 _shader.CurrentState.AddUniform("texture_depth", (float)_renderData.depth_id);
-                _shader.CurrentState.AddUniform("mipmap", (float)_renderData.mipmap_id);
+                //_shader.CurrentState.AddUniform("mipmap", (float)_renderData.mipmap_id);
+                _shader.CurrentState.AddUniform("mipmap", 0.0f);
                 _shader.CurrentState.AddUniform("aspect_ratio", (float) _texture.Data.Height / _texture.Data.Width);
                 _shader.CurrentState.AddUniform("scale", _scale);
                 _shader.CurrentState.AddUniform("offset", offset);
