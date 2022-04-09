@@ -4,16 +4,21 @@ using Newtonsoft.Json;
 
 namespace NbCore
 {
+
+    public delegate void ShaderConfigUpdatedEventHandler();
+
     [NbSerializable, NbDeserializable]
     public class GLSLShaderConfig : Entity
     {
         public string Name = "";
-
+        public bool IsGeneric = false;
         public Dictionary<NbShaderSourceType, GLSLShaderSource> Sources = new();
         public List<string> directives = new();
-
-        public HashSet<NbShader> ReferencedByShaders = new();
         
+        public HashSet<MeshMaterial> ReferencedByMaterials = new();
+
+        public ShaderConfigUpdatedEventHandler IsUpdated;
+
         //Store the raw shader text temporarily
         public NbShaderMode ShaderMode = NbShaderMode.DEFAULT;
         
@@ -54,12 +59,18 @@ namespace NbCore
 
             //Add shader reference to source object
             s.SetConfigReference(this);
-            
+            s.IsUpdated += OnSourceUpdate;
+
         }
-        
+
         public override GLSLShaderConfig Clone()
         {
             throw new NotImplementedException();
+        }
+
+        public void OnSourceUpdate()
+        {
+            IsUpdated?.Invoke();
         }
 
         public void Serialize(JsonWriter writer)

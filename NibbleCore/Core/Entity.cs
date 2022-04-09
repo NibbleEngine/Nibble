@@ -14,6 +14,7 @@ namespace NbCore
         SceneNodeModel,
         SceneNodeReference,
         SceneNodeCollision,
+        SceneNodeEmmiter,
         MeshComponent,
         AnimationComponent,
         SceneComponent,

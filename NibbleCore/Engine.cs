@@ -377,8 +377,7 @@ namespace NbCore
 
                     RegisterEntity(mc.Mesh);
                     RegisterEntity(mc.Mesh.Material);
-                    RegisterEntity(mc.Mesh.Material.Shader);
-
+                    
                     renderSys.RegisterEntity(e); //Register Mesh
                 }
 
@@ -901,10 +900,6 @@ namespace NbCore
         {
             mat.SetShader(shader);
             
-            //Set Shader References
-            shader.RefMaterial = mat;
-            shader.RefConfig = mat.ShaderConfig;
-            
             //Clear active uniforms and samplers from material
             mat.ActiveSamplers.Clear();
             mat.ActiveUniforms.Clear();
@@ -972,7 +967,7 @@ namespace NbCore
         public GLSLShaderConfig CreateShaderConfig(GLSLShaderSource vs, GLSLShaderSource fs,
                                                 GLSLShaderSource gs, GLSLShaderSource tcs,
                                                 GLSLShaderSource tes, List<string> directives,
-            NbShaderMode mode, string name)
+            NbShaderMode mode, string name, bool isGeneric = false)
         {
             List<string> finaldirectives = CombineShaderDirectives(directives, mode);
             GLSLShaderConfig shader_conf = new GLSLShaderConfig(vs, fs, gs, tcs, tes, finaldirectives, mode);
@@ -1001,9 +996,7 @@ namespace NbCore
             //Create New Shader if it doesn't exist
             if (shader == null)
             {
-                shader = new();
-                
-                if (!Platform.Graphics.GraphicsAPI.CompileShader(ref shader, mat.ShaderConfig, mat))
+                if (!Platform.Graphics.GraphicsAPI.CompileShader(out shader, mat))
                     return null;
                 //Attach UBO binding Points
                 renderSys.Renderer.AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_FRAME", 0);

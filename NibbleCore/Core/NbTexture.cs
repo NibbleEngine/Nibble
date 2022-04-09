@@ -24,7 +24,7 @@ namespace NbCore
         RGTC2,
         BC7,
         DX10,
-        RGBA
+        RGBA8
     }
 
     public class NbTexture : Entity

@@ -4,25 +4,31 @@ using System.Linq;
 
 namespace NbCore
 {
+
+    public delegate void ShaderUpdatedEventHandler();
+
     public class NbShader : Entity
     {
         //Program ID
         public int ProgramID = -1;
         public long Hash = -1;
+        public int RefCounter = 0;
+        public bool IsGeneric = false; //Used to flag internal shaders
+
+        //References
+        private MeshMaterial RefMaterial = null;
+        private GLSLShaderConfig RefShaderConfig = null;
+
         //Keep active uniforms
         public Dictionary<string, NbUniformFormat> uniformLocations = new();
         public NbShaderState CurrentState = NbShaderState.Create(); //Empty state
         public Dictionary<NbShaderSourceType, int> SourceObjects = new();
         public new NbShaderType Type;
 
-        public MeshMaterial RefMaterial;
-        public GLSLShaderConfig RefConfig;
-        
         //Shader Compilation log
         public string CompilationLog = "";
 
-        public delegate void OnShaderUpdateEventHandler();
-        public OnShaderUpdateEventHandler IsUpdated;
+        public ShaderUpdatedEventHandler IsUpdated;
 
         public NbShader() : base(EntityType.Shader)
         {
@@ -34,51 +40,57 @@ namespace NbCore
             CurrentState.Clear();
         }
 
-        public void FilterState(ref NbShaderState state)
+        public void RemoveReference()
         {
-            //Floats;
-            var arr = state.Floats.ToArray();
-            for (int i = 0; i < arr.Length; i++)
-            {
-                if (!uniformLocations.ContainsKey(arr[i].Key))
-                    state.Floats.Remove(arr[i].Key);
-            }
-
-            //Vec2s
-            var arr1 = state.Vec2s.ToArray();
-            for (int i = 0; i < arr1.Length; i++)
-            {
-                if (!uniformLocations.ContainsKey(arr1[i].Key))
-                    state.Vec2s.Remove(arr1[i].Key);
-            }
-
-            //Vec3s
-            var arr3 = state.Vec3s.ToArray();
-            for (int i = 0; i < arr3.Length; i++)
-            {
-                if (!uniformLocations.ContainsKey(arr3[i].Key))
-                    state.Vec3s.Remove(arr3[i].Key);
-            }
-
-            //Vec4s
-            var arr4 = state.Vec4s.ToArray();
-            for (int i = 0; i < arr4.Length; i++)
-            {
-                if (!uniformLocations.ContainsKey(arr4[i].Key))
-                    state.Vec4s.Remove(arr4[i].Key);
-            }
-
-            //Samplers
-            var arr5 = state.Samplers.ToArray();
-            for (int i = 0; i < arr5.Length; i++)
-            {
-                if (!uniformLocations.ContainsKey(arr5[i].Key))
-                    state.Samplers.Remove(arr5[i].Key);
-            }
-
+            RefCounter--;
         }
 
+        public void AddReference()
+        {
+            RefCounter++;
+        }
 
+        public MeshMaterial GetMaterial()
+        {
+            return RefMaterial;
+        }
+
+        public void SetMaterial(MeshMaterial mat)
+        {
+            RefMaterial = mat;
+            RefShaderConfig = mat.ShaderConfig;
+            IsUpdated -= IsUpdated;
+        }
+
+        public GLSLShaderConfig GetShaderConfig()
+        {
+            return RefShaderConfig;
+        }
+
+        public void SetShaderConfig(GLSLShaderConfig conf)
+        {
+            RefShaderConfig = conf;
+            RefMaterial = null;
+            IsUpdated -= IsUpdated;
+            conf.IsUpdated += OnShaderUpdate;
+        }
+
+        public void OnShaderUpdate()
+        {
+            //Issue shader for re-compilation
+            Common.RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(this);
+        }
+
+        public void FilterState(ref NbShaderState state)
+        {
+            var arr = state.Data.ToArray();
+            for (int i = 0; i < arr.Length; i++)
+            {
+                string uf_name = arr[i].Key.Split(':')[1];
+                if (!uniformLocations.ContainsKey(uf_name))
+                    state.Data.Remove(uf_name);
+            }
+        }
 
         public override Entity Clone()
         {

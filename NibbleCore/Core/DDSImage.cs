@@ -40,7 +40,7 @@ namespace NbCore {
 
 				header = ReadHeader(r);
 
-				if (((header.ddspf.dwFlags & DDPF_FOURCC) != 0) && (header.ddspf.dwFourCC == FOURCC_DX10 /*DX10*/))
+				if (header.ddspf.dwFourCC == FOURCC_DX10) /*DX10*/
 				{
 					header10 = Read_DDS_HEADER10(r);
 					//Override PitchOrLinearSize in case of BC7 textures
@@ -95,6 +95,12 @@ namespace NbCore {
 			bool compressed = false;
 			switch (header.ddspf.dwFourCC)
 			{
+				//Uncompressed
+				//TODO: Read masks and figure out the correct format
+				case (0x0):
+					pif = NbTextureInternalFormat.RGBA8;
+					compressed = false;
+					break;
 				//DXT1
 				case (0x31545844):
 					pif = NbTextureInternalFormat.DXT1;
@@ -120,6 +126,18 @@ namespace NbCore {
 								pif = NbTextureInternalFormat.BC7;
 								compressed = true;
 								break;
+							case (DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM):
+								pif = NbTextureInternalFormat.DXT5;
+								compressed = true;
+								break;
+							case (DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM):
+								pif = NbTextureInternalFormat.DXT1;
+								compressed = true;
+								break;
+							case (DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM):
+								pif = NbTextureInternalFormat.RGTC2;
+								compressed = true;
+								break;
 							default:
 								throw new ApplicationException("Unimplemented DX10 Texture Pixel format");
 						}
@@ -140,11 +158,11 @@ namespace NbCore {
 				r.Write(dwMagic);
 				WriteHeader(r);
 
-				if (((header.ddspf.dwFlags & DDPF_FOURCC) != 0) && (header.ddspf.dwFourCC == FOURCC_DX10 /*DX10*/))
+				if (header.ddspf.dwFourCC == FOURCC_DX10)  /*DX10*/
 				{
 					WriteHeader10(r);
 				}
-
+				
 				r.Write(Data);
 			}
 
@@ -525,7 +543,7 @@ namespace NbCore {
 		private DDS_PIXELFORMAT ReadPixelFormat(BinaryReader r) {
 			DDS_PIXELFORMAT p = new DDS_PIXELFORMAT();
 			p.dwSize = r.ReadInt32();
-			p.dwFlags = r.ReadInt32();
+			p.dwFlags = (DDS_PIXELFORMAT_DWFLAGS) r.ReadInt32();
 			p.dwFourCC = r.ReadInt32();
 
 			switch (p.dwFourCC)
@@ -540,17 +558,17 @@ namespace NbCore {
 			}
 
 			p.dwRGBBitCount = r.ReadInt32();
-			p.dwRBitMask = r.ReadInt32();
-			p.dwGBitMask = r.ReadInt32();
-			p.dwBBitMask = r.ReadInt32();
-			p.dwABitMask = r.ReadInt32();
+			p.dwRBitMask = r.ReadUInt32();
+			p.dwGBitMask = r.ReadUInt32();
+			p.dwBBitMask = r.ReadUInt32();
+			p.dwABitMask = r.ReadUInt32();
 			return p;
 		}
 
 		private void WritePixelFormat(BinaryWriter bw)
         {
 			bw.Write(header.ddspf.dwSize);
-			bw.Write(header.ddspf.dwFlags);
+			bw.Write((int) header.ddspf.dwFlags);
 			bw.Write(header.ddspf.dwFourCC);
 			bw.Write(header.ddspf.dwRGBBitCount);
 			bw.Write(header.ddspf.dwRBitMask);
@@ -631,6 +649,17 @@ namespace NbCore {
 	}
 
 	[Flags]
+	public enum DDS_PIXELFORMAT_DWFLAGS
+	{
+		DDPF_ALPHAPIXELS = 0x1,
+		DDPF_ALPHA = 0x2,
+		DDPF_FOURCC = 0x4,
+		DDPF_RGB = 0x40,
+		DDPF_YUV = 0x200,
+		DDPF_LUMINANCE = 0x20000
+	}
+
+	[Flags]
 	public enum DDSCAPS
     {
 		DDSCAPS_COMPLEX = 0x8,
@@ -678,13 +707,13 @@ namespace NbCore {
 
 	public class DDS_PIXELFORMAT {
 		public int dwSize;
-		public int dwFlags;
+		public DDS_PIXELFORMAT_DWFLAGS dwFlags;
 		public int dwFourCC;
 		public int dwRGBBitCount;
-		public int dwRBitMask;
-		public int dwGBitMask;
-		public int dwBBitMask;
-		public int dwABitMask;
+		public uint dwRBitMask;
+		public uint dwGBitMask;
+		public uint dwBBitMask;
+		public uint dwABitMask;
 
 		public DDS_PIXELFORMAT() {
 		}

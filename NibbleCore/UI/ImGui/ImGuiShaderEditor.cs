@@ -97,7 +97,10 @@ namespace NbCore.UI.ImGui
                         (GLSLShaderSource)shaderSourceList[OriginalVSSourceIndex]);
                     Updated = true;
                 }
-                    
+
+                if (ImGuiCore.IsItemHovered())
+                    ImGuiCore.SetTooltip(sourceItems[OriginalVSSourceIndex]);
+
                 ImGuiCore.PopItemWidth();
                 ImGuiCore.TableSetColumnIndex(2);
                 if (ImGuiCore.Button("Edit##1"))
@@ -122,6 +125,10 @@ namespace NbCore.UI.ImGui
                         (GLSLShaderSource)shaderSourceList[OriginalFSSourceIndex]);
                     Updated = true;
                 }
+
+                if (ImGuiCore.IsItemHovered())
+                    ImGuiCore.SetTooltip(sourceItems[OriginalFSSourceIndex]);
+
                 ImGuiCore.PopItemWidth();
                 ImGuiCore.TableSetColumnIndex(2);
                 if (ImGuiCore.Button("Edit##2"))

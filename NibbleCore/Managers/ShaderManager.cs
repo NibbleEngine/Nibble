@@ -8,9 +8,10 @@ namespace NbCore.Managers
 {
     public class ShaderManager: EntityManager<NbShader>
     {
-        public readonly Queue<NbShader> CompilationQueue = new();
-
+        public readonly Queue<NbShader> ShaderCompilationQueue = new();
+        
         private readonly Dictionary<long, NbShader> ShaderHashMap = new();
+        private readonly Dictionary<long, NbShader> GenericShaderHashMap = new();
         
         public bool AddShader(NbShader shader)
         {
@@ -23,14 +24,20 @@ namespace NbCore.Managers
             return false;
         }
 
-        public void AddShaderForCompilation(NbShader req)
+        public void AddShaderForCompilation(NbShader shader)
         {
-            CompilationQueue.Enqueue(req);
+            if (!ShaderCompilationQueue.Contains(shader))
+                ShaderCompilationQueue.Enqueue(shader);
         }
 
         public NbShader GetShaderByHash(long hash)
         {
             return ShaderHashMap[hash];
+        }
+
+        public NbShader GetGenericShaderByHash(long hash)
+        {
+            return GenericShaderHashMap[hash];
         }
 
         public NbShader GetShaderByType(NbShaderType type)
@@ -48,9 +55,34 @@ namespace NbCore.Managers
             return ShaderHashMap.ContainsKey(hash);
         }
 
+        public bool GenericShaderHashExists(long hash)
+        {
+            return GenericShaderHashMap.ContainsKey(hash);
+        }
+
         public bool ShaderIDExists(long ID) //GUID
         {
             return EntityMap.ContainsKey(ID);
+        }
+
+        public void MakeShaderGeneric(long hash)
+        {
+            if (ShaderHashExists(hash))
+            {
+                NbShader shader = GetShaderByHash(hash);
+                GenericShaderHashMap.Add(hash, shader);
+                ShaderHashMap.Remove(hash);
+            }
+        }
+
+        public void MakeShaderNonGeneric(long hash)
+        {
+            if (GenericShaderHashExists(hash))
+            {
+                NbShader shader = GetGenericShaderByHash(hash);
+                ShaderHashMap.Add(hash, shader);
+                GenericShaderHashMap.Remove(hash);
+            }
         }
 
         public new void CleanUp()
