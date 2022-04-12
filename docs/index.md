@@ -1,37 +1,36 @@
-## Welcome to GitHub Pages
+## Home
 
-You can use the [editor on GitHub](https://github.com/gregkwaste/NMSMV/edit/develop/docs/index.md) to maintain and preview the content for your website in Markdown files.
+### Description
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+**Nibble** is a custom cross-platform graphics (and wannabe game) engine that is *currently* written in C#. Nibble's core code base is derived from the No Man's Sky Model Viewer (NMSMV). At some point so much stuff was put into the viewer that the scope of the project changed and I was more excited to work on a custom rendering/game engine rather than a dedicated asset viewer. The goal is to create a standalone, easy-to-use and portable game engine library that can be integrated with low effort on other projects. 
 
-### Markdown
+The engine is designed to be extensible using plugins. This way custom importers/exporters can be plugged into the engine and allow for both the preview of custom formats but also the re-export on other supported model formats.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+Since the initial code base was in C#, I did not bother rewriting everything in C++. For this reason I am trying to design engine sub-systems as much as possible in a plug n play way (using abstractions) so that I can provide better implementations at some point in the future and make it work out of the box (hopefully). 
 
-```markdown
-Syntax highlighted code block
+In any case the engine is a heavy WIP for the time being.
 
-# Header 1
-## Header 2
-### Header 3
+### Features
 
-- Bulleted
-- List
+- Crossplatform
+- Deferred Rendering (OpenGL 4.6)
+- Live Shader (.glsl) editing
+- Plugin System for asset importers/exporters
+- Custom DDS loading library (DXT10 textures are supported)
+- PBR Shading (I have no idea what I am doing >.<)
 
-1. Numbered
-2. List
 
-**Bold** and _Italic_ and `Code` text
 
-[Link](url) and ![Image](src)
-```
+### Specification
+- [Instance Buffer Management](Spec_GLBufferManager.md)
+- [Shader System](Spec_ShaderSystem.md)
 
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
 
-### Jekyll Themes
+### API
+TODO
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/gregkwaste/NMSMV/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+
 
 ### Support or Contact
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+For questions, suggestions or inquiries please mail me at <gregkwaste@gmail.com>

@@ -197,11 +197,9 @@ namespace NbCore.Systems
         public NbShader GetMaterialShader(MeshMaterial mat)
         {
             //Calculate Shader hash
-            List<string> directives = new();
-            directives = EngineRef.CombineShaderDirectives(directives, mat.ShaderConfig.ShaderMode);
+            List<string> directives = EngineRef.CreateShaderDirectivesFromMode(mat.ShaderConfig.ShaderMode);
             directives.AddRange(EngineRef.GetMaterialShaderDirectives(mat));
             int shader_hash = EngineRef.CalculateShaderHash(directives);
-
             NbShader shader = null;
 
             if (ShaderMgr.ShaderHashExists(shader_hash))
@@ -210,7 +208,7 @@ namespace NbCore.Systems
             } else
             {
                 //Compile Material Shader
-                shader =  EngineRef.CompileMaterialShader(mat);
+                shader =  EngineRef.CompileShader(mat);
             }
 
             EngineRef.AttachShaderToMaterial(mat, shader);

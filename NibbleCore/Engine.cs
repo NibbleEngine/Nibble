@@ -333,9 +333,9 @@ namespace NbCore
         {
             if (registrySys.RegisterEntity(mat))
             {
-                //Add material to teh material manager
                 renderSys.MaterialMgr.AddMaterial(mat);
-                
+
+                //Register Textures as well
                 foreach (NbSampler sampl in mat.Samplers)
                 {
                     NbTexture tex = sampl.GetTexture();
@@ -654,7 +654,7 @@ namespace NbCore
             //z: metallic
             mat.Uniforms.Add(uf);
             mat.ShaderConfig = GetShaderConfigByName("UberShader");
-            shader = CompileMaterialShader(mat);
+            shader = CompileShader(mat);
             AttachShaderToMaterial(mat, shader);
 
             RegisterEntity(mat);
@@ -896,26 +896,15 @@ namespace NbCore
             return tex;
         }
 
+        public void AttachShaderToConfig(GLSLShaderConfig conf, NbShader shader)
+        {
+            shader.SetShaderConfig(conf);
+        }
+
         public void AttachShaderToMaterial(MeshMaterial mat, NbShader shader)
         {
+            shader.SetMaterial(mat);
             mat.SetShader(shader);
-            
-            //Clear active uniforms and samplers from material
-            mat.ActiveSamplers.Clear();
-            mat.ActiveUniforms.Clear();
-
-            //Load Active Uniforms to Material
-            for (int i = 0; i < mat.Uniforms.Count; i++)
-            {
-                mat.UpdateUniform(mat.Uniforms[i]);
-            }
-
-            foreach (NbSampler s in mat.Samplers)
-            {
-                //I don't like htis method being here. I think I need to relocate it
-                mat.UpdateSampler(s); 
-            }
-    
         }
 
         public List<string> GetMaterialShaderDirectives(MeshMaterial mat)
@@ -931,9 +920,9 @@ namespace NbCore
             return includes;
         }
 
-        public List<string> CombineShaderDirectives(List<string> directives, NbShaderMode mode)
+        public List<string> CreateShaderDirectivesFromMode(NbShaderMode mode)
         {
-            List<string> includes = directives.ToList();
+            List<string> includes = new();
 
             //General Directives are provided here
             if (mode.HasFlag(NbShaderMode.DEFFERED))
@@ -969,13 +958,42 @@ namespace NbCore
                                                 GLSLShaderSource tes, List<string> directives,
             NbShaderMode mode, string name, bool isGeneric = false)
         {
-            List<string> finaldirectives = CombineShaderDirectives(directives, mode);
+
+            List<string> finaldirectives = CreateShaderDirectivesFromMode(mode);
+            foreach (string d in directives)
+                finaldirectives.Add(d);
             GLSLShaderConfig shader_conf = new GLSLShaderConfig(vs, fs, gs, tcs, tes, finaldirectives, mode);
             shader_conf.Name = name;
             return shader_conf;
         }
 
-        public NbShader CompileMaterialShader(MeshMaterial mat)
+        public NbShader CompileShader(GLSLShaderConfig conf)
+        {
+            List<string> hashdirectives = CreateShaderDirectivesFromMode(conf.ShaderMode);
+            hashdirectives.Add(conf.Name);
+
+            int hash = CalculateShaderHash(hashdirectives);
+            NbShader shader = GetShaderByHash(hash);
+
+            //Create New Shader if it doesn't exist
+            if (shader == null)
+            {
+                if (!Platform.Graphics.GraphicsAPI.CompileShader(out shader, conf))
+                    return null;
+                
+                //TODO maybe also move hash assignment inside shader compilation
+                shader.Hash = hash;
+
+                //Register New Shader
+                RegisterEntity(shader);
+                AttachShaderToConfig(conf, shader);
+            }
+
+            return shader;
+
+        }
+
+        public NbShader CompileShader(MeshMaterial mat)
         {
             if (mat.ShaderConfig == null)
             {
@@ -983,13 +1001,12 @@ namespace NbCore
                     LogVerbosityLevel.WARNING);
                 return null;
             }
-
+            
             List<string> matdirectives = GetMaterialShaderDirectives(mat);
-            List<string> hashdirectives = new();
-            hashdirectives = CombineShaderDirectives(hashdirectives, mat.ShaderConfig.ShaderMode);
+            List<string> hashdirectives = CreateShaderDirectivesFromMode(mat.ShaderConfig.ShaderMode);
             hashdirectives.AddRange(matdirectives);
-
             hashdirectives.Add(mat.ShaderConfig.Name);
+
             int hash = CalculateShaderHash(hashdirectives);
             NbShader shader = GetShaderByHash(hash);
 
@@ -998,19 +1015,13 @@ namespace NbCore
             {
                 if (!Platform.Graphics.GraphicsAPI.CompileShader(out shader, mat))
                     return null;
-                //Attach UBO binding Points
-                renderSys.Renderer.AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_FRAME", 0);
-                renderSys.Renderer.AttachSSBOToShaderBindingPoint(shader, "_COMMON_PER_MESH", 1);
-                renderSys.Renderer.AttachSSBOToShaderBindingPoint(shader, "_COMMON_PER_MESHGROUP", 2);
-
+                
                 shader.Hash = hash;
 
                 //Register New Shader
                 RegisterEntity(shader);
+                AttachShaderToMaterial(mat, shader);
             }
-
-            //Attach Shader to material
-            AttachShaderToMaterial(mat, shader);
 
             return shader;
         }

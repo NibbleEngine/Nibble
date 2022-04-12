@@ -4,7 +4,6 @@ using System.Linq;
 
 namespace NbCore
 {
-
     public delegate void ShaderUpdatedEventHandler();
 
     public class NbShader : Entity
@@ -16,7 +15,6 @@ namespace NbCore
         public bool IsGeneric = false; //Used to flag internal shaders
 
         //References
-        private MeshMaterial RefMaterial = null;
         private GLSLShaderConfig RefShaderConfig = null;
 
         //Keep active uniforms
@@ -40,24 +38,8 @@ namespace NbCore
             CurrentState.Clear();
         }
 
-        public void RemoveReference()
+        public void AddMaterialReference(MeshMaterial mat)
         {
-            RefCounter--;
-        }
-
-        public void AddReference()
-        {
-            RefCounter++;
-        }
-
-        public MeshMaterial GetMaterial()
-        {
-            return RefMaterial;
-        }
-
-        public void SetMaterial(MeshMaterial mat)
-        {
-            RefMaterial = mat;
             RefShaderConfig = mat.ShaderConfig;
             IsUpdated -= IsUpdated;
         }
@@ -70,7 +52,6 @@ namespace NbCore
         public void SetShaderConfig(GLSLShaderConfig conf)
         {
             RefShaderConfig = conf;
-            RefMaterial = null;
             IsUpdated -= IsUpdated;
             conf.IsUpdated += OnShaderUpdate;
         }
