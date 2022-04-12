@@ -101,7 +101,7 @@ namespace NbCore.UI.ImGui
                     {
                         GLSLShaderConfig old = _ActiveMaterial.ShaderConfig;
                         _ActiveMaterial.ShaderConfig = shaderconfs[currentShaderConfigId] as GLSLShaderConfig;
-                        NbShader new_shader = RenderState.engineRef.CompileMaterialShader(_ActiveMaterial);
+                        NbShader new_shader = RenderState.engineRef.CompileShader(_ActiveMaterial);
 
                         if (new_shader == null)
                         {

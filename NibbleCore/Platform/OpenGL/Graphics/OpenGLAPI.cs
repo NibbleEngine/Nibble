@@ -1187,7 +1187,7 @@ namespace NbCore.Platform.Graphics
         
 
         //This method attaches UBOs to shader binding points
-        public void AttachUBOToShaderBindingPoint(NbShader shader, string var_name, int binding_point)
+        public static void AttachUBOToShaderBindingPoint(NbShader shader, string var_name, int binding_point)
         {
             int shdr_program_id = shader.ProgramID;
             int ubo_index = GL.GetUniformBlockIndex(shdr_program_id, var_name);
@@ -1202,6 +1202,20 @@ namespace NbCore.Platform.Graphics
             int ssbo_index = GL.GetProgramResourceIndex(shdr_program_id, ProgramInterface.ShaderStorageBlock, var_name);
             if (ssbo_index != -1)
                 GL.ShaderStorageBlockBinding(shader.ProgramID, ssbo_index, binding_point);
+        }
+
+        private static string NumberLines(string s)
+        {
+            if (s == "")
+                return s;
+
+            string n_s = "";
+            string[] split = s.Split('\n');
+
+            for (int i = 0; i < split.Length; i++)
+                n_s += (i + 1).ToString() + ": " + split[i] + "\n";
+
+            return n_s;
         }
 
         public static bool CompileShaderSource(NbShader shader, GLSLShaderConfig shaderConf, 
@@ -1231,7 +1245,7 @@ namespace NbCore.Platform.Graphics
 
             GL.GetShader(shader_object_id, ShaderParameter.CompileStatus, out int status_code);
 
-            temp_log += GLShaderHelper.NumberLines(ActualShaderSource) + "\n";
+            temp_log += NumberLines(ActualShaderSource) + "\n";
             temp_log += info + "\n";
 
             if (status_code != 1)
@@ -1358,6 +1372,13 @@ namespace NbCore.Platform.Graphics
 
             ShaderCompilationLog(shader);
             loadActiveUniforms(shader);
+
+
+            //Attach UBO binding Points
+            AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_FRAME", 0);
+            AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_MESH", 1);
+            AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_MESHGROUP", 2);
+
             shader.IsUpdated?.Invoke();
             return true;
         }

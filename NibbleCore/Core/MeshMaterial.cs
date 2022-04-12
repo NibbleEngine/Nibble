@@ -74,7 +74,7 @@ namespace NbCore
         _F63_DISSOLVE,
         _F64_,
     }
-
+        
     [NbSerializable]
     public class MeshMaterial : Entity
     {
@@ -84,11 +84,12 @@ namespace NbCore
         public TextureManager texMgr;
         public GLSLShaderConfig ShaderConfig;
         public NbShader Shader;
+        public List<MaterialFlagEnum> Flags = new();
         public List<NbUniform> Uniforms = new();
         public List<NbSampler> Samplers = new();
         public Dictionary<string, NbSampler> SamplerMap = new();
-        public List<MaterialFlagEnum> Flags = new();
-        
+
+
         public float[] material_flags = new float[64];
 
         public static List<MaterialFlagEnum> supported_flags = new() {
@@ -196,9 +197,8 @@ namespace NbCore
 
         public void SetShader(NbShader shader)
         {
-            Shader?.RemoveReference();
+            Shader.AddMaterialReference(this);
             Shader = shader;
-            Shader.AddReference();
             OnShaderUpdate();
             shader.IsUpdated += OnShaderUpdate;
         }
