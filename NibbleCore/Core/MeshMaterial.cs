@@ -74,7 +74,7 @@ namespace NbCore
         _F63_DISSOLVE,
         _F64_,
     }
-        
+
     [NbSerializable]
     public class MeshMaterial : Entity
     {
@@ -82,14 +82,12 @@ namespace NbCore
         public string Class = "";
         public bool IsGeneric = false;
         public TextureManager texMgr;
-        public GLSLShaderConfig ShaderConfig;
         public NbShader Shader;
         public List<MaterialFlagEnum> Flags = new();
         public List<NbUniform> Uniforms = new();
         public List<NbSampler> Samplers = new();
         public Dictionary<string, NbSampler> SamplerMap = new();
-
-
+        
         public float[] material_flags = new float[64];
 
         public static List<MaterialFlagEnum> supported_flags = new() {
@@ -195,16 +193,30 @@ namespace NbCore
             return newmat;
         }
 
-        public void SetShader(NbShader shader)
+        public void AttachShader(NbShader shader)
         {
-            Shader.AddMaterialReference(this);
+            DettachShader(); //Just in case
             Shader = shader;
-            OnShaderUpdate();
+            Shader.AddReference();
+            OnShaderUpdate(shader);
             shader.IsUpdated += OnShaderUpdate;
         }
 
-        public void OnShaderUpdate()
+        public void DettachShader()
         {
+            Shader?.RemoveReference();
+            Shader = null;
+        }
+
+        public void OnShaderUpdate(NbShader shader)
+        {
+            if (shader.Hash != Shader.Hash)
+            {
+                DettachShader();
+                AttachShader(shader);
+                return;
+            }
+            
             ActiveSamplers.Clear();
             ActiveUniforms.Clear();
 
@@ -268,7 +280,7 @@ namespace NbCore
             writer.WriteValue(Class);
 
             writer.WritePropertyName("ShaderConfig");
-            writer.WriteValue(ShaderConfig?.Name);
+            writer.WriteValue(Shader?.RefShaderConfig?.Name);
 
             //Write Flags
             writer.WritePropertyName("Flags");

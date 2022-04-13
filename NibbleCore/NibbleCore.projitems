@@ -36,7 +36,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Input\MouseInput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLSLShaderConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLSLShaderSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\NbShader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\NbShader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\TwosComplement.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiLog.cs" />
@@ -112,7 +112,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Input\GamepadHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Rendering\Gbuffer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\Primitives.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLShaderHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\GMDL.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\Octree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Systems\RenderSystem.cs" />

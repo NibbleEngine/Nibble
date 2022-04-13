@@ -194,27 +194,6 @@ namespace NbCore.Systems
             
         }
 
-        public NbShader GetMaterialShader(MeshMaterial mat)
-        {
-            //Calculate Shader hash
-            List<string> directives = EngineRef.CreateShaderDirectivesFromMode(mat.ShaderConfig.ShaderMode);
-            directives.AddRange(EngineRef.GetMaterialShaderDirectives(mat));
-            int shader_hash = EngineRef.CalculateShaderHash(directives);
-            NbShader shader = null;
-
-            if (ShaderMgr.ShaderHashExists(shader_hash))
-            {
-                shader =  ShaderMgr.GetShaderByHash(shader_hash);
-            } else
-            {
-                //Compile Material Shader
-                shader =  EngineRef.CompileShader(mat);
-            }
-
-            EngineRef.AttachShaderToMaterial(mat, shader);
-            return shader;
-        }
-
         public void RegisterEntity(Entity e)
         {
             if (!e.HasComponent<MeshComponent>())
@@ -578,7 +557,7 @@ namespace NbCore.Systems
                 MeshMaterial mat = EngineRef.GetMaterialByName("lightMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
 
-                //Render static meshes
+                //Render static meshes 
                 foreach (NbMesh m in lightMeshList)
                 {
                     if (m.InstanceCount == 0) continue;
@@ -1306,7 +1285,7 @@ namespace NbCore.Systems
             while (ShaderMgr.ShaderCompilationQueue.Count > 0)
             {
                 NbShader shader = ShaderMgr.ShaderCompilationQueue.Dequeue();
-                GraphicsAPI.RecompileShader(shader);
+                EngineRef.CompileShader(shader);
             }
             
             //Render Scene
