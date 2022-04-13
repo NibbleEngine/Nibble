@@ -96,18 +96,29 @@ namespace NbCore.UI.ImGui
                     {
                         shaderconfItems[i] = ((GLSLShaderConfig)shaderconfs[i]).Name;
                     }
-                    int currentShaderConfigId = shaderconfs.IndexOf(_ActiveMaterial.ShaderConfig);
+                    int currentShaderConfigId = shaderconfs.IndexOf(_ActiveMaterial.Shader.RefShaderConfig);
                     if (ImGuiNET.ImGui.Combo("##MaterialShader", ref currentShaderConfigId, shaderconfItems, shaderconfs.Count))
                     {
-                        GLSLShaderConfig old = _ActiveMaterial.ShaderConfig;
-                        _ActiveMaterial.ShaderConfig = shaderconfs[currentShaderConfigId] as GLSLShaderConfig;
-                        NbShader new_shader = RenderState.engineRef.CompileShader(_ActiveMaterial);
+                        GLSLShaderConfig old = _ActiveMaterial.Shader.RefShaderConfig;
+                        _ActiveMaterial.Shader.RefShaderConfig = shaderconfs[currentShaderConfigId] as GLSLShaderConfig;
+
+                        //Calculate requested shader hash
+                        int shader_hash = RenderState.engineRef.CalculateShaderHash(shaderconfs[currentShaderConfigId] as GLSLShaderConfig,
+                            RenderState.engineRef.GetMaterialShaderDirectives(_ActiveMaterial));
+
+                        NbShader new_shader = RenderState.engineRef.GetShaderByHash(shader_hash);
 
                         if (new_shader == null)
                         {
-                            Console.WriteLine("Unable to compile shader for material");
-                            _ActiveMaterial.ShaderConfig = old;
+                            //Create new Shader
+                            new_shader = new(_ActiveMaterial.Shader);
+                            new_shader.SetShaderConfig(shaderconfs[currentShaderConfigId] as GLSLShaderConfig);
+                            RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(new_shader);
+                            
+                            _ActiveMaterial.Shader.IsUpdated -= _ActiveMaterial.OnShaderUpdate;
+                            new_shader.IsUpdated += _ActiveMaterial.OnShaderUpdate;
                         }
+
                     }
 
                     ImGuiNET.ImGui.TableNextRow();

@@ -13,10 +13,6 @@ namespace NbCore
         public string Name = "";
         public bool IsGeneric = false;
         public Dictionary<NbShaderSourceType, GLSLShaderSource> Sources = new();
-        public List<string> directives = new();
-        
-        public HashSet<MeshMaterial> ReferencedByMaterials = new();
-
         public ShaderConfigUpdatedEventHandler IsUpdated;
 
         //Store the raw shader text temporarily
@@ -36,7 +32,7 @@ namespace NbCore
         public GLSLShaderConfig(GLSLShaderSource vvs,
             GLSLShaderSource ffs, GLSLShaderSource ggs,
             GLSLShaderSource ttcs, GLSLShaderSource ttes,
-            List<string> directives, NbShaderMode mode) : base(EntityType.ShaderConfig)
+            NbShaderMode mode) : base(EntityType.ShaderConfig)
         {
             ShaderMode = mode;
 
@@ -46,9 +42,7 @@ namespace NbCore
             AddSource(NbShaderSourceType.GeometryShader, ggs);
             AddSource(NbShaderSourceType.TessControlShader, ttcs);
             AddSource(NbShaderSourceType.TessEvaluationShader, ttes);
-                
-            foreach (string d in directives)
-                this.directives.Add(d);
+            
         }
 
         public void AddSource(NbShaderSourceType t, GLSLShaderSource s)
@@ -96,14 +90,6 @@ namespace NbCore
             }
                 
             writer.WriteEndArray();
-
-            writer.WritePropertyName("Directives");
-            writer.WriteStartArray();
-            foreach (string d in directives)
-                writer.WriteValue(d);
-            writer.WriteEndArray();
-
-
             writer.WriteEndObject();
         }
 
@@ -135,14 +121,9 @@ namespace NbCore
                 }
             }
 
-            //parse Directives
-            List<string> directives = new();
-            foreach (var ct in token["Directives"])
-                directives.Add(ct.ToString());
-
             NbShaderMode mode = (NbShaderMode) token.Value<int>("ShaderMode");
 
-            GLSLShaderConfig config = new GLSLShaderConfig(vs, fs, null, null, null, directives, mode);
+            GLSLShaderConfig config = new GLSLShaderConfig(vs, fs, null, null, null, mode);
             config.Name = name;
             
             return config;

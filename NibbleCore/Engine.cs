@@ -637,6 +637,7 @@ namespace NbCore
             };
 
             NbShader shader = null;
+            GLSLShaderConfig conf;
 
             //Sphere Material
             MeshMaterial mat = new();
@@ -653,10 +654,12 @@ namespace NbCore
             //x: roughness
             //z: metallic
             mat.Uniforms.Add(uf);
-            mat.ShaderConfig = GetShaderConfigByName("UberShader");
-            shader = CompileShader(mat);
-            AttachShaderToMaterial(mat, shader);
+            conf = GetShaderConfigByName("UberShader");
 
+            shader = CreateShader(conf);
+            EngineRef.CompileShader(shader);
+            mat.AttachShader(shader);
+            
             RegisterEntity(mat);
             
             scene.Children.Add(sphere);
@@ -896,17 +899,6 @@ namespace NbCore
             return tex;
         }
 
-        public void AttachShaderToConfig(GLSLShaderConfig conf, NbShader shader)
-        {
-            shader.SetShaderConfig(conf);
-        }
-
-        public void AttachShaderToMaterial(MeshMaterial mat, NbShader shader)
-        {
-            shader.SetMaterial(mat);
-            mat.SetShader(shader);
-        }
-
         public List<string> GetMaterialShaderDirectives(MeshMaterial mat)
         {
             List<string> includes = new();
@@ -934,6 +926,21 @@ namespace NbCore
             return includes;
         }
 
+        public int CalculateShaderHash(NbShader shader)
+        {
+            return CalculateShaderHash(shader.RefShaderConfig, shader.directives);
+        }
+
+        public int CalculateShaderHash(GLSLShaderConfig conf, List<string> extradirectives = null)
+        {
+            List<string> finaldirectives = new();
+            finaldirectives.AddRange(CreateShaderDirectivesFromMode(conf.ShaderMode));
+            if (extradirectives != null)
+                finaldirectives.AddRange(extradirectives);
+            finaldirectives.Add(conf.Name);
+            return CalculateShaderHash(finaldirectives);
+        }
+        
         public int CalculateShaderHash(List<string> includes)
         {
             //Directive ordering
@@ -955,75 +962,41 @@ namespace NbCore
 
         public GLSLShaderConfig CreateShaderConfig(GLSLShaderSource vs, GLSLShaderSource fs,
                                                 GLSLShaderSource gs, GLSLShaderSource tcs,
-                                                GLSLShaderSource tes, List<string> directives,
-            NbShaderMode mode, string name, bool isGeneric = false)
+                                                GLSLShaderSource tes, NbShaderMode mode, 
+                                                string name, bool isGeneric = false)
         {
 
-            List<string> finaldirectives = CreateShaderDirectivesFromMode(mode);
-            foreach (string d in directives)
-                finaldirectives.Add(d);
-            GLSLShaderConfig shader_conf = new GLSLShaderConfig(vs, fs, gs, tcs, tes, finaldirectives, mode);
+            GLSLShaderConfig shader_conf = new GLSLShaderConfig(vs, fs, gs, tcs, tes, mode);
             shader_conf.Name = name;
             return shader_conf;
         }
 
-        public NbShader CompileShader(GLSLShaderConfig conf)
+        public NbShader CreateShader(GLSLShaderConfig conf, List<string> extradirectives = null)
         {
-            List<string> hashdirectives = CreateShaderDirectivesFromMode(conf.ShaderMode);
-            hashdirectives.Add(conf.Name);
-
-            int hash = CalculateShaderHash(hashdirectives);
-            NbShader shader = GetShaderByHash(hash);
-
-            //Create New Shader if it doesn't exist
-            if (shader == null)
-            {
-                if (!Platform.Graphics.GraphicsAPI.CompileShader(out shader, conf))
-                    return null;
-                
-                //TODO maybe also move hash assignment inside shader compilation
-                shader.Hash = hash;
-
-                //Register New Shader
-                RegisterEntity(shader);
-                AttachShaderToConfig(conf, shader);
-            }
-
+            NbShader shader = new(conf);
+            if (extradirectives != null)
+                shader.directives = new(extradirectives);
             return shader;
-
         }
 
-        public NbShader CompileShader(MeshMaterial mat)
+        public bool CompileShader(NbShader shader)
         {
-            if (mat.ShaderConfig == null)
+            if (shader.RefShaderConfig == null)
             {
                 Log("Missing Shader Configuration on Material. Nothing to compile",
-                    LogVerbosityLevel.WARNING);
-                return null;
+                    LogVerbosityLevel.ERROR);
+                return false;
             }
+
+            if (!Platform.Graphics.GraphicsAPI.CompileShader(shader))
+                return false;
             
-            List<string> matdirectives = GetMaterialShaderDirectives(mat);
-            List<string> hashdirectives = CreateShaderDirectivesFromMode(mat.ShaderConfig.ShaderMode);
-            hashdirectives.AddRange(matdirectives);
-            hashdirectives.Add(mat.ShaderConfig.Name);
-
-            int hash = CalculateShaderHash(hashdirectives);
-            NbShader shader = GetShaderByHash(hash);
-
-            //Create New Shader if it doesn't exist
-            if (shader == null)
-            {
-                if (!Platform.Graphics.GraphicsAPI.CompileShader(out shader, mat))
-                    return null;
-                
-                shader.Hash = hash;
-
-                //Register New Shader
-                RegisterEntity(shader);
-                AttachShaderToMaterial(mat, shader);
-            }
-
-            return shader;
+            shader.Hash = CalculateShaderHash(shader);
+            
+            shader.IsUpdated?.Invoke(shader);
+            //Register New Shader
+            RegisterEntity(shader);
+            return true;
         }
 
         #endregion
@@ -1058,7 +1031,7 @@ namespace NbCore
                         continue;
 
                     //Save Config
-                    var shader_config = mc.Mesh.Material.ShaderConfig;
+                    var shader_config = mc.Mesh.Material.Shader.RefShaderConfig;
                     if (!configs.Contains(shader_config))
                         configs.Add(shader_config);
 
@@ -1078,7 +1051,7 @@ namespace NbCore
                     }
 
 
-                    var shader_sources = mc.Mesh.Material.ShaderConfig.Sources;
+                    var shader_sources = mc.Mesh.Material.Shader.RefShaderConfig.Sources;
                     foreach (GLSLShaderSource s in shader_sources.Values)
                     {
                         if (s.SourceFilePath == "")

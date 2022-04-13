@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace NbCore
 {
-    public delegate void ShaderUpdatedEventHandler();
+    public delegate void ShaderUpdatedEventHandler(NbShader shader);
 
     public class NbShader : Entity
     {
@@ -15,7 +15,8 @@ namespace NbCore
         public bool IsGeneric = false; //Used to flag internal shaders
 
         //References
-        private GLSLShaderConfig RefShaderConfig = null;
+        public GLSLShaderConfig RefShaderConfig = null;
+        public List<string> directives = new(); //Extra Compilation directives (on top of the config directives)
 
         //Keep active uniforms
         public Dictionary<string, NbUniformFormat> uniformLocations = new();
@@ -33,15 +34,22 @@ namespace NbCore
             
         }
 
+        public NbShader(GLSLShaderConfig conf) : base(EntityType.Shader)
+        {
+            SetShaderConfig(conf);
+        }
+
+        public NbShader(NbShader shader) : base(EntityType.Shader)
+        {
+            RefShaderConfig = shader.RefShaderConfig;
+            IsGeneric = shader.IsGeneric;
+            directives = new List<string>(shader.directives);
+            Type = shader.Type;
+        }
+
         public void ClearCurrentState()
         {
             CurrentState.Clear();
-        }
-
-        public void AddMaterialReference(MeshMaterial mat)
-        {
-            RefShaderConfig = mat.ShaderConfig;
-            IsUpdated -= IsUpdated;
         }
 
         public GLSLShaderConfig GetShaderConfig()
@@ -51,9 +59,21 @@ namespace NbCore
 
         public void SetShaderConfig(GLSLShaderConfig conf)
         {
+            if (RefShaderConfig != null)
+                RefShaderConfig.IsUpdated -= OnShaderUpdate;
+            
             RefShaderConfig = conf;
-            IsUpdated -= IsUpdated;
             conf.IsUpdated += OnShaderUpdate;
+        }
+
+        public void AddReference()
+        {
+            RefCounter++;
+        }
+
+        public void RemoveReference()
+        {
+            RefCounter--;
         }
 
         public void OnShaderUpdate()

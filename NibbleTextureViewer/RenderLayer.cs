@@ -56,30 +56,28 @@ namespace NibbleTextureViewer
             GLSLShaderConfig conf = EngineRef.CreateShaderConfig(
                 EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_vs.glsl"),
                 EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_fs.glsl"),
-                null, null, null, new() { }, NbShaderMode.DEFAULT, "Texture");
+                null, null, null, NbShaderMode.DEFAULT, "Texture");
 
 
             GLSLShaderConfig conf_multitex = EngineRef.CreateShaderConfig(
                 EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_vs.glsl"),
                 EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_fs.glsl"),
-                null, null, null, new() { "_F55_MULTITEXTURE" }, 
-                NbShaderMode.DEFAULT, "MultiTexTexture");
+                null, null, null, NbShaderMode.DEFAULT, "MultiTexTexture");
 
             GLSLShaderConfig conf_voltex = EngineRef.CreateShaderConfig(
                 EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_vs.glsl"),
                 EngineRef.GetShaderSourceByFilePath("Shaders/texture_shader_fs.glsl"),
-                null, null, null, new() { "_D_VOLUME_TEXTURE" },
-                NbShaderMode.DEFAULT, "VolumeTexture");
+                null, null, null, NbShaderMode.DEFAULT, "VolumeTexture");
 
-            _shaderArray = new();
-            GraphicsAPI.CompileShader(ref _shaderArray, conf_multitex);
+            _shaderArray = EngineRef.CreateShader(conf_multitex, new() { "_F55_MULTITEXTURE" });
+            EngineRef.CompileShader(_shaderArray);
 
-            _shaderSingle = new();
-            GraphicsAPI.CompileShader(ref _shaderSingle, conf);
-
-            _shaderVolume = new();
-            GraphicsAPI.CompileShader(ref _shaderVolume, conf_voltex);
-
+            _shaderSingle = EngineRef.CreateShader(conf);
+            EngineRef.CompileShader(_shaderSingle);
+            
+            _shaderVolume = EngineRef.CreateShader(conf_voltex, new() { "_D_VOLUME_TEXTURE" });
+            EngineRef.CompileShader(_shaderVolume);
+        
         }
 
         public void OnRenderTextureDataChanged(object sender, RenderTextureData data)
@@ -138,7 +136,7 @@ namespace NibbleTextureViewer
             while (EngineRef.renderSys.ShaderMgr.ShaderCompilationQueue.Count > 0)
             {
                 NbShader shader = EngineRef.renderSys.ShaderMgr.ShaderCompilationQueue.Dequeue();
-                GraphicsAPI.RecompileShader(shader);
+                EngineRef.CompileShader(shader);
             }
             
             renderer.EnableBlend();
