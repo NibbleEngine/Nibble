@@ -21,10 +21,10 @@ In any case the engine is a heavy WIP for the time being.
 
 
 
-### Specification
+### Engine Design
 - [Instance Buffer Management](Spec_GLBufferManager.md)
 - [Shader System](Spec_ShaderSystem.md)
-
+- [Entity Component System](Spec_ECS.md)
 
 ### API
 TODO
