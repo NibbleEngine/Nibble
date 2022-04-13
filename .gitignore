@@ -25,6 +25,7 @@ log.out
 bld/
 [Bb]in/
 [Oo]bj/
+**/PublishProfiles/
 
 # Visual Studio 2015 cache/options directory
 .vs/
