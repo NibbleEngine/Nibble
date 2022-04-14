@@ -81,7 +81,7 @@ namespace NbCore.UI.ImGui
                     //Create Mesh
                     Primitives.Sphere sph = new(new(0.0f), 1.0f, divs);
 
-                    NbMeshData md = sph.geom.GetData();
+                    NbMeshData md = sph.geom.GetMeshData();
                     NbMeshMetaData mmd = sph.geom.GetMetaData();
                     sph.Dispose();
 
@@ -107,6 +107,7 @@ namespace NbCore.UI.ImGui
             {
                 //Register new locator node to engine
                 _manager.EngineRef.RegisterEntity(new_node);
+                _manager.EngineRef.sceneMgmtSys.AddNode(new_node);
 
                 //Set parent
                 new_node.SetParent(_clicked);
@@ -213,7 +214,7 @@ namespace NbCore.UI.ImGui
                         //Create Mesh
                         Primitives.Box bx = new(1.0f,1.0f,1.0f, new Math.NbVector3(1.0f), true);
 
-                        NbMeshData md = bx.geom.GetData();
+                        NbMeshData md = bx.geom.GetMeshData();
                         NbMeshMetaData mmd = bx.geom.GetMetaData();
                         bx.Dispose();
 
@@ -239,7 +240,7 @@ namespace NbCore.UI.ImGui
                         //Create Mesh
                         Primitives.Quad q = new(1.0f, 1.0f);
 
-                        NbMeshData md = q.geom.GetData();
+                        NbMeshData md = q.geom.GetMeshData();
                         NbMeshMetaData mmd = q.geom.GetMetaData();
                         q.Dispose();
 

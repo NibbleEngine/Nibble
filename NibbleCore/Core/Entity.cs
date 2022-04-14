@@ -59,7 +59,7 @@ namespace NbCore
             AddComponent<GUIDComponent>(c);
         }
 
-        public long GetID()
+        public ulong GetID()
         {
             GUIDComponent gc = GetComponent<GUIDComponent>() as GUIDComponent;
             return gc.ID;

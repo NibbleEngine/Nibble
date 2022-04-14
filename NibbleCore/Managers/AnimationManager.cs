@@ -11,12 +11,12 @@ namespace NbCore.Managers
             return base.Add(o);
         }
 
-        public bool HasAnimation(long id)
+        public bool HasAnimation(ulong id)
         {
             return Contains(id);
         }
 
-        public Animation GetAnimation(long id)
+        public Animation GetAnimation(ulong id)
         {
             return Get(id) as Animation;
         }

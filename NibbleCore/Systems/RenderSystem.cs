@@ -47,7 +47,7 @@ namespace NbCore.Systems
         public GraphicsAPI Renderer;
 
         //Entity Managers used by the rendering system
-        public readonly ObjectManager<NbMeshData> MeshDataMgr = new();
+        public readonly ObjectManager<ulong, NbMeshData> MeshDataMgr = new();
         public readonly MaterialManager MaterialMgr = new();
         public readonly GeometryManager GeometryMgr = new();
         public readonly TextureManager TextureMgr = new();
@@ -194,27 +194,22 @@ namespace NbCore.Systems
             
         }
 
-        public void RegisterEntity(Entity e)
+        public void RegisterEntity(NbMesh mesh)
         {
-            if (!e.HasComponent<MeshComponent>())
-            {
-                Log(string.Format("Entity {0} should have a mesh component", e.GetID()), LogVerbosityLevel.INFO);
-                return;
-            }
-
-            MeshComponent mc = e.GetComponent<MeshComponent>() as MeshComponent;
-
-            Renderer.AddMesh(mc.Mesh);
-            MaterialMgr.AddMaterial(mc.Mesh.Material);
-
+            Renderer.AddMesh(mesh);
+            MaterialMgr.AddMaterial(mesh.Material);
             //Store Mesh Data Here
-            MeshDataMgr.Add(mc.Mesh.Data.Hash, mc.Mesh.Data);
+            MeshDataMgr.Add(mesh.Data.Hash, mesh.Data);
 
             //Add to MeshGroup
-            if (mc.Mesh.Group != null)
-                if (!OpenMeshGroups.ContainsKey(mc.Mesh.Group.ID))
-                    AddNewMeshGroup(mc.Mesh.Group);
-            
+            if (mesh.Group != null)
+                if (!OpenMeshGroups.ContainsKey(mesh.Group.ID))
+                    AddNewMeshGroup(mesh.Group);
+        }
+
+        public void RegisterEntity(MeshComponent mc)
+        {
+            RegisterEntity(mc.Mesh);
             process_model(mc);
         }   
 
@@ -572,8 +567,8 @@ namespace NbCore.Systems
                 Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes
-                NbMesh light_sphere = EngineRef.GetPrimitiveMesh((ulong) "default_light_sphere".GetHashCode());
-
+                NbMesh light_sphere = EngineRef.GetMesh((ulong)"default_light_sphere".GetHashCode());
+                
                 if (light_sphere.InstanceCount > 0)
                     Renderer.RenderMesh(light_sphere, mat);
             }
@@ -631,7 +626,7 @@ namespace NbCore.Systems
             NbShader shader = mat.Shader;
             Renderer.SetProgram(mat.Shader.ProgramID);
 
-            Renderer.RenderQuad(GeometryMgr.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode()),
+            Renderer.RenderQuad(EngineRef.GetMesh((ulong)"default_renderquad".GetHashCode()),
                 shader, shader.CurrentState);
         }
 
@@ -801,7 +796,7 @@ namespace NbCore.Systems
                 }
             );
 
-            Renderer.RenderQuad(GeometryMgr.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode()), 
+            Renderer.RenderQuad(EngineRef.GetMesh((ulong)"default_renderquad".GetHashCode()), 
                 bwoit_composite_shader, bwoit_composite_shader.CurrentState);
             
             GL.Disable(EnableCap.Blend);
@@ -973,7 +968,7 @@ namespace NbCore.Systems
                 TextureID = InTex
             });
 
-            Renderer.RenderQuad(GeometryMgr.GetPrimitiveMesh((ulong) "default_renderquad".GetHashCode()),
+            Renderer.RenderQuad(EngineRef.GetMesh((ulong) "default_renderquad".GetHashCode()),
                         shader, shader.CurrentState);
             GL.Enable(EnableCap.DepthTest); //Re-enable Depth test
         }
@@ -1102,7 +1097,7 @@ namespace NbCore.Systems
                 TextureID = renderBuffer.GetChannel(1)
             });
             
-            Renderer.RenderQuad(GeometryMgr.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode()),
+            Renderer.RenderQuad(EngineRef.GetMesh((ulong)"default_renderquad".GetHashCode()),
                         shader, shader.CurrentState);
         }
 
@@ -1210,7 +1205,7 @@ namespace NbCore.Systems
             GL.DepthMask(false);
             GL.Disable(EnableCap.DepthTest);
 
-            NbMesh mesh = GeometryMgr.GetPrimitiveMesh((ulong) "default_light_sphere".GetHashCode());
+            NbMesh mesh = EngineRef.GetMesh((ulong) "default_light_sphere".GetHashCode());
             
             GL.UseProgram(shader_conf.ProgramID);
 

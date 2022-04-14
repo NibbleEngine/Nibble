@@ -1,13 +1,13 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace NbCore
 {
     //TODO: Make sure that every entity (previous model) uses this component by default
 
-    
+    [NbSerializable]
     public unsafe class TransformComponent : Component {
-
-        [NbSerializable]
+        
         public TransformData Data;
         public bool IsControllable = false;
 
@@ -28,5 +28,23 @@ namespace NbCore
         {
             throw new NotImplementedException();
         }
+
+        public void Serialize(JsonTextWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().FullName);
+            writer.WritePropertyName("Data");
+            IO.NbSerializer.Serialize(Data, writer);
+            writer.WriteEndObject();
+        }
+
+        public static TransformComponent Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            TransformData data = IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("Data")) as TransformData;
+            return new TransformComponent(data);
+        }
+
+
     }
 }

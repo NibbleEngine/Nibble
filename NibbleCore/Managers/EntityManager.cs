@@ -7,7 +7,7 @@ namespace NbCore.Managers
     {
         public int EntityCount = 0;
         public List<T> Entities = new();
-        public Dictionary<long, T> EntityMap = new();
+        public Dictionary<ulong, T> EntityMap = new();
 
         private Entity _CheckEntity(T item)
         {
@@ -17,7 +17,7 @@ namespace NbCore.Managers
         }
 
         //All objects added to the manager are Entities, I can disable sanity checks
-        public virtual bool Contains(long id)
+        public virtual bool Contains(ulong id)
         {
             return EntityMap.ContainsKey(id);
         }
@@ -44,11 +44,11 @@ namespace NbCore.Managers
             
         public virtual bool Add(T item)
         {
+            if (item == null)
+                return false;
+
             //Check if Item is Entity
             Entity e = _CheckEntity(item);
-
-            if (e == null)
-                return false;
 
             if (!_IsEntityRegistered(e))
                 return false;
@@ -76,7 +76,7 @@ namespace NbCore.Managers
             return false;
         }
 
-        public T Get(long id)
+        public T Get(ulong id)
         {
             if (Contains(id))
                 return EntityMap[id];

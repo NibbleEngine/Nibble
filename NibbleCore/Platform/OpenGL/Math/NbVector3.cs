@@ -138,5 +138,14 @@ namespace NbCore.Math
             writer.WriteValue(_Value.Z);
             writer.WriteEndObject();
         }
+
+        public static NbVector3 Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            float x = token.Value<float>("X");
+            float y = token.Value<float>("Y");
+            float z = token.Value<float>("Z");
+
+            return new NbVector3(x, y, z);
+        }
     }
 }

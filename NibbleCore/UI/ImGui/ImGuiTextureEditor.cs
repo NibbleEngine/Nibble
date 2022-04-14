@@ -23,13 +23,16 @@ namespace NbCore.UI.ImGui
         public void Draw()
         {
             //Items
-            List<NbTexture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
+            List<Entity> textureList = RenderState.engineRef.GetEntityTypeList(EntityType.Texture);
             string[] items = new string[textureList.Count];
             for (int i = 0; i < items.Length; i++)
-                items[i] = textureList[i].Path == "" ? "Texture_" + i : textureList[i].Path; 
-
+            {
+                NbTexture tex = (NbTexture) textureList[i];
+                items[i] = tex.Path == "" ? "Texture_" + i : tex.Path;
+            }
+                
             if (ImGuiCore.Combo("##1", ref _SelectedId, items, items.Length))
-                _ActiveTexture = textureList[_SelectedId];
+                _ActiveTexture = textureList[_SelectedId] as NbTexture;
 
             ImGuiCore.SameLine();
 
@@ -112,7 +115,7 @@ namespace NbCore.UI.ImGui
         public void SetTexture(NbTexture tex)
         {
             _ActiveTexture = tex;
-            List<NbTexture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
+            List<Entity> textureList = RenderState.engineRef.GetEntityTypeList(EntityType.Texture);
             _SelectedId = textureList.IndexOf(tex);
         }
     }

@@ -242,10 +242,14 @@ namespace NbCore.UI.ImGui
 
                             //Texture Selector
                             //Get All Textures
-                            List<NbTexture> textureList = RenderState.engineRef.renderSys.TextureMgr.Entities;
+                            List<Entity> textureList = RenderState.engineRef.GetEntityTypeList(EntityType.Texture);
                             string[] textureItems = new string[textureList.Count];
                             for (int j = 0; j < textureItems.Length; j++)
-                                textureItems[j] = textureList[j].Path == "" ? "Texture_" + j : textureList[j].Path;
+                            {
+                                NbTexture tex = (NbTexture)textureList[j];
+                                textureItems[j] = tex.Path == "" ? "Texture_" + j : tex.Path;
+                            }
+                            
 
                             int currentTexImageID = textureList.IndexOf(samplerTex);
                             ImGuiNET.ImGui.TableNextRow();
@@ -255,7 +259,7 @@ namespace NbCore.UI.ImGui
                             ImGuiNET.ImGui.SetNextItemWidth(-1);
                             if (ImGuiNET.ImGui.Combo("##SamplerTexture" + i, ref currentTexImageID, textureItems, textureItems.Length))
                             {
-                                current_sampler.SetTexture(textureList[currentTexImageID]);
+                                current_sampler.SetTexture((NbTexture) textureList[currentTexImageID]);
                             }
 
                             if (samplerTex != null)

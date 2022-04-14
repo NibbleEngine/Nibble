@@ -48,6 +48,7 @@ namespace NbCore
         public int InstanceCount = 0;
         public NbMeshGroup Group = null;
         public MeshMaterial Material;
+        public bool IsGeneric = false;
         
         //This is needed only for removing render instances, so that InstanceIDs for relocated meshes in the buffer are updated
         //I think I should find a way to get rid of this at some point. Till then I'll keep it
@@ -96,7 +97,23 @@ namespace NbCore
             IO.NbSerializer.WriteField(typeof(NbMesh).GetField("MetaData"), this, writer);
             writer.WritePropertyName("MeshDataHash");
             writer.WriteValue(Data.Hash);
+            writer.WritePropertyName("Material");
+            writer.WriteValue(Material.Name);
             writer.WriteEndObject();
+        }
+
+        public static NbMesh Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            NbMesh mesh = new();
+            mesh.Hash = token.Value<ulong>("Hash");
+            mesh.Type = (NbMeshType) token.Value<int>("MeshType");
+            mesh.MetaData = (NbMeshMetaData)IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("MetaData"));
+
+            //Material and MeshData references should be loaded from the engine
+            mesh.Material = Common.RenderState.engineRef.GetMaterialByName(token.Value<string>("Material"));
+            mesh.Data = Common.RenderState.engineRef.renderSys.MeshDataMgr.Get(token.Value<ulong>("MeshDataHash"));
+            
+            return mesh;
         }
     }
 }

@@ -12,7 +12,7 @@ namespace NbCore.Systems
     {
         //Keep animations
         public AnimationManager AnimMgr = new();
-        public readonly ObjectManager<AnimationData> AnimDataMgr = new();
+        public readonly ObjectManager<ulong, AnimationData> AnimDataMgr = new();
         //Organize animations in groups
         public List<NbAnimationGroup> AnimationGroups = new();
         //Properties

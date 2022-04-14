@@ -415,18 +415,15 @@ namespace NbCore.Platform.Graphics
 
         public void AddMesh(NbMesh mesh)
         {
-
-            if (mesh.Hash == 0x0)
-            {
-                Log("Default mesh hash. Something went wrong during mesh generation", LogVerbosityLevel.WARNING);
-                return;
-            }
+            Callbacks.Assert(mesh.Hash != 0x0, 
+                "Default mesh hash. Something went wrong during mesh generation");
 
             if (MeshMap.ContainsKey(mesh.Hash))
             {
                 Log("Mesh Hash already exists in map", LogVerbosityLevel.WARNING);
+                return;
             }
-
+            
             //Generate instanced mesh
             GLInstancedMesh imesh = GenerateAPIMesh(mesh);
             MeshMap[mesh.Hash] = imesh;
