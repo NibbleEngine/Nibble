@@ -8,8 +8,8 @@ namespace NbCore.Systems
     public class EntityRegistrySystem : EngineSystem
     {
         private long itemCounter = 0;
-        private long NextID = 1;
-        private Dictionary<long, Entity> EntityMap = new();
+        private ulong NextID = 1;
+        private Dictionary<ulong, Entity> EntityMap = new();
         private Dictionary<EntityType, List<Entity>> EntityTypeList = new();
         public EntityRegistrySystem() : base(EngineSystemEnum.REGISTRY_SYSTEM)
         {
@@ -20,12 +20,12 @@ namespace NbCore.Systems
             }
         }
 
-        public Entity GetEntity(long ID)
+        public Entity GetEntity(ulong ID)
         {
             return EntityMap[ID];
         }
 
-        public Entity GetEntity(EntityType type, long ID)
+        public Entity GetEntity(EntityType type, ulong ID)
         {
             return EntityTypeList[type].Find(x=> x.GetID() == ID);
         }

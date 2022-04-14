@@ -11,9 +11,9 @@ namespace NbCore.Systems
     public class ActionSystem : EngineSystem
     {
         public List<SceneGraphNode> ActionSceneNodes = new();
-        public Dictionary<long, string> ActionSceneStateMap = new();
-        public Dictionary<long, List<Action>> ActionsExecutedInState = new();
-        public Dictionary<long, string> PrevActionSceneStateMap = new();
+        public Dictionary<ulong, string> ActionSceneStateMap = new();
+        public Dictionary<ulong, List<Action>> ActionsExecutedInState = new();
+        public Dictionary<ulong, string> PrevActionSceneStateMap = new();
         private readonly float timeInterval = 1000.0f / 60.0f;
         private float time = 0.0f;
 

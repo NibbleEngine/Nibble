@@ -8,15 +8,15 @@ namespace NbCore
 {
     public class TransformData
     {
-        [NbSerializable] public float TransX;
-        [NbSerializable] public float TransY;
-        [NbSerializable] public float TransZ;
-        [NbSerializable] public float RotX;
-        [NbSerializable] public float RotY;
-        [NbSerializable] public float RotZ;
-        [NbSerializable] public float ScaleX;
-        [NbSerializable] public float ScaleY;
-        [NbSerializable] public float ScaleZ;
+        [NbSerializable] public float TransX = 0.0f;
+        [NbSerializable] public float TransY = 0.0f;
+        [NbSerializable] public float TransZ = 0.0f;
+        [NbSerializable] public float RotX = 0.0f;
+        [NbSerializable] public float RotY = 0.0f;
+        [NbSerializable] public float RotZ = 0.0f;
+        [NbSerializable] public float ScaleX = 1.0f;
+        [NbSerializable] public float ScaleY = 1.0f;
+        [NbSerializable] public float ScaleZ = 1.0f;
 
         //Raw values 
         public NbVector3 localTranslation
@@ -75,15 +75,15 @@ namespace NbCore
         }
 
         //Keep Original Values
-        private float OldTransX;
-        private float OldTransY;
-        private float OldTransZ;
-        private float OldRotX;
-        private float OldRotY;
-        private float OldRotZ;
-        private float OldScaleX;
-        private float OldScaleY;
-        private float OldScaleZ;
+        private float OldTransX = 0.0f;
+        private float OldTransY = 0.0f;
+        private float OldTransZ = 0.0f;
+        private float OldRotX = 0.0f;
+        private float OldRotY = 0.0f;
+        private float OldRotZ = 0.0f;
+        private float OldScaleX = 1.0f;
+        private float OldScaleY = 1.0f;
+        private float OldScaleZ = 1.0f;
 
         public NbMatrix4 LocalTransformMat;
         public NbMatrix4 WorldTransformMat;
@@ -96,30 +96,8 @@ namespace NbCore
         public bool IsUpdated;
         public bool IsActive;
 
-        public TransformData(float tx = 0.0f, float ty = 0.0f, float tz = 0.0f,
-                             float rx = 0.0f, float ry = 0.0f, float rz = 0.0f,
-                             float sx = 1.0f, float sy = 1.0f, float sz = 1.0f)
+        public TransformData()
         {
-            TransX = tx;
-            TransY = ty;
-            TransZ = tz;
-            RotX = rx;
-            RotY = ry;
-            RotZ = rz;
-            ScaleX = sx;
-            ScaleY = sy;
-            ScaleZ = sz;
-            
-            OldTransX = TransX;
-            OldTransY = TransY;
-            OldTransZ = TransZ;
-            OldRotX = RotX;
-            OldRotY = RotY;
-            OldRotZ = RotZ;
-            OldScaleX = ScaleX;
-            OldScaleY = ScaleY;
-            OldScaleZ = ScaleZ;
-
             //Rest Properties
             LocalTransformMat = NbMatrix4.Identity();
             WorldTransformMat = NbMatrix4.Identity();
@@ -129,7 +107,7 @@ namespace NbCore
             IsUpdated = false;
             IsActive = true; //by default
         }
-
+        
         public void SetParentData(TransformData data)
         {
             parent = data;

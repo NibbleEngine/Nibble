@@ -9,7 +9,7 @@ namespace NbCore
 {
     public delegate void SourceUpdatedEventHandler();
     
-    [NbDeserializable]
+    [NbSerializable]
     public class GLSLShaderSource : Entity
     {
         public string Name = "";

@@ -37,12 +37,11 @@ namespace NibbleTextureViewer
             NbMesh mesh = new()
             {
                 Hash = (ulong)"default_renderquad".GetHashCode(),
-                Data = q.geom.GetData(),
+                Data = q.geom.GetMeshData(),
                 MetaData = q.geom.GetMetaData(),
             };
-            EngineRef.renderSys.Renderer.AddMesh(mesh);
+
             EngineRef.RegisterEntity(mesh);
-            EngineRef.renderSys.GeometryMgr.AddPrimitiveMesh(mesh);
             q.Dispose();
 
             //Add Shader Sources to engine
@@ -188,7 +187,7 @@ namespace NibbleTextureViewer
 
                 renderer.EnableShaderProgram(_shader);
 
-                NbMesh nm = EngineRef.GetPrimitiveMesh((ulong)"default_renderquad".GetHashCode());
+                NbMesh nm = EngineRef.GetMesh((ulong)"default_renderquad".GetHashCode());
                 renderer.RenderQuad(nm, _shader, _shader.CurrentState);
             }
 

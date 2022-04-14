@@ -51,9 +51,9 @@ namespace NbCore
         public Dictionary<string, List<NbQuaternion>> Rotations;
         public Dictionary<string, List<NbVector3>> Scales;
 
-        public override int GetHashCode()
+        public new ulong GetHashCode()
         {
-            return MetaData.GetHashCode();
+            return (ulong) MetaData.GetHashCode();
         }
 
         public AnimationData()

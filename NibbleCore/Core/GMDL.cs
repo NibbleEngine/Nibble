@@ -166,16 +166,9 @@ namespace NbCore
             System.Buffer.BlockCopy(vx_buffer_float, 0, temp_geom.vbuffer, 0, temp_geom.vbuffer.Length);
 
 
-            NbMeshData temp_geom_data = temp_geom.GetData();
+            NbMeshData temp_geom_data = temp_geom.GetMeshData();
             temp_geom.Dispose();
             return temp_geom_data;
-        }
-
-        public NbMeshData GetMeshData(ulong hash)
-        {
-            if (meshDataDict.ContainsKey(hash))
-                return meshDataDict[hash];
-            return NbMeshData.Create();
         }
 
         public NbMeshMetaData GetMetaData()
@@ -197,9 +190,17 @@ namespace NbCore
             };
         }
 
-        public NbMeshData GetData()
+        public NbMeshData GetMeshData(ulong hash)
+        {
+            if (meshDataDict.ContainsKey(hash))
+                return meshDataDict[hash];
+            return NbMeshData.Create();
+        }
+
+        public NbMeshData GetMeshData()
         {
             NbMeshData data = new();
+            data.Hash = (ulong)(ibuffer.GetHashCode() ^ vbuffer.GetHashCode());
             data.IndexBuffer = new byte[ibuffer.Length];
             data.VertexBuffer = new byte[vbuffer.Length];
             data.VertexBufferStride = vx_size;

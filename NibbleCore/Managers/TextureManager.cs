@@ -5,45 +5,26 @@ using NbCore.Managers;
 
 namespace NbCore
 {
-    public class TextureManager : EntityManager<NbTexture>
+    public class TextureManager : ObjectManager<string, NbTexture>
     {
-        public Dictionary<string, NbTexture> TextureMap = new();
-        
         public TextureManager()
         {
 
         }
 
+        public bool AddTexture(NbTexture tex)
+        {
+            return Add(tex.Path, tex);
+        }
+
         public void DeleteTextures()
         {
-            foreach (NbTexture p in TextureMap.Values)
+            foreach (NbTexture p in Objects)
                 p.Dispose();
-        }
-
-        public bool HasTexture(string name)
-        {
-            return TextureMap.ContainsKey(name);
-        }
-
-        public bool AddTexture(NbTexture t)
-        {
-            if (!HasTexture(t.Path))
-            {
-                TextureMap[t.Path] = t;
-                return Add(t);
-            }
-            else
-                return false;
-        }
-
-        public NbTexture Get(string name)
-        {
-            return TextureMap[name];
         }
 
         public override void CleanUp()
         {
-            TextureMap.Clear();
             base.CleanUp();
         }
 

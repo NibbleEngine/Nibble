@@ -313,6 +313,11 @@ namespace NbCore
         }
 
         //Entity Registration Methods
+        public bool IsEntityRegistered(Entity e)
+        {
+            return registrySys.IsRegistered(e);
+        }
+
         public void RegisterEntity(NbShader shader)
         {
             if (registrySys.RegisterEntity(shader))
@@ -320,12 +325,20 @@ namespace NbCore
                 renderSys.ShaderMgr.AddShader(shader);
             }
         }
-        
+
+        public void RegisterEntity(NbMesh mesh)
+        {
+            if (registrySys.RegisterEntity(mesh))
+            {
+                renderSys.RegisterEntity(mesh);
+            }
+        }
+
         public void RegisterEntity(NbTexture tex)
         {
             if (registrySys.RegisterEntity(tex))
             {
-                renderSys.TextureMgr.AddTexture(tex);
+                renderSys.TextureMgr.Add(tex.Path, tex);
             }
         }
 
@@ -345,13 +358,13 @@ namespace NbCore
             }
         }
 
-        public void RegisterEntity(SceneGraphNode e, bool recurse = true)
+        public void RegisterSceneGraphTree(SceneGraphNode e, bool recurse = true)
         {
             //Add Entity to main registry
-            if (RegisterEntity((Entity) e))
+            if (RegisterEntity(e))
             {
                 sceneMgmtSys.AddNode(e);
-                
+
                 if (recurse)
                 {
                     foreach (SceneGraphNode child in e.Children)
@@ -377,8 +390,8 @@ namespace NbCore
 
                     RegisterEntity(mc.Mesh);
                     RegisterEntity(mc.Mesh.Material);
-                    
-                    renderSys.RegisterEntity(e); //Register Mesh
+
+                    renderSys.RegisterEntity(mc); //Register Mesh to Rendering System
                 }
 
                 if (e.HasComponent<AnimComponent>())
@@ -439,33 +452,27 @@ namespace NbCore
 
         #endregion
 
-        
+
 
 
         #region EngineQueries
 
-        //Asset Setters
-        public void AddTexture(NbTexture tex)
-        {
-            renderSys.TextureMgr.AddTexture(tex);
-        }
-
-        public Entity GetEntityByID(long id)
+        //Asset Getter
+        public Entity GetEntityByID(ulong id)
         {
             return registrySys.GetEntity(id);
         }
 
-        //Asset Getter
         public NbTexture GetTexture(string name)
         {
             return renderSys.TextureMgr.Get(name);
         }
 
-        public NbMesh GetPrimitiveMesh(ulong hash)
+        public NbMesh GetMesh(ulong hash)
         {
-            return renderSys.GeometryMgr.GetPrimitiveMesh(hash);
+            return registrySys.GetEntityTypeList(EntityType.Mesh).Find(x => ((NbMesh)x).Hash == hash) as NbMesh;
         }
-
+        
         public MeshMaterial GetMaterialByName(string name)
         {
             return renderSys.MaterialMgr.GetByName(name);
@@ -631,7 +638,7 @@ namespace NbCore
                         VertrStartGraphics = 0,
                         VertrEndGraphics = (bands + 1) * (bands + 1) - 1
                     },
-                    Data = (new Sphere(new NbVector3(), 2.0f, 40)).geom.GetData()
+                    Data = (new Sphere(new NbVector3(), 2.0f, 40)).geom.GetMeshData()
                 }
                 
             };
@@ -737,7 +744,7 @@ namespace NbCore
             //Create MeshComponent
             MeshComponent mc = new()
             {
-                Mesh = GetPrimitiveMesh((ulong) "default_cross".GetHashCode())
+                Mesh = GetMesh((ulong) "default_cross".GetHashCode())
             };
             
             n.AddComponent<MeshComponent>(mc);
@@ -784,7 +791,7 @@ namespace NbCore
             //Create MeshComponent
             MeshComponent mc = new()
             {
-                Mesh = GetPrimitiveMesh((ulong)"default_cross".GetHashCode())
+                Mesh = GetMesh((ulong)"default_cross".GetHashCode())
             };
             
             n.AddComponent<MeshComponent>(mc);
@@ -811,7 +818,7 @@ namespace NbCore
             {
                 Mesh = new()
                 {
-                    Data = seg.geom.GetData(),
+                    Data = seg.geom.GetMeshData(),
                     MetaData = seg.geom.GetMetaData(),
                     Material = RenderState.engineRef.GetMaterialByName("jointMat")
                 }
@@ -850,7 +857,7 @@ namespace NbCore
                     Type = NbMeshType.Light,
                     MetaData = ls.geom.GetMetaData(),
                     Material = GetMaterialByName("lightMat"),
-                    Data = ls.geom.GetData()
+                    Data = ls.geom.GetMeshData()
                 }
             };
             
@@ -860,7 +867,7 @@ namespace NbCore
             //Add Light Component
             LightComponent lc = new()
             {
-                Mesh = EngineRef.renderSys.GeometryMgr.GetPrimitiveMesh((ulong)"default_light_sphere".GetHashCode()),
+                Mesh = EngineRef.GetMesh((ulong) "default_light_sphere".GetHashCode()),
                 Data = new()
                 {
                     FOV = 360.0f,
@@ -968,6 +975,7 @@ namespace NbCore
 
             GLSLShaderConfig shader_conf = new GLSLShaderConfig(vs, fs, gs, tcs, tes, mode);
             shader_conf.Name = name;
+            shader_conf.IsGeneric = isGeneric;
             return shader_conf;
         }
 
@@ -1013,11 +1021,11 @@ namespace NbCore
             writer.WriteStartObject();
 
             //Step A: Export SceneGraph
-            List<GLSLShaderSource> sources = new();
             List<GLSLShaderConfig> configs = new();
             List<MeshMaterial> materials = new();
             List<NbTexture> textures = new();
-            List<NbMeshData> meshes = new();
+            List<NbMesh> meshes = new();
+            List<NbMeshData> mesh_data = new();
 
             foreach (SceneGraphNode node in g.Nodes)
             {
@@ -1032,15 +1040,21 @@ namespace NbCore
 
                     //Save Config
                     var shader_config = mc.Mesh.Material.Shader.RefShaderConfig;
-                    if (!configs.Contains(shader_config))
+                    if (!configs.Contains(shader_config) && !shader_config.IsGeneric)
+                    {
                         configs.Add(shader_config);
-
+                    }
+                        
                     //Save Mesh
-                    if (!meshes.Contains(mc.Mesh.Data))
-                        meshes.Add(mc.Mesh.Data);
+                    if (!meshes.Contains(mc.Mesh))
+                        meshes.Add(mc.Mesh);
+
+                    //Save Mesh Data
+                    if (!mesh_data.Contains(mc.Mesh.Data))
+                        mesh_data.Add(mc.Mesh.Data);
 
                     //Save Material
-                    if (!materials.Contains(mc.Mesh.Material))
+                    if (!materials.Contains(mc.Mesh.Material) && !mc.Mesh.Material.IsGeneric)
                         materials.Add(mc.Mesh.Material);
 
                     foreach (NbSampler sampler in mc.Mesh.Material.Samplers)
@@ -1050,15 +1064,7 @@ namespace NbCore
                             textures.Add(tex);
                     }
 
-
-                    var shader_sources = mc.Mesh.Material.Shader.RefShaderConfig.Sources;
-                    foreach (GLSLShaderSource s in shader_sources.Values)
-                    {
-                        if (s.SourceFilePath == "")
-                            continue;
-                        if (!sources.Contains(s))
-                            sources.Add(s);
-                    }
+                    
                 }
             }
 
@@ -1069,7 +1075,6 @@ namespace NbCore
                 IO.NbSerializer.Serialize(conf, writer);
             writer.WriteEndArray();
 
-
             //Step C: Export Materials
             writer.WritePropertyName("MATERIALS");
             writer.WriteStartArray();
@@ -1077,21 +1082,28 @@ namespace NbCore
                 IO.NbSerializer.Serialize(mat, writer);
             writer.WriteEndArray();
 
-            //Step C: Export Materials
+            //Step C: Export Textures
             writer.WritePropertyName("TEXTURES");
             writer.WriteStartArray();
             foreach (NbTexture tex in textures)
                 IO.NbSerializer.Serialize(tex, writer);
             writer.WriteEndArray();
 
-            //Step D: Export Materials
+            //Step D: Export Meshes
             writer.WritePropertyName("MESHES");
             writer.WriteStartArray();
-            foreach (NbMeshData mesh in meshes)
+            foreach (NbMesh mesh in meshes)
                 IO.NbSerializer.Serialize(mesh, writer);
             writer.WriteEndArray();
 
-            //Step E: Export SceneGraph
+            //Step E: Export Mesh Data
+            writer.WritePropertyName("MESH_DATA");
+            writer.WriteStartArray();
+            foreach (NbMeshData data in mesh_data)
+                IO.NbSerializer.Serialize(data, writer);
+            writer.WriteEndArray();
+            
+            //Step F: Export SceneGraph
             writer.WritePropertyName("SCENEGRAPH");
             IO.NbSerializer.Serialize(g.Root, writer);
 
@@ -1108,12 +1120,41 @@ namespace NbCore
             Newtonsoft.Json.Linq.JObject ob = serializer.Deserialize<Newtonsoft.Json.Linq.JObject>(reader);
 
             //Parse Shader Sources
-            List<GLSLShaderConfig> configs = new();
-            
+            Dictionary<ulong,NbMeshData> meshes = new();
+
             foreach (var s in ob["SHADER_CONFIGS"])
             {
-                configs.Add((GLSLShaderConfig) IO.NbDeserializer.Deserialize(s));    
+                GLSLShaderConfig conf = (GLSLShaderConfig)IO.NbDeserializer.Deserialize(s);
+                RegisterEntity(conf);
             }
+                
+            foreach (var s in ob["TEXTURES"])
+            {
+                NbTexture tex = (NbTexture)IO.NbDeserializer.Deserialize(s);
+                RegisterEntity(tex);
+            }
+
+            foreach (var s in ob["MESH_DATA"])
+            {
+                NbMeshData meshdata = (NbMeshData)IO.NbDeserializer.Deserialize(s);
+                renderSys.MeshDataMgr.Add(meshdata.Hash, meshdata);
+            }
+
+            foreach (var s in ob["MESHES"])
+            {
+                NbMesh mesh = (NbMesh) IO.NbDeserializer.Deserialize(s);
+                RegisterEntity(mesh);
+            }
+
+            foreach (var s in ob["MATERIALS"])
+            {
+                MeshMaterial mat = (MeshMaterial)IO.NbDeserializer.Deserialize(s);
+                RegisterEntity(mat);
+            }
+
+            SceneGraphNode root = (SceneGraphNode)IO.NbDeserializer.Deserialize(ob["SCENEGRAPH"]);
+
+            //Register shit and add to shit
 
             //SceneGraphNode root = null;
             //ImportScene(root);
@@ -1203,3 +1244,5 @@ namespace NbCore
 
     }
 }
+
+

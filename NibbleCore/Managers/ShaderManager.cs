@@ -45,7 +45,7 @@ namespace NbCore.Managers
             return Entities.Find(x=>x.Type == type);
         }
 
-        public NbShader GetShaderByID(long id)
+        public NbShader GetShaderByID(ulong id)
         {
             return Get(id);
         }
@@ -60,7 +60,7 @@ namespace NbCore.Managers
             return GenericShaderHashMap.ContainsKey(hash);
         }
 
-        public bool ShaderIDExists(long ID) //GUID
+        public bool ShaderIDExists(ulong ID) //GUID
         {
             return EntityMap.ContainsKey(ID);
         }

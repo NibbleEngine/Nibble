@@ -8,8 +8,8 @@ namespace NbCore.Systems
     public unsafe class TransformationSystem : EngineSystem
     {
         private readonly List<TransformData> _Data;
-        private readonly Dictionary<long, TransformController> EntityControllerMap;
-        private readonly Dictionary<long, TransformComponent> EntityDataMap;
+        private readonly Dictionary<ulong, TransformController> EntityControllerMap;
+        private readonly Dictionary<ulong, TransformComponent> EntityDataMap;
         private readonly Queue<Entity> UpdatedEntities; //Entities to update on demand
         private readonly List<Entity> DynamicEntities; //Dynamic entities that need to be constantly updated
         

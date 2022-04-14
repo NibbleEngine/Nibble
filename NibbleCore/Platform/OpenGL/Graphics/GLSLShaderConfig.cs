@@ -7,7 +7,7 @@ namespace NbCore
 
     public delegate void ShaderConfigUpdatedEventHandler();
 
-    [NbSerializable, NbDeserializable]
+    [NbSerializable]
     public class GLSLShaderConfig : Entity
     {
         public string Name = "";

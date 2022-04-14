@@ -26,13 +26,11 @@ namespace NbCore
         UNKNOWN
     }
 
-    
+    [NbSerializable]
     public class SceneGraphNode : Entity
     {
-        [NbSerializable]
         public new SceneNodeType Type = SceneNodeType.UNKNOWN;
         public bool IsSelected = false;
-        [NbSerializable]
         public string Name = "";
         public bool IsRenderable = true;
         public bool IsOpen = false;
@@ -41,45 +39,27 @@ namespace NbCore
         public Dictionary<string, string> Attributes = new();
         public SceneGraphNode Root = null;
         public SceneGraphNode Parent = null;
-        [NbSerializable]
         public List<SceneGraphNode> Children = new();
         
         //Disposable Stuff
         private bool disposed = false;
         private Microsoft.Win32.SafeHandles.SafeFileHandle handle = new(IntPtr.Zero, true);
 
-        public SceneGraphNode(SceneNodeType type) : base(EntityType.SceneNode)
+        private static Dictionary<SceneNodeType, EntityType> entityTypeMap = new()
+        {
+            {SceneNodeType.MESH, EntityType.SceneNodeMesh},
+            {SceneNodeType.LIGHT, EntityType.SceneNodeLight},
+            {SceneNodeType.MODEL, EntityType.SceneNodeModel},
+            {SceneNodeType.LOCATOR, EntityType.SceneNodeLocator},
+            {SceneNodeType.JOINT, EntityType.SceneNodeJoint},
+            {SceneNodeType.COLLISION, EntityType.SceneNodeCollision},
+            {SceneNodeType.REFERENCE, EntityType.SceneNodeReference},
+            {SceneNodeType.EMITTER, EntityType.SceneNodeEmmiter}
+        };
+
+        public SceneGraphNode(SceneNodeType type) : base(entityTypeMap[type])
         {
             Type = type;
-            switch (type)
-            {
-                case SceneNodeType.MESH:
-                    base.Type = EntityType.SceneNodeMesh;
-                    break;
-                case SceneNodeType.MODEL:
-                    base.Type = EntityType.SceneNodeModel;
-                    break;
-                case SceneNodeType.LOCATOR:
-                    base.Type = EntityType.SceneNode; // Not sure if this should be any different
-                    break;
-                case SceneNodeType.JOINT:
-                    base.Type = EntityType.SceneNodeJoint;
-                    break;
-                case SceneNodeType.LIGHT:
-                    base.Type = EntityType.SceneNodeLight;
-                    break;
-                case SceneNodeType.COLLISION:
-                    base.Type = EntityType.SceneNodeCollision;
-                    break;
-                case SceneNodeType.REFERENCE:
-                    base.Type = EntityType.SceneNodeReference;
-                    break;
-                case SceneNodeType.EMITTER:
-                    base.Type = EntityType.SceneNodeEmmiter;
-                    break;
-                default:
-                    throw new Exception($"make sure to property initialize base type: {base.Type}");
-            }
         }
 
         public bool IsDisposed()
@@ -131,7 +111,7 @@ namespace NbCore
             }
         }
 
-        public void findNodeByID(long id, ref SceneGraphNode m)
+        public void findNodeByID(ulong id, ref SceneGraphNode m)
         {
             GUIDComponent gc = m.GetComponent<GUIDComponent>() as GUIDComponent;
             if (gc.ID == id)
@@ -169,6 +149,53 @@ namespace NbCore
         public override Entity Clone()
         {
             throw new NotImplementedException();
+        }
+
+
+        public void Serialize(JsonTextWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().FullName);
+            writer.WritePropertyName("Type");
+            writer.WriteValue(Type);
+            writer.WritePropertyName("Name");
+            writer.WriteValue(Name);
+            //Serialize Components
+            writer.WritePropertyName("Components");
+            writer.WriteStartArray();
+            foreach (Component c in Components)
+                IO.NbSerializer.Serialize(c, writer);
+            writer.WriteEndArray();
+
+            //Serialize Children
+            writer.WritePropertyName("Children");
+            writer.WriteStartArray();
+            foreach (SceneGraphNode c in Children)
+                IO.NbSerializer.Serialize(c, writer);
+            writer.WriteEndArray();
+
+            writer.WriteEndObject();
+        }
+
+        public static SceneGraphNode Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            SceneNodeType type = (SceneNodeType)token.Value<int>("Type");
+            SceneGraphNode node = new SceneGraphNode(type);
+            node.Name = token.Value<string>("Name");
+
+            //Deserialize Components
+            Newtonsoft.Json.Linq.JToken complist_tkn = token.Value<Newtonsoft.Json.Linq.JToken>("Components");
+
+            foreach (Newtonsoft.Json.Linq.JToken tkn in complist_tkn.Children())
+            {
+                Component c = IO.NbDeserializer.Deserialize(tkn) as Component;
+                node.AddComponent(c.GetType(), c);
+            }
+            
+            
+
+            return node;
         }
 
         //WARNING: This should NOT be called directly, object disposals should happen via the engine
