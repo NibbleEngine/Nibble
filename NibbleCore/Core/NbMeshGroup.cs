@@ -24,7 +24,7 @@ namespace NbCore
         public NbMeshGroup()
         {
             JointBindingDataList = new List<JointBindingData>();
-            for (int i = 0; i < 128; i++)
+            for (int i = 0; i < 256; i++)
                 JointBindingDataList.Add(new JointBindingData());
         }
     }

@@ -299,7 +299,7 @@ namespace NbCore
 
         public void ImportScene(SceneGraphNode scene)
         {
-            RegisterEntity(scene);
+            RegisterSceneGraphTree(scene, true);
             RequestEntityTransformUpdate(scene);
 
             scene.SetParent(GetActiveSceneGraph().Root);
@@ -332,6 +332,8 @@ namespace NbCore
             {
                 renderSys.RegisterEntity(mesh);
             }
+            else
+                Console.WriteLine("Asdasdasd");
         }
 
         public void RegisterEntity(NbTexture tex)
@@ -368,7 +370,7 @@ namespace NbCore
                 if (recurse)
                 {
                     foreach (SceneGraphNode child in e.Children)
-                        RegisterEntity(child);
+                        RegisterSceneGraphTree(child, recurse);
                 }
             }
         }
