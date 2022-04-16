@@ -192,8 +192,15 @@ namespace NbCore
                 Component c = IO.NbDeserializer.Deserialize(tkn) as Component;
                 node.AddComponent(c.GetType(), c);
             }
-            
-            
+
+            //Deserialize Children
+            Newtonsoft.Json.Linq.JToken children_tkn = token.Value<Newtonsoft.Json.Linq.JToken>("Children");
+
+            foreach (Newtonsoft.Json.Linq.JToken tkn in children_tkn.Children())
+            {
+                SceneGraphNode child = IO.NbDeserializer.Deserialize(tkn) as SceneGraphNode;
+                node.AddChild(child);
+            }
 
             return node;
         }

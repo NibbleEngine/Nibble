@@ -45,7 +45,7 @@ namespace NbCore.Systems
 
             if (IsRegistered(e))
             {
-                Log("Entity already registered", LogVerbosityLevel.INFO);
+                Log($"Entity already registered. ID: {e.GetID()}", LogVerbosityLevel.DEBUG);
                 return false;
             }
             
@@ -65,6 +65,9 @@ namespace NbCore.Systems
                     EntityTypeList[EntityType.SceneNode].Add(e);
                     break;
             }
+
+
+            Log($"Entity of Type {e.Type} was successfully registered. ID: {e.GetID()}", LogVerbosityLevel.DEBUG);
 
             return true;
         }

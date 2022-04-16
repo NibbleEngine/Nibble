@@ -10,7 +10,7 @@ namespace NbCore
     {
         //Program ID
         public int ProgramID = -1;
-        public long Hash = -1;
+        public ulong Hash = 0;
         public int RefCounter = 0;
         public bool IsGeneric = false; //Used to flag internal shaders
 

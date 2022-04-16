@@ -10,8 +10,8 @@ namespace NbCore.Managers
     {
         public readonly Queue<NbShader> ShaderCompilationQueue = new();
         
-        private readonly Dictionary<long, NbShader> ShaderHashMap = new();
-        private readonly Dictionary<long, NbShader> GenericShaderHashMap = new();
+        private readonly Dictionary<ulong, NbShader> ShaderHashMap = new();
+        private readonly Dictionary<ulong, NbShader> GenericShaderHashMap = new();
         
         public bool AddShader(NbShader shader)
         {
@@ -30,12 +30,12 @@ namespace NbCore.Managers
                 ShaderCompilationQueue.Enqueue(shader);
         }
 
-        public NbShader GetShaderByHash(long hash)
+        public NbShader GetShaderByHash(ulong hash)
         {
             return ShaderHashMap[hash];
         }
 
-        public NbShader GetGenericShaderByHash(long hash)
+        public NbShader GetGenericShaderByHash(ulong hash)
         {
             return GenericShaderHashMap[hash];
         }
@@ -50,12 +50,12 @@ namespace NbCore.Managers
             return Get(id);
         }
 
-        public bool ShaderHashExists(long hash)
+        public bool ShaderHashExists(ulong hash)
         {
             return ShaderHashMap.ContainsKey(hash);
         }
 
-        public bool GenericShaderHashExists(long hash)
+        public bool GenericShaderHashExists(ulong hash)
         {
             return GenericShaderHashMap.ContainsKey(hash);
         }
@@ -65,7 +65,7 @@ namespace NbCore.Managers
             return EntityMap.ContainsKey(ID);
         }
 
-        public void MakeShaderGeneric(long hash)
+        public void MakeShaderGeneric(ulong hash)
         {
             if (ShaderHashExists(hash))
             {
@@ -75,7 +75,7 @@ namespace NbCore.Managers
             }
         }
 
-        public void MakeShaderNonGeneric(long hash)
+        public void MakeShaderNonGeneric(ulong hash)
         {
             if (GenericShaderHashExists(hash))
             {

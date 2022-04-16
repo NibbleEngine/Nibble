@@ -250,12 +250,10 @@ namespace NbCore.UI.ImGui
                         if (ImGuiCore.TreeNode("MetaData"))
                         {
                             ImGuiCore.Columns(2);
-                            ImGuiCore.Text("Hash");
                             ImGuiCore.Text("BatchCount");
                             ImGuiCore.Text("Vertex Start Graphics");
                             ImGuiCore.Text("Vertex End Graphics");
                             ImGuiCore.NextColumn();
-                            ImGuiCore.Text(mesh.MetaData.Hash.ToString());
                             ImGuiCore.Text(mesh.MetaData.BatchCount.ToString());
                             ImGuiCore.Text(mesh.MetaData.VertrStartGraphics.ToString());
                             ImGuiCore.Text(mesh.MetaData.VertrEndGraphics.ToString());

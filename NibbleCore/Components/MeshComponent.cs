@@ -2,10 +2,10 @@
 
 namespace NbCore
 {
+    [NbSerializable]
     public class MeshComponent : Component
     {
         //Store TkSceneNodeAttributes for Meshes
-        [NbSerializable]
         public NbMesh Mesh;
         public int InstanceID;
         public NbUniform[] InstanceUniforms;
@@ -33,6 +33,29 @@ namespace NbCore
 
             MeshComponent mc = c as MeshComponent;
             Mesh = mc.Mesh;
+        }
+
+        public void Serialize(JsonTextWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().FullName);
+            writer.WritePropertyName("Mesh");
+            writer.WriteValue(Mesh.Hash.ToString());
+            writer.WriteEndObject();
+        }
+
+        public static MeshComponent Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            string mesh_hash = token.Value<string>("Mesh");
+            ulong hash = ulong.Parse(mesh_hash);
+
+            MeshComponent mc = new()
+            {
+                Mesh = Common.RenderState.engineRef.GetMesh(hash)
+            };
+
+            return mc;
         }
 
         /* Move that to the exporter class

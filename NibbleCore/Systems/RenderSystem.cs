@@ -209,7 +209,6 @@ namespace NbCore.Systems
 
         public void RegisterEntity(MeshComponent mc)
         {
-            RegisterEntity(mc.Mesh);
             process_model(mc);
         }   
 
@@ -567,7 +566,7 @@ namespace NbCore.Systems
                 Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes
-                NbMesh light_sphere = EngineRef.GetMesh((ulong)"default_light_sphere".GetHashCode());
+                NbMesh light_sphere = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere"));
                 
                 if (light_sphere.InstanceCount > 0)
                     Renderer.RenderMesh(light_sphere, mat);
@@ -626,7 +625,7 @@ namespace NbCore.Systems
             NbShader shader = mat.Shader;
             Renderer.SetProgram(mat.Shader.ProgramID);
 
-            Renderer.RenderQuad(EngineRef.GetMesh((ulong)"default_renderquad".GetHashCode()),
+            Renderer.RenderQuad(EngineRef.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
         }
 
@@ -796,7 +795,7 @@ namespace NbCore.Systems
                 }
             );
 
-            Renderer.RenderQuad(EngineRef.GetMesh((ulong)"default_renderquad".GetHashCode()), 
+            Renderer.RenderQuad(EngineRef.GetMesh(NbHasher.Hash("default_renderquad")), 
                 bwoit_composite_shader, bwoit_composite_shader.CurrentState);
             
             GL.Disable(EnableCap.Blend);
@@ -968,7 +967,7 @@ namespace NbCore.Systems
                 TextureID = InTex
             });
 
-            Renderer.RenderQuad(EngineRef.GetMesh((ulong) "default_renderquad".GetHashCode()),
+            Renderer.RenderQuad(EngineRef.GetMesh(NbHasher.Hash("default_renderquad")),
                         shader, shader.CurrentState);
             GL.Enable(EnableCap.DepthTest); //Re-enable Depth test
         }
@@ -1097,7 +1096,7 @@ namespace NbCore.Systems
                 TextureID = renderBuffer.GetChannel(1)
             });
             
-            Renderer.RenderQuad(EngineRef.GetMesh((ulong)"default_renderquad".GetHashCode()),
+            Renderer.RenderQuad(EngineRef.GetMesh(NbHasher.Hash("default_renderquad")),
                         shader, shader.CurrentState);
         }
 
@@ -1205,7 +1204,7 @@ namespace NbCore.Systems
             GL.DepthMask(false);
             GL.Disable(EnableCap.DepthTest);
 
-            NbMesh mesh = EngineRef.GetMesh((ulong) "default_light_sphere".GetHashCode());
+            NbMesh mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere"));
             
             GL.UseProgram(shader_conf.ProgramID);
 
