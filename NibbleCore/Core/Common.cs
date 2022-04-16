@@ -286,7 +286,6 @@ namespace NbCore.Common
                 Logger.Log(Assembly.GetCallingAssembly(), trace, LogVerbosityLevel.ERROR);
                 throw new Exception(msg);
             }
-            
         }
 
         //Resource Handler

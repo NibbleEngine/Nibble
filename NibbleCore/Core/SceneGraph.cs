@@ -53,8 +53,15 @@ namespace NbCore
 
             //Handle orphans
             if (n.Parent != null)
-                n.Parent.RemoveChild(n);
+            {
+                //Connect node's parent to node's children
+                foreach (SceneGraphNode child in n.Children)
+                    child.SetParent(n.Parent);
 
+                //Disconnect node from parent
+                n.Parent.RemoveChild(n);
+            }
+            
             Nodes.Remove(n);
 
             if (n.HasComponent<MeshComponent>())
@@ -93,9 +100,6 @@ namespace NbCore
 
             if (n.HasComponent<SceneComponent>())
                 SceneNodes.Add(n);
-
-            foreach (SceneGraphNode child in n.Children)
-                AddNode(child);
         }
 
         public void Clear()

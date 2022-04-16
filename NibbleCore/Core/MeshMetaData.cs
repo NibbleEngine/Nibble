@@ -10,7 +10,6 @@ namespace NbCore
     public class NbMeshMetaData
     {
         //Mesh Properties
-        [NbSerializable] public ulong Hash;
         [NbSerializable] public NbVector3 AABBMIN;
         [NbSerializable] public NbVector3 AABBMAX;
         [NbSerializable] public int VertrStartPhysics;
@@ -48,7 +47,6 @@ namespace NbCore
             LastSkinMat = 0;
             BoundHullStart = 0;
             BoundHullEnd = 0;
-            Hash = 0xFFFFFFFF;
             AABBMIN = new();
             AABBMAX = new();
         }
@@ -67,10 +65,20 @@ namespace NbCore
             LastSkinMat = input.LastSkinMat;
             BoundHullStart = input.BoundHullStart;
             BoundHullEnd = input.BoundHullEnd;
-            Hash = input.Hash;
             LODLevel = input.LODLevel;
             AABBMIN = new(input.AABBMIN);
             AABBMAX = new(input.AABBMAX);
+        }
+
+
+        public ulong GetHash()
+        {
+            ulong hash = 27;
+
+
+
+
+            return hash;
         }
     }
 }

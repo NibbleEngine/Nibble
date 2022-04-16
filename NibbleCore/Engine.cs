@@ -304,10 +304,10 @@ namespace NbCore
 
             scene.SetParent(GetActiveSceneGraph().Root);
             scene.Root = scene.Parent;
-
+            
             //Post Import procedures
             renderSys.SubmitOpenMeshGroups();
-
+            
             //Invoke Event
             NewSceneEvent?.Invoke(GetActiveSceneGraph());
         }
@@ -332,8 +332,6 @@ namespace NbCore
             {
                 renderSys.RegisterEntity(mesh);
             }
-            else
-                Console.WriteLine("Asdasdasd");
         }
 
         public void RegisterEntity(NbTexture tex)
@@ -518,7 +516,7 @@ namespace NbCore
                 .Find(x => ((GLSLShaderConfig)x).Name == name) as GLSLShaderConfig;
         }
 
-        public NbShader GetShaderByHash(int hash)
+        public NbShader GetShaderByHash(ulong hash)
         {
             return registrySys.GetEntityTypeList(EntityType.Shader)
                 .Find(x => ((NbShader)x).Hash == hash) as NbShader;
@@ -746,7 +744,7 @@ namespace NbCore
             //Create MeshComponent
             MeshComponent mc = new()
             {
-                Mesh = GetMesh((ulong) "default_cross".GetHashCode())
+                Mesh = GetMesh(NbHasher.Hash("default_cross"))
             };
             
             n.AddComponent<MeshComponent>(mc);
@@ -793,7 +791,7 @@ namespace NbCore
             //Create MeshComponent
             MeshComponent mc = new()
             {
-                Mesh = GetMesh((ulong)"default_cross".GetHashCode())
+                Mesh = GetMesh(NbHasher.Hash("default_cross"))
             };
             
             n.AddComponent<MeshComponent>(mc);
@@ -855,7 +853,7 @@ namespace NbCore
             {
                 Mesh = new()
                 {
-                    Hash = (ulong)(name.GetHashCode() ^ DateTime.Now.GetHashCode()),
+                    Hash = NbHasher.Hash(name) ^ (ulong) DateTime.Now.GetHashCode(),
                     Type = NbMeshType.Light,
                     MetaData = ls.geom.GetMetaData(),
                     Material = GetMaterialByName("lightMat"),
@@ -869,7 +867,7 @@ namespace NbCore
             //Add Light Component
             LightComponent lc = new()
             {
-                Mesh = EngineRef.GetMesh((ulong) "default_light_sphere".GetHashCode()),
+                Mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere")),
                 Data = new()
                 {
                     FOV = 360.0f,
@@ -935,12 +933,12 @@ namespace NbCore
             return includes;
         }
 
-        public int CalculateShaderHash(NbShader shader)
+        public ulong CalculateShaderHash(NbShader shader)
         {
             return CalculateShaderHash(shader.RefShaderConfig, shader.directives);
         }
 
-        public int CalculateShaderHash(GLSLShaderConfig conf, List<string> extradirectives = null)
+        public ulong CalculateShaderHash(GLSLShaderConfig conf, List<string> extradirectives = null)
         {
             List<string> finaldirectives = new();
             finaldirectives.AddRange(CreateShaderDirectivesFromMode(conf.ShaderMode));
@@ -950,7 +948,7 @@ namespace NbCore
             return CalculateShaderHash(finaldirectives);
         }
         
-        public int CalculateShaderHash(List<string> includes)
+        public ulong CalculateShaderHash(List<string> includes)
         {
             //Directive ordering
             //1: General directives
@@ -965,7 +963,7 @@ namespace NbCore
             if (hash == "")
                 hash = "DEFAULT";
 
-            return hash.GetHashCode();
+            return NbHasher.Hash(hash);
         }
 
 
@@ -1031,6 +1029,9 @@ namespace NbCore
 
             foreach (SceneGraphNode node in g.Nodes)
             {
+                if (node == g.Root)
+                    continue;
+                
                 if (node.HasComponent<MeshComponent>())
                 {
                     MeshComponent mc = node.GetComponent<MeshComponent>() as MeshComponent;
@@ -1108,7 +1109,7 @@ namespace NbCore
             //Step F: Export SceneGraph
             writer.WritePropertyName("SCENEGRAPH");
             IO.NbSerializer.Serialize(g.Root, writer);
-
+            
             writer.WriteEndObject();
             writer.Close();
         }
@@ -1138,7 +1139,7 @@ namespace NbCore
 
             foreach (var s in ob["MESH_DATA"])
             {
-                NbMeshData meshdata = (NbMeshData)IO.NbDeserializer.Deserialize(s);
+                NbMeshData meshdata = (NbMeshData) IO.NbDeserializer.Deserialize(s);
                 renderSys.MeshDataMgr.Add(meshdata.Hash, meshdata);
             }
 
@@ -1154,10 +1155,14 @@ namespace NbCore
                 RegisterEntity(mat);
             }
 
-            SceneGraphNode root = (SceneGraphNode)IO.NbDeserializer.Deserialize(ob["SCENEGRAPH"]);
+            SceneGraphNode root = (SceneGraphNode) IO.NbDeserializer.Deserialize(ob["SCENEGRAPH"]);
 
             //Register shit and add to shit
+            
+            foreach (SceneGraphNode child in root.Children)
+                ImportScene(child);
 
+            root.Dispose(); //Root is not imported
             //SceneGraphNode root = null;
             //ImportScene(root);
             Console.WriteLine("DESERIALIZATION FINISHED!");

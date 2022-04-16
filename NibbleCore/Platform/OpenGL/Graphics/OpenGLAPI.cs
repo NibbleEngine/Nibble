@@ -420,13 +420,15 @@ namespace NbCore.Platform.Graphics
 
             if (MeshMap.ContainsKey(mesh.Hash))
             {
-                Log("Mesh Hash already exists in map", LogVerbosityLevel.WARNING);
+                Log($"Mesh Hash already exists in map. Entity ID: {mesh.GetID()}. Mesh Hash {mesh.Hash}", LogVerbosityLevel.WARNING);
                 return;
             }
             
             //Generate instanced mesh
             GLInstancedMesh imesh = GenerateAPIMesh(mesh);
             MeshMap[mesh.Hash] = imesh;
+
+            Log($"Mesh was successfully registered to the Renderer. Entity ID: {mesh.GetID()}. Mesh Hash {mesh.Hash}", LogVerbosityLevel.DEBUG);
         }
 
         private GLInstancedMesh GenerateAPIMesh(NbMesh mesh)

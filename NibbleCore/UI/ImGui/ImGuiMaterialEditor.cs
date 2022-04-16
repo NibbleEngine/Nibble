@@ -103,7 +103,7 @@ namespace NbCore.UI.ImGui
                         _ActiveMaterial.Shader.RefShaderConfig = shaderconfs[currentShaderConfigId] as GLSLShaderConfig;
 
                         //Calculate requested shader hash
-                        int shader_hash = RenderState.engineRef.CalculateShaderHash(shaderconfs[currentShaderConfigId] as GLSLShaderConfig,
+                        ulong shader_hash = RenderState.engineRef.CalculateShaderHash(shaderconfs[currentShaderConfigId] as GLSLShaderConfig,
                             RenderState.engineRef.GetMaterialShaderDirectives(_ActiveMaterial));
 
                         NbShader new_shader = RenderState.engineRef.GetShaderByHash(shader_hash);
@@ -133,7 +133,7 @@ namespace NbCore.UI.ImGui
                     {
                         Console.WriteLine("Recompile Shader Here");
                     }
-
+                    
                     ImGuiNET.ImGui.TableNextRow();
                     ImGuiNET.ImGui.TableSetColumnIndex(0);
                     ImGuiNET.ImGui.Text("Flags");

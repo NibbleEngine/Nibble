@@ -21,6 +21,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\DDSImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ApplicationLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimationGroup.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\NbHasher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbLogger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\PNGImage.cs" />

@@ -243,7 +243,7 @@ namespace NibbleOBJPlugin
             mat.Uniforms.Add(uf);
 
             GLSLShaderConfig conf = EngineRef.GetShaderConfigByName("UberShader_Deferred_Lit");
-            int shader_hash = EngineRef.CalculateShaderHash(conf, EngineRef.GetMaterialShaderDirectives(mat));
+            ulong shader_hash = EngineRef.CalculateShaderHash(conf, EngineRef.GetMaterialShaderDirectives(mat));
 
             NbShader shader = EngineRef.GetShaderByHash(shader_hash);
             if (shader == null)
