@@ -45,11 +45,6 @@ namespace NbCore
             vao = new GLVao();
         }
 
-        public GLInstancedMesh(NbMesh mesh)
-        {
-            vao =  Platform.Graphics.GraphicsAPI.generateVAO(mesh);
-            Mesh = mesh;
-        }
     }
     
     //    public class Mesh : Model

@@ -15,7 +15,7 @@ namespace NbCore
         public bool IsGeneric = false; //Used to flag internal shaders
 
         //References
-        public GLSLShaderConfig RefShaderConfig = null;
+        private GLSLShaderConfig RefShaderConfig = null;
         public List<string> directives = new(); //Extra Compilation directives (on top of the config directives)
 
         //Keep active uniforms

@@ -90,13 +90,13 @@ namespace NbCore
             writer.WriteValue(GetType().FullName);
 
             writer.WritePropertyName("Hash");
-            writer.WriteValue(Hash);
+            writer.WriteValue(Hash.ToString());
             writer.WritePropertyName("MeshType");
             writer.WriteValue(Type);
             writer.WritePropertyName("MetaData");
             IO.NbSerializer.WriteField(typeof(NbMesh).GetField("MetaData"), this, writer);
             writer.WritePropertyName("MeshDataHash");
-            writer.WriteValue(Data.Hash);
+            writer.WriteValue(Data.Hash.ToString());
             writer.WritePropertyName("Material");
             writer.WriteValue(Material.Name);
             writer.WriteEndObject();
@@ -105,13 +105,14 @@ namespace NbCore
         public static NbMesh Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
             NbMesh mesh = new();
-            mesh.Hash = token.Value<ulong>("Hash");
+            mesh.Hash = ulong.Parse(token.Value<string>("Hash"));
             mesh.Type = (NbMeshType) token.Value<int>("MeshType");
             mesh.MetaData = (NbMeshMetaData)IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("MetaData"));
 
             //Material and MeshData references should be loaded from the engine
             mesh.Material = Common.RenderState.engineRef.GetMaterialByName(token.Value<string>("Material"));
-            mesh.Data = Common.RenderState.engineRef.renderSys.MeshDataMgr.Get(token.Value<ulong>("MeshDataHash"));
+            string mesh_data_hash = token.Value<string>("MeshDataHash");
+            mesh.Data = Common.RenderState.engineRef.renderSys.MeshDataMgr.Get(ulong.Parse(mesh_data_hash));
             
             return mesh;
         }

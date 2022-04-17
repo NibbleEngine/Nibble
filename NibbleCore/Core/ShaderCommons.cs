@@ -77,8 +77,11 @@ namespace NbCore
 
     public struct NbUniformState
     {
+        [NbSerializable]
         public string ShaderBinding;
+        [NbSerializable]
         public int ShaderLocation;
+        [NbSerializable]
         public NbUniformType Type;
     }
 
