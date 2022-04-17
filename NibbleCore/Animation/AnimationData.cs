@@ -23,18 +23,15 @@ namespace NbCore
         public bool Mirrored;
         public bool Active;
         
-        public override int GetHashCode()
+        public ulong GetHash()
         {
-            int hash = 0;
-            hash ^= Name.GetHashCode();
-            hash ^= FileName.GetHashCode();
-            hash ^= AnimType.GetHashCode();
-            hash ^= FrameStart.GetHashCode();
-            hash ^= FrameEnd.GetHashCode();
-            hash ^= StartNode.GetHashCode();
-            hash ^= Speed.GetHashCode();
-            hash ^= Priority.GetHashCode();
-            
+            ulong hash = NbHasher.Hash(Name);
+            hash = NbHasher.CombineHash(hash, NbHasher.Hash(FileName));
+            hash = NbHasher.CombineHash(hash, (ulong)AnimType);
+            hash = NbHasher.CombineHash(hash, (ulong)FrameStart);
+            hash = NbHasher.CombineHash(hash, (ulong)FrameEnd);
+            hash = NbHasher.CombineHash(hash, (ulong)FrameEnd);
+            hash = NbHasher.CombineHash(hash, NbHasher.Hash(StartNode));
             return hash;
         }
     

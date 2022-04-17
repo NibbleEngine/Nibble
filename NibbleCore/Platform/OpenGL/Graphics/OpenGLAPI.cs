@@ -68,6 +68,7 @@ namespace NbCore.Platform.Graphics
         private const string RendererName = "OPENGL_RENDERER";
         private int activeProgramID = -1;
         public Dictionary<ulong, GLInstancedMesh> MeshMap = new();
+        public Dictionary<ulong, GLVao> VaoMap = new();
         private readonly Dictionary<string, int> UBOs = new();
         private readonly Dictionary<string, int> SSBOs = new();
 
@@ -413,27 +414,45 @@ namespace NbCore.Platform.Graphics
             GL.ClearColor(vec.X, vec.Y, vec.Z, vec.W);
         }
 
-        public void AddMesh(NbMesh mesh)
+        public bool AddMesh(NbMesh mesh)
         {
             Callbacks.Assert(mesh.Hash != 0x0, 
                 "Default mesh hash. Something went wrong during mesh generation");
 
-            if (MeshMap.ContainsKey(mesh.Hash))
+            Callbacks.Assert(mesh.GetID() != 0x0,
+                "WARNING. Mesh Object probably not registered");
+
+            if (MeshMap.ContainsKey(mesh.GetID()))
             {
                 Log($"Mesh Hash already exists in map. Entity ID: {mesh.GetID()}. Mesh Hash {mesh.Hash}", LogVerbosityLevel.WARNING);
-                return;
+                return false;
             }
             
             //Generate instanced mesh
             GLInstancedMesh imesh = GenerateAPIMesh(mesh);
-            MeshMap[mesh.Hash] = imesh;
+            MeshMap[mesh.GetID()] = imesh;
 
             Log($"Mesh was successfully registered to the Renderer. Entity ID: {mesh.GetID()}. Mesh Hash {mesh.Hash}", LogVerbosityLevel.DEBUG);
+            return true;
         }
 
         private GLInstancedMesh GenerateAPIMesh(NbMesh mesh)
         {
-            GLInstancedMesh imesh = new(mesh);
+            GLVao gl_vao;
+            if (VaoMap.ContainsKey(mesh.Hash))
+                gl_vao = VaoMap[mesh.Hash];
+            else
+            {
+                gl_vao = generateVAO(mesh);
+                VaoMap[mesh.Hash] = gl_vao;
+            }
+            
+            GLInstancedMesh imesh = new()
+            {
+                vao = gl_vao,
+                Mesh = mesh
+            };
+            
             return imesh;
         }
 
@@ -461,7 +480,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderQuad(NbMesh quadMesh, NbShader shader, NbShaderState state)
         {
-            GLInstancedMesh glmesh = MeshMap[quadMesh.Hash];
+            GLInstancedMesh glmesh = MeshMap[quadMesh.GetID()];
 
             GL.UseProgram(shader.ProgramID);
             GL.BindVertexArray(glmesh.vao.vao_id);
@@ -529,7 +548,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderMesh(NbMesh mesh)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.Hash]; //Fetch GL Mesh
+            GLInstancedMesh glmesh = MeshMap[mesh.GetID()]; //Fetch GL Mesh
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -546,7 +565,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderMesh(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.Hash]; //Fetch GL Mesh
+            GLInstancedMesh glmesh = MeshMap[mesh.GetID()]; //Fetch GL Mesh
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -565,7 +584,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderLocator(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.Hash];
+            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -584,7 +603,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderJoint(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.Hash];
+            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -603,7 +622,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderCollision(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.Hash];
+            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -629,7 +648,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderLight(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.Hash];
+            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -648,7 +667,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderLightVolume(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.Hash] as GLInstancedMesh;
+            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
             RenderMesh(glmesh.Mesh, mat);
         }
 
@@ -1038,7 +1057,7 @@ namespace NbCore.Platform.Graphics
             GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize,
                 out size);
 
-            Common.Callbacks.Assert(size == mesh.Data.VertexBufferStride * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics + 1),
+            Callbacks.Assert(size == mesh.Data.VertexBufferStride * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics + 1),
                 "Mesh metadata does not match the vertex buffer size from the geometry file");
 
             //Assign VertexAttribPointers
@@ -1220,7 +1239,7 @@ namespace NbCore.Platform.Graphics
         public static bool CompileShaderSource(NbShader shader, 
             NbShaderSourceType type, ref int object_id, ref string temp_log, string append_text = "")
         {
-            GLSLShaderSource _source = shader.RefShaderConfig.Sources[type];
+            GLSLShaderSource _source = shader.GetShaderConfig().Sources[type];
 
             if (_source == null)
                 return false;
@@ -1260,13 +1279,14 @@ namespace NbCore.Platform.Graphics
         //Shader Creation
         public static bool CompileShader(NbShader shader)
         {
-            bool gsflag = shader.RefShaderConfig.Sources.ContainsKey(NbShaderSourceType.GeometryShader);
+            GLSLShaderConfig conf = shader.GetShaderConfig();
+            bool gsflag = conf.Sources.ContainsKey(NbShaderSourceType.GeometryShader);
 
-            bool tsflag = shader.RefShaderConfig.Sources.ContainsKey(NbShaderSourceType.TessControlShader) |
-                     shader.RefShaderConfig.Sources.ContainsKey(NbShaderSourceType.TessControlShader);
+            bool tsflag = conf.Sources.ContainsKey(NbShaderSourceType.TessControlShader) |
+                     conf.Sources.ContainsKey(NbShaderSourceType.TessControlShader);
 
             List<string> finaldirectives = new();
-            finaldirectives.AddRange(RenderState.engineRef.CreateShaderDirectivesFromMode(shader.RefShaderConfig.ShaderMode));
+            finaldirectives.AddRange(RenderState.engineRef.CreateShaderDirectivesFromMode(conf.ShaderMode));
             finaldirectives.AddRange(shader.directives);
             
             //Generate DirectiveString
@@ -1277,7 +1297,7 @@ namespace NbCore.Platform.Graphics
             //Try to compile all attachments
             Dictionary<NbShaderSourceType, int> temp_objects = new();
             string temp_log = "";
-            foreach (var pair in shader.RefShaderConfig.Sources)
+            foreach (var pair in conf.Sources)
             {
                 int object_id = -1;
                 bool status = CompileShaderSource(shader, pair.Key, ref object_id, ref temp_log, directivestring);
@@ -1295,7 +1315,7 @@ namespace NbCore.Platform.Graphics
             shader.CompilationLog = temp_log;
             
             //Save Objects to shader
-            foreach (var pair in shader.RefShaderConfig.Sources)
+            foreach (var pair in conf.Sources)
             {
                 //TODO: Try to first compile the shader and return if there are problems
                 if (shader.SourceObjects.ContainsKey(pair.Key))

@@ -42,8 +42,8 @@ namespace NibbleOBJPlugin
         public override void Import(string filepath)
         {
             SceneGraphNode node = ParseObj(filepath);
-            EngineRef.RegisterEntity(node);
-            EngineRef.RequestEntityTransformUpdate(node);
+            foreach (SceneGraphNode child in node.Children)
+                EngineRef.ImportScene(child);
         }
 
         private NbMesh GenerateMesh(List<NbVector3> lverts, List<NbVector3i> ltris)
@@ -54,7 +54,7 @@ namespace NibbleOBJPlugin
             //Generate NbMesh
             NbMesh mesh = new()
             {
-                Hash = (ulong)"obj_mesh".GetHashCode(),
+                Hash = NbHasher.CombineHash(data.Hash, metadata.GetHash()),
                 Data = data,
                 MetaData = metadata
             };
@@ -79,8 +79,7 @@ namespace NibbleOBJPlugin
         private NbMeshData GenerateGeometryData(List<NbVector3> lverts, List<NbVector3i> ltris)
         {
             NbMeshData data = NbMeshData.Create();
-            data.Hash = (ulong)"obj_mesh".GetHashCode();
-
+            
             //Save vertices
             int vxbytecount = lverts.Count * 3 * 4;
             int ixbytecount = ltris.Count * 3 * 4;
@@ -129,11 +128,20 @@ namespace NibbleOBJPlugin
 
             data.buffers[0] = buf;
             //Use buffer information to calculate the per vertex stride
-            data.VertexBufferStride = 0x4 * 0x3; 
+            data.VertexBufferStride = 0x4 * 0x3;
 
+            data.Hash = NbHasher.CombineHash(NbHasher.Hash(data.VertexBuffer),
+                                             NbHasher.Hash(data.IndexBuffer));
             return data;
         }
 
+        private SceneGraphNode SubmitMesh(string name, MeshMaterial mat, List<NbVector3> Vertices, List<NbVector3i> Tris)
+        {
+            NbMesh mesh = GenerateMesh(Vertices, Tris);
+            mesh.Material = mat;
+            return EngineRef.CreateMeshNode(name, mesh);
+        }
+        
         public SceneGraphNode ParseObj(string filename)
         {
             FileStream fs = new FileStream(filename, FileMode.Open);
@@ -145,17 +153,72 @@ namespace NibbleOBJPlugin
 
             //Final Data
             List<NbVector3> Vertices = new();
+            List<NbVector3> Normals = new();
             List<NbVector3i> Tris = new();
             int indexCount = 0;
+            bool mesh_submitted = true;
+            string node_name = "";
+
+            //Generate Material
+            //TODO: Parse all material from the mtl file.
+            MeshMaterial mat = new();
             
+            mat.Name = "objMat";
+            NbUniform uf = new()
+            {
+                Name = "mpCustomPerMaterial.gMaterialColourVec4",
+                State = new()
+                {
+                    Type = NbUniformType.Vector4,
+                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
+                },
+                Values = new(0.0f, 1.0f, 1.0f, 1.0f)
+            };
+            mat.Uniforms.Add(uf);
+
+            GLSLShaderConfig conf = EngineRef.GetShaderConfigByName("UberShader_Deferred_Lit");
+            ulong shader_hash = EngineRef.CalculateShaderHash(conf, EngineRef.GetMaterialShaderDirectives(mat));
+
+            NbShader shader = EngineRef.GetShaderByHash(shader_hash);
+            if (shader == null)
+            {
+                shader = new()
+                {
+                    directives = EngineRef.GetMaterialShaderDirectives(mat)
+                };
+
+                shader.SetShaderConfig(conf);
+                EngineRef.CompileShader(shader);
+            }
+
+            mat.AttachShader(shader);
+
+
+            SceneGraphNode root = EngineRef.CreateLocatorNode("obj_root");
+
             while (!sr.EndOfStream)
             {
                 string line = sr.ReadLine();
 
                 if (line.StartsWith("#"))
                     continue;
-
-                if (line.StartsWith("vt"))
+                else if (line.StartsWith("o"))
+                {
+                    if (!mesh_submitted)
+                        root.AddChild(SubmitMesh(node_name, mat, Vertices, Tris));
+                    
+                    string[] split = line.Split(' ');
+                    
+                    //Start new mesh
+                    node_name = split[1];
+                    
+                    //Final Data
+                    Vertices = new();
+                    Tris = new();
+                    indexCount = 0;
+                    mesh_submitted = false;
+                }
+                else if (line.StartsWith("vt"))
                 {
                     //Parse Vertex
                     string[] split = line.Split(' ');
@@ -185,86 +248,89 @@ namespace NibbleOBJPlugin
                     //Parse Face Data
                     string[] split = line.Split(' ');
                     
-                    //Quad
-                    if (split.Length == 5)
+                    if (split.Length == 5) //Quad
                     {
-                        //TODO
-                    } else //Triangle
+                        int v1_pos_id = int.Parse(split[1].Split('/')[0]) - 1;
+                        int v1_norm_id = int.Parse(split[1].Split('/')[2]) - 1;
+                        int v1_uv_id = int.Parse(split[1].Split('/')[1]) - 1;
+
+                        int v2_pos_id = int.Parse(split[2].Split('/')[0]) - 1;
+                        int v2_norm_id = int.Parse(split[2].Split('/')[2]) - 1;
+                        int v2_uv_id = int.Parse(split[2].Split('/')[1]) - 1;
+
+                        int v3_pos_id = int.Parse(split[3].Split('/')[0]) - 1;
+                        int v3_norm_id = int.Parse(split[3].Split('/')[2]) - 1;
+                        int v3_uv_id = int.Parse(split[3].Split('/')[1]) - 1;
+
+                        int v4_pos_id = int.Parse(split[4].Split('/')[0]) - 1;
+                        int v4_norm_id = int.Parse(split[4].Split('/')[2]) - 1;
+                        int v4_uv_id = int.Parse(split[4].Split('/')[1]) - 1;
+
+                        Vertices.Add(VertexPositions[v1_pos_id]);
+                        Vertices.Add(VertexPositions[v2_pos_id]);
+                        Vertices.Add(VertexPositions[v3_pos_id]);
+
+                        Normals.Add(VertexNormals[v1_norm_id]);
+                        Normals.Add(VertexNormals[v2_norm_id]);
+                        Normals.Add(VertexNormals[v3_norm_id]);
+
+                        Vertices.Add(VertexPositions[v1_pos_id]);
+                        Vertices.Add(VertexPositions[v3_pos_id]);
+                        Vertices.Add(VertexPositions[v4_pos_id]);
+
+                        Normals.Add(VertexNormals[v1_norm_id]);
+                        Normals.Add(VertexNormals[v3_norm_id]);
+                        Normals.Add(VertexNormals[v4_norm_id]);
+
+                        //Save 2 triangles
+                        Tris.Add(new NbVector3i(indexCount, indexCount + 1, indexCount + 2));
+                        Tris.Add(new NbVector3i(indexCount + 3, indexCount + 4, indexCount + 5));
+                        indexCount += 6;
+                    } else if (split.Length == 4) //Triangle
                     {
-                        //Assume triangles
-                        for (int i = 1; i < 4; i++)
-                        {
-                            string[] vsplit = split[i].Split('/');
-                            
-                            for (int j = 0; j < vsplit.Length; j++)
-                            {
-                                switch (j)
-                                {
-                                    //VertexPositions
-                                    case 0:
-                                        {
-                                            NbVector3 v1 = VertexPositions[int.Parse(vsplit[0]) - 1];
-                                            Vertices.Add(v1);
-                                            break;
-                                        };
-                                    default:
-                                        {
-                                            //Normals and Uns not yet supported
-                                            break;
-                                        }
-                                }
-                            }
-                        }
+                        int v1_pos_id = int.Parse(split[1].Split('/')[0]) - 1;
+                        int v1_norm_id = int.Parse(split[1].Split('/')[2]) - 1;
+                        int v1_uv_id = int.Parse(split[1].Split('/')[1]) - 1;
+
+                        int v2_pos_id = int.Parse(split[2].Split('/')[0]) - 1;
+                        int v2_norm_id = int.Parse(split[2].Split('/')[2]) - 1;
+                        int v2_uv_id = int.Parse(split[2].Split('/')[1]) - 1;
+
+                        int v3_pos_id = int.Parse(split[3].Split('/')[0]) - 1;
+                        int v3_norm_id = int.Parse(split[3].Split('/')[2]) - 1;
+                        int v3_uv_id = int.Parse(split[3].Split('/')[1]) - 1;
+
+                        Vertices.Add(VertexPositions[v1_pos_id]);
+                        Vertices.Add(VertexPositions[v2_pos_id]);
+                        Vertices.Add(VertexPositions[v3_pos_id]);
+
+                        Normals.Add(VertexNormals[v1_norm_id]);
+                        Normals.Add(VertexNormals[v2_norm_id]);
+                        Normals.Add(VertexNormals[v3_norm_id]);
+                        
                         //Save triangle
                         Tris.Add(new NbVector3i(indexCount, indexCount + 1, indexCount + 2));
                         indexCount += 3;
+                    } else
+                    {
+                        //I Have no idea what else...
                     }
                 }
                 else
                 {
                     Log($"Unknown obj directive {line}. Skipping...", LogVerbosityLevel.WARNING);
                 }
-
-            }
-            sr.Close();
-
-            NbMesh mesh = GenerateMesh(Vertices, Tris);
-
-            //Generate Material
-            MeshMaterial mat = new();
-
-            mat.Name = "objMat";
-            mat.add_flag(MaterialFlagEnum._F07_UNLIT);
-            NbUniform uf = new()
-            {
-                Name = "mpCustomPerMaterial.gMaterialColourVec4",
-                Values = new(0.0f, 1.0f, 1.0f, 1.0f)
-            };
-            mat.Uniforms.Add(uf);
-
-            GLSLShaderConfig conf = EngineRef.GetShaderConfigByName("UberShader_Deferred_Lit");
-            ulong shader_hash = EngineRef.CalculateShaderHash(conf, EngineRef.GetMaterialShaderDirectives(mat));
-
-            NbShader shader = EngineRef.GetShaderByHash(shader_hash);
-            if (shader == null)
-            {
-                shader = new()
-                {
-                    RefShaderConfig = conf,
-                    directives = EngineRef.GetMaterialShaderDirectives(mat)
-                };
-
-                EngineRef.CompileShader(shader);
-            }
-
-            mat.AttachShader(shader);
-            mesh.Material = mat;
-
-            //Generate Mesh Node
-            SceneGraphNode mesh_node = EngineRef.CreateMeshNode("obj_mesh", mesh);
             
+            }
 
-            return mesh_node;
+            //Submit last mesh
+            if (!mesh_submitted)
+                root.AddChild(SubmitMesh(node_name, mat, Vertices, Tris));
+
+            sr.Close();
+            
+            
+            return root;
         }
 
         public override void Export(string filepath)

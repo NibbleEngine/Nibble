@@ -124,7 +124,7 @@ namespace NbCore
 
             for (int i = 0; i < mmd.BoundHullEnd - mmd.BoundHullStart; i++)
             {
-                NbVector3 v = bhullverts[i + mmd.BoundHullStart];
+                NbVector3 v = bhullverts[i + (int) mmd.BoundHullStart];
                 vx_buffer_float[3 * i + 0] = v.X;
                 vx_buffer_float[3 * i + 1] = v.Y;
                 vx_buffer_float[3 * i + 2] = v.Z;
@@ -155,14 +155,14 @@ namespace NbCore
             };
             temp_geom.bufInfo.Add(buf);
 
-            int indicesLength = 0x4;
+            uint indicesLength = 0x4;
             if (indicesType == NbPrimitiveDataType.UnsignedShort)
                 indicesLength = 0x2;
             //Set Buffers
             temp_geom.ibuffer = new byte[indicesLength * mmd.BatchCount];
             temp_geom.vbuffer = new byte[sizeof(float) * vx_buffer_float.Length];
             
-            System.Buffer.BlockCopy(ibuffer, mmd.BatchStartGraphics * indicesLength, temp_geom.ibuffer, 0, temp_geom.ibuffer.Length);
+            System.Buffer.BlockCopy(ibuffer, (int) (mmd.BatchStartGraphics * indicesLength), temp_geom.ibuffer, 0, temp_geom.ibuffer.Length);
             System.Buffer.BlockCopy(vx_buffer_float, 0, temp_geom.vbuffer, 0, temp_geom.vbuffer.Length);
 
 

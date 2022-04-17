@@ -168,6 +168,17 @@ namespace NbCore.Math
             writer.WriteEndObject();
         }
 
+        public static NbVector4 Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            return new()
+            {
+                X = token.Value<float>("X"),
+                Y = token.Value<float>("Y"),
+                Z = token.Value<float>("Z"),
+                W = token.Value<float>("W")
+            };
+        }
+
     }
 
 

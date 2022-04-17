@@ -280,13 +280,13 @@ namespace NbCore
             writer.WriteValue(Class);
 
             writer.WritePropertyName("ShaderConfig");
-            writer.WriteValue(Shader?.RefShaderConfig?.Name);
+            writer.WriteValue(Shader?.GetShaderConfig()?.Name);
 
             //Write Flags
             writer.WritePropertyName("Flags");
             writer.WriteStartArray();
             foreach (MaterialFlagEnum flag in Flags)
-                writer.WriteValue(flag);
+                writer.WriteValue(flag.ToString());
             writer.WriteEndArray();
 
             //Write Uniforms
@@ -305,6 +305,47 @@ namespace NbCore
 
             writer.WriteEndObject();
         
+        }
+
+        public static MeshMaterial Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            MeshMaterial mat = new MeshMaterial();
+            mat.Name = token.Value<string>("Name");
+            mat.Class = token.Value<string>("Class");
+
+            GLSLShaderConfig conf = RenderState.engineRef.GetShaderConfigByName(token.Value<string>("ShaderConfig"));
+
+            //Deserialize flags
+            Newtonsoft.Json.Linq.JToken flag_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Flags");
+            foreach (Newtonsoft.Json.Linq.JToken tkn in flag_tkns.Children())
+                mat.add_flag((MaterialFlagEnum) IO.NbDeserializer.Deserialize(tkn));
+
+            //Deserialize uniforms
+            Newtonsoft.Json.Linq.JToken uniform_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Uniforms");
+            foreach (Newtonsoft.Json.Linq.JToken tkn in uniform_tkns.Children())
+                mat.Uniforms.Add((NbUniform) IO.NbDeserializer.Deserialize(tkn));
+
+
+            //Calculate Shader hash
+            ulong shader_hash = RenderState.engineRef.CalculateShaderHash(conf, RenderState.engineRef.GetMaterialShaderDirectives(mat));
+
+            NbShader shader = RenderState.engineRef.GetShaderByHash(shader_hash);
+
+            if (shader == null)
+            {
+                //Compile shader
+                shader = new()
+                {
+                    directives = RenderState.engineRef.GetMaterialShaderDirectives(mat)
+                };
+
+                shader.SetShaderConfig(conf);
+                RenderState.engineRef.CompileShader(shader);
+
+                mat.AttachShader(shader);
+            }
+
+            return mat;
         }
 
 

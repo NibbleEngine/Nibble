@@ -96,12 +96,12 @@ namespace NbCore.UI.ImGui
                     {
                         shaderconfItems[i] = ((GLSLShaderConfig)shaderconfs[i]).Name;
                     }
-                    int currentShaderConfigId = shaderconfs.IndexOf(_ActiveMaterial.Shader.RefShaderConfig);
+                    int currentShaderConfigId = shaderconfs.IndexOf(_ActiveMaterial.Shader.GetShaderConfig());
                     if (ImGuiNET.ImGui.Combo("##MaterialShader", ref currentShaderConfigId, shaderconfItems, shaderconfs.Count))
                     {
-                        GLSLShaderConfig old = _ActiveMaterial.Shader.RefShaderConfig;
-                        _ActiveMaterial.Shader.RefShaderConfig = shaderconfs[currentShaderConfigId] as GLSLShaderConfig;
-
+                        GLSLShaderConfig old = _ActiveMaterial.Shader.GetShaderConfig();
+                        _ActiveMaterial.Shader.SetShaderConfig(shaderconfs[currentShaderConfigId] as GLSLShaderConfig);
+                        
                         //Calculate requested shader hash
                         ulong shader_hash = RenderState.engineRef.CalculateShaderHash(shaderconfs[currentShaderConfigId] as GLSLShaderConfig,
                             RenderState.engineRef.GetMaterialShaderDirectives(_ActiveMaterial));

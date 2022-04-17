@@ -40,7 +40,7 @@ namespace NbCore
             writer.WritePropertyName("ObjectType");
             writer.WriteValue(GetType().FullName);
             writer.WritePropertyName("Hash");
-            writer.WriteValue(Hash);
+            writer.WriteValue(Hash.ToString());
             writer.WritePropertyName("VertexBufferStride");
             writer.WriteValue(VertexBufferStride);
             writer.WritePropertyName("IndicesLength");
@@ -90,7 +90,7 @@ namespace NbCore
         public static NbMeshData Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
             NbMeshData data = new();
-            data.Hash = token.Value<ulong>("Hash");
+            data.Hash = ulong.Parse(token.Value<string>("Hash"));
             data.VertexBufferStride = token.Value<uint>("VertexBufferStride");
             data.IndicesLength = (NbPrimitiveDataType)token.Value<int>("IndicesLength");
 

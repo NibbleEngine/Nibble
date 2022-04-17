@@ -935,7 +935,7 @@ namespace NbCore
 
         public ulong CalculateShaderHash(NbShader shader)
         {
-            return CalculateShaderHash(shader.RefShaderConfig, shader.directives);
+            return CalculateShaderHash(shader.GetShaderConfig(), shader.directives);
         }
 
         public ulong CalculateShaderHash(GLSLShaderConfig conf, List<string> extradirectives = null)
@@ -989,7 +989,7 @@ namespace NbCore
 
         public bool CompileShader(NbShader shader)
         {
-            if (shader.RefShaderConfig == null)
+            if (shader.GetShaderConfig() == null)
             {
                 Log("Missing Shader Configuration on Material. Nothing to compile",
                     LogVerbosityLevel.ERROR);
@@ -1042,7 +1042,7 @@ namespace NbCore
                         continue;
 
                     //Save Config
-                    var shader_config = mc.Mesh.Material.Shader.RefShaderConfig;
+                    var shader_config = mc.Mesh.Material.Shader.GetShaderConfig();
                     if (!configs.Contains(shader_config) && !shader_config.IsGeneric)
                     {
                         configs.Add(shader_config);
@@ -1143,18 +1143,19 @@ namespace NbCore
                 renderSys.MeshDataMgr.Add(meshdata.Hash, meshdata);
             }
 
-            foreach (var s in ob["MESHES"])
-            {
-                NbMesh mesh = (NbMesh) IO.NbDeserializer.Deserialize(s);
-                RegisterEntity(mesh);
-            }
-
             foreach (var s in ob["MATERIALS"])
             {
                 MeshMaterial mat = (MeshMaterial)IO.NbDeserializer.Deserialize(s);
                 RegisterEntity(mat);
             }
 
+            foreach (var s in ob["MESHES"])
+            {
+                NbMesh mesh = (NbMesh) IO.NbDeserializer.Deserialize(s);
+                RegisterEntity(mesh);
+            }
+
+            
             SceneGraphNode root = (SceneGraphNode) IO.NbDeserializer.Deserialize(ob["SCENEGRAPH"]);
 
             //Register shit and add to shit
