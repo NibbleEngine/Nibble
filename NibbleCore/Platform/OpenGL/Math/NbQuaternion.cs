@@ -108,6 +108,14 @@ namespace NbCore.Math
             return n;
         }
 
+        public static NbQuaternion Mult(NbQuaternion q1, NbQuaternion q2)
+        {
+            return new NbQuaternion()
+            {
+                _Value = Quaternion.Multiply(q1._Value, q2._Value)
+            };
+        }
+        
         public static NbVector3 ToEulerAngles(NbQuaternion q)
         {
             Vector3 v = q._Value.ToEulerAngles();
@@ -125,7 +133,15 @@ namespace NbCore.Math
                 W = q.W
             };
         }
-        
+
+        public static NbQuaternion FromAxis(NbVector3 axis, float angle)
+        {
+            return new NbQuaternion()
+            {
+                _Value = Quaternion.FromAxisAngle(axis._Value, angle)
+            };
+        }
+
         public static void ToEulerAngles(NbQuaternion q, out NbVector3 v)
         {
             Quaternion.ToEulerAngles(q._Value, out var vt);

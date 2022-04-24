@@ -35,8 +35,8 @@ namespace NbCore
         public NbVector3 Right;
         public NbVector3 Front;
         public NbVector3 Up;
-        public float yaw = MathUtils.radians(-90.0f);
-        public float pitch = 0.0f;
+        //public float yaw = MathUtils.radians(-90.0f);
+        //public float pitch = 0.0f;
         public NbVector3 Position = new(0.0f, 0.0f, 0.0f);
         //Movement Time
         
@@ -125,26 +125,18 @@ namespace NbCore
         public static void UpdateCameraDirectionalVectors(Camera cam)
         {
             //Update Camera Vectors
-            TransformComponent tc = cam.GetComponent<TransformComponent>() as TransformComponent;
-
-            //Apply Current Position to the Camera
-            cam.Position = tc.Data.localTranslation;
-
-            //Console.WriteLine(string.Format("Camera Position {0} {1} {2}",
-            //                    cam.Position.X, cam.Position.Y, cam.Position.Z));
-
-            cam.Front.X = (float) System.Math.Cos(cam.yaw) * (float) System.Math.Cos(cam.pitch);
-            cam.Front.Y = (float) System.Math.Sin(cam.pitch);
-            cam.Front.Z = (float) System.Math.Sin(cam.yaw) * (float) System.Math.Cos(cam.pitch);
-            cam.Front.Normalize();
-
-            cam.Up.X = (float) System.Math.Cos(cam.yaw) * (float)System.Math.Cos(cam.pitch + System.Math.PI / 2.0f);
-            cam.Up.Y = (float) System.Math.Sin(cam.pitch + System.Math.PI / 2.0f);
-            cam.Up.Z = (float) System.Math.Sin(cam.yaw) * (float)System.Math.Cos(cam.pitch + System.Math.PI / 2.0f);
-            cam.Up.Normalize();
+            TransformController t_controller = Common.RenderState.engineRef.transformSys.GetEntityTransformController(cam);
             
+            //Rotation
+            NbQuaternion q = t_controller.Rotation;
+            
+            //Apply Current Position to the Camera
+            cam.Position = t_controller.Position;
+            cam.Front = NbVector3.Transform(BaseFront, q);
+            cam.Front.Normalize();
+            cam.Up = NbVector3.Transform(BaseUp, q);
+            cam.Up.Normalize();
             cam.Right = cam.Front.Cross(cam.Up).Normalized();
-            //cam.Up = Vector3.Cross(cam.Right, cam.Front);
         }
 
         public static void CalculateNextCameraState(Camera cam, CameraPos target)
@@ -152,10 +144,14 @@ namespace NbCore
             TransformController t_controller = Common.RenderState.engineRef.transformSys.GetEntityTransformController(cam);
 
             //Calculate actual camera speed
-            cam.yaw += -Common.RenderState.settings.camSettings.Sensitivity * MathUtils.radians(target.Rotation.X);
-            cam.pitch += Common.RenderState.settings.camSettings.Sensitivity * MathUtils.radians(target.Rotation.Y);
-            cam.pitch = MathUtils.clamp(cam.pitch, -89.0f, 89.0f);
-
+            float pitch = Common.RenderState.settings.camSettings.Sensitivity * MathUtils.radians(target.Rotation.Y);
+            float yaw = Common.RenderState.settings.camSettings.Sensitivity * MathUtils.radians(target.Rotation.X);
+            
+            NbQuaternion yaw_q = NbQuaternion.FromAxis(cam.Up, yaw);
+            NbQuaternion pitch_q = NbQuaternion.FromAxis(cam.Right, pitch);
+            NbQuaternion new_rot = NbQuaternion.Mult(pitch_q, yaw_q);
+            new_rot = NbQuaternion.Mult(new_rot, t_controller.Rotation);
+            
             //Console.WriteLine("Mouse Displacement {0} {1}",
             //                target.Rotation.X, target.Rotation.Y);
 
@@ -164,10 +160,10 @@ namespace NbCore
             //                    LogVerbosityLevel.INFO);
 
             //Move Camera based on the impulse
-
+            
             //Calculate Next State 
             NbVector3 currentPosition = t_controller.Position;
-            NbQuaternion currentRotation = t_controller.Rotation;
+            NbQuaternion currentRotation = new_rot;
             NbVector3 currentScale = new(1.0f);
 
             NbVector3 offset = new();
@@ -175,17 +171,15 @@ namespace NbCore
             offset += SpeedScale * Common.RenderState.settings.camSettings.Speed * target.PosImpulse.Y * cam.Front;
             offset += SpeedScale * Common.RenderState.settings.camSettings.Speed * target.PosImpulse.Z * cam.Up;
 
-
             //Console.WriteLine(string.Format("Camera offset {0} {1} {2}",
             //                    offset.X, offset.Y, offset.Z));
-             
+            
             currentPosition += offset;
             //There is no need to update rotation for the camera. Pitch/Yaw is all we need
             //Quaternion rall = Quaternion.FromEulerAngles(cam.pitch, cam.yaw, 0.0f);
             //currentRotation = rall;
-
+            
             t_controller.AddFutureState(currentPosition, currentRotation, currentScale);
-
         }
 
         /*
