@@ -5,6 +5,13 @@ using NbCore.Common;
 
 namespace NbCore.Plugins
 {
+    public delegate void ToolEventHandler(object ob);
+    public struct ToolDescription
+    {
+        public string Name;
+        public ToolEventHandler ToolFunc;
+    }
+    
     public abstract class PluginBase
     {
         //Properties
@@ -12,6 +19,7 @@ namespace NbCore.Plugins
         public string Description = "";
         public string Version = "";
         public string Creator = "";
+        public List<ToolDescription> Tools = new();
 
         public PluginSettings Settings;
         public Engine EngineRef;
@@ -20,6 +28,7 @@ namespace NbCore.Plugins
         {
             
         }
+
         public PluginBase(Engine e)
         {
             EngineRef = e;
@@ -31,9 +40,7 @@ namespace NbCore.Plugins
         public abstract void OnUnload();
 
         public abstract void DrawImporters(); //Used to draw import functions in the File menu
-        
         public abstract void DrawExporters(SceneGraph scn); //Used to draw export functions in the File menu
-
         public abstract void Draw(); //Used to draw plugin panels and popups
 
         public virtual void Log(string message, LogVerbosityLevel lvl)

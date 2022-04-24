@@ -516,6 +516,12 @@ namespace NbCore
                 .Find(x => ((GLSLShaderConfig)x).Name == name) as GLSLShaderConfig;
         }
 
+        public GLSLShaderConfig GetShaderConfigByHash(ulong hash)
+        {
+            return registrySys.GetEntityTypeList(EntityType.ShaderConfig)
+                .Find(x => ((GLSLShaderConfig)x).Hash == hash) as GLSLShaderConfig;
+        }
+
         public NbShader GetShaderByHash(ulong hash)
         {
             return registrySys.GetEntityTypeList(EntityType.Shader)
@@ -926,7 +932,8 @@ namespace NbCore
             //General Directives are provided here
             if (mode.HasFlag(NbShaderMode.DEFFERED))
                 includes.Add("_D_DEFERRED_RENDERING");
-
+            if (mode.HasFlag(NbShaderMode.SKINNED))
+                includes.Add("_D_SKINNED");
             if (mode.HasFlag(NbShaderMode.LIT))
                 includes.Add("_D_LIGHTING");
 

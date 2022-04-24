@@ -12,7 +12,8 @@ namespace NbCore
         DEFFERED,
         LIT,
         FORWARD,
-        DECAL
+        DECAL,
+        SKINNED
     }
 
     public enum NbShaderType

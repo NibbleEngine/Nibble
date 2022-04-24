@@ -107,6 +107,7 @@ namespace NbCore.Systems
                 boneRemapIndices = new int[1],
                 Meshes = new()
             };
+
             MeshGroupDict[0] = group;
             MeshGroups.Add(group);
 
@@ -348,7 +349,6 @@ namespace NbCore.Systems
         {
             mg.ID = MeshGroups.Count;
             mg.GroupTBO1 = Renderer.CreateGroupBuffer();
-            
             mg.GroupTBO1Data = new NbMatrix4[System.Math.Max(1,mg.JointBindingDataList.Count)];
             mg.PrevFrameJointData = new NbMatrix4[System.Math.Max(1, mg.JointBindingDataList.Count)];
             mg.NextFrameJointData = new NbMatrix4[System.Math.Max(1, mg.JointBindingDataList.Count)];
@@ -636,9 +636,8 @@ namespace NbCore.Systems
             
             foreach(NbMeshGroup mg in MeshGroups)
             {
-                //Bind Group Data Buffer
-                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, mg.GroupTBO1);
 
+                Renderer.BindGroupBuffer(mg);
                 foreach (NbMesh mesh in mg.Meshes)
                 {
                     if (mesh.InstanceCount == 0)

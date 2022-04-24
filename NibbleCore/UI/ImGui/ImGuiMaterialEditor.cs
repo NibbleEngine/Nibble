@@ -86,6 +86,13 @@ namespace NbCore.UI.ImGui
 
                     ImGuiNET.ImGui.TableNextRow();
                     ImGuiNET.ImGui.TableSetColumnIndex(0);
+                    ImGuiNET.ImGui.Text("Mode");
+                    ImGuiNET.ImGui.TableSetColumnIndex(1);
+                    ImGuiNET.ImGui.SetNextItemWidth(-1);
+                    ImGuiNET.ImGui.Text(_ActiveMaterial.Shader.GetShaderConfig().ShaderMode.ToString());
+
+                    ImGuiNET.ImGui.TableNextRow();
+                    ImGuiNET.ImGui.TableSetColumnIndex(0);
                     ImGuiNET.ImGui.Text("Shader");
                     ImGuiNET.ImGui.TableSetColumnIndex(1);
                     ImGuiNET.ImGui.SetNextItemWidth(-1);

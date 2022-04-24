@@ -68,6 +68,7 @@ namespace NbCore.UI.ImGui
             //Process Modals
             //Modals
             bool isOpen = true;
+            ImGuiCore.SetNextWindowSize(new Vector2(300, 60));
             if (ImGuiCore.BeginPopupModal("AddSpherePopup", ref isOpen, ImGuiNET.ImGuiWindowFlags.NoResize))
             {
                 ImGuiCore.Columns(2);
@@ -75,7 +76,7 @@ namespace NbCore.UI.ImGui
                 ImGuiCore.NextColumn();
                 ImGuiCore.DragInt("##sphereBands", ref divs, 1.0f, 10, 100);
                 ImGuiCore.Columns(1);
-                
+                ImGuiCore.SameLine();
                 if (ImGuiCore.Button("Add"))
                 {
                     //Create Mesh

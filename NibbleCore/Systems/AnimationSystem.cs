@@ -74,9 +74,8 @@ namespace NbCore.Systems
 
                 SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
                 
-                foreach (string node in sc.JointNodes.Keys)
+                foreach (SceneGraphNode joint in sc.JointNodes)
                 {
-                    SceneGraphNode joint = sc.JointNodes[node];
                     JointComponent jc = joint.GetComponent<JointComponent>() as JointComponent;
                     TransformComponent tc = joint.GetComponent<TransformComponent>() as TransformComponent;
 
@@ -84,6 +83,7 @@ namespace NbCore.Systems
 
                     NbMatrix4 invBindMatrix = group.RefMeshGroup.JointBindingDataList[actualJointIndex].invBindMatrix;
                     group.RefMeshGroup.NextFrameJointData[actualJointIndex] = invBindMatrix * tc.Data.WorldTransformMat;
+
                 }
 
                 
@@ -102,21 +102,28 @@ namespace NbCore.Systems
                     group.ActiveAnimation.Progress();
 
                     SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
-                    //Update data to the meshgroups
-                    foreach (string node in sc.JointNodes.Keys)
-                    {
-                        SceneGraphNode joint = sc.JointNodes[node];
-                        JointComponent jc = joint.GetComponent<JointComponent>() as JointComponent;
-                        TransformComponent tc = joint.GetComponent<TransformComponent>() as TransformComponent;
+                    
 
-                        NbVector3 nodePosition = group.ActiveAnimation.GetNodeTranslation(node);
-                        NbQuaternion nodeRotation = group.ActiveAnimation.GetNodeRotation(node);
-                        NbVector3 nodeScale = group.ActiveAnimation.GetNodeScale(node);
+                    foreach (string anim_node in group.ActiveAnimation.animData.Nodes)
+                    {
+                        //TODO: THIS SHOULD NOT HAPPEN
+                        if (!sc.HasNode(anim_node))
+                            continue;
+
+                        SceneGraphNode node = sc.NodeMap[anim_node];
+
+                        if (node.Type == SceneNodeType.LOCATOR)
+                            continue;
+                        
+                        TransformComponent tc = node.GetComponent<TransformComponent>() as TransformComponent;
+
+                        NbVector3 nodePosition = group.ActiveAnimation.GetNodeTranslation(anim_node);
+                        NbQuaternion nodeRotation = group.ActiveAnimation.GetNodeRotation(anim_node);
+                        NbVector3 nodeScale = group.ActiveAnimation.GetNodeScale(anim_node);
 
                         tc.Data.localRotation = nodeRotation;
                         tc.Data.localScale = nodeScale;
                         tc.Data.localTranslation = nodePosition;
-
                     }
                     EngineRef.RequestEntityTransformUpdate(group.AnimationRoot);
                 }

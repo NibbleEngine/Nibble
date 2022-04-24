@@ -11,6 +11,7 @@ namespace NbCore
     public class GLSLShaderConfig : Entity
     {
         public string Name = "";
+        public ulong Hash;
         public bool IsGeneric = false;
         public Dictionary<NbShaderSourceType, GLSLShaderSource> Sources = new();
         public ShaderConfigUpdatedEventHandler IsUpdated;
@@ -42,7 +43,29 @@ namespace NbCore
             AddSource(NbShaderSourceType.GeometryShader, ggs);
             AddSource(NbShaderSourceType.TessControlShader, ttcs);
             AddSource(NbShaderSourceType.TessEvaluationShader, ttes);
-            
+
+            //Calculate Config Hash
+            Hash = GetHash(vvs,ffs,ggs,ttcs, ttes, mode);
+        }
+
+        public static ulong GetHash(GLSLShaderSource vvs,
+            GLSLShaderSource ffs, GLSLShaderSource ggs,
+            GLSLShaderSource ttcs, GLSLShaderSource ttes,
+            NbShaderMode mode)
+        {
+            ulong hs = (ulong)mode;
+            if (vvs != null)
+                hs = NbHasher.CombineHash(hs, vvs.Hash);
+            if (ffs != null)
+                hs = NbHasher.CombineHash(hs, ffs.Hash);
+            if (ggs != null)
+                hs = NbHasher.CombineHash(hs, ggs.Hash);
+            if (ttcs != null)
+                hs = NbHasher.CombineHash(hs, ttcs.Hash);
+            if (ttes != null)
+                hs = NbHasher.CombineHash(hs, ttes.Hash);
+
+            return hs;
         }
 
         public void AddSource(NbShaderSourceType t, GLSLShaderSource s)
@@ -52,7 +75,6 @@ namespace NbCore
             Sources[t] = s;
 
             //Add shader reference to source object
-            s.SetConfigReference(this);
             s.IsUpdated += OnSourceUpdate;
 
         }
