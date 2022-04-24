@@ -152,6 +152,30 @@ namespace NbCore.Math
             return n;
         }
 
+        public static NbVector4 Transform(NbVector4 vec, NbQuaternion q)
+        {
+            return new NbVector4()
+            {
+                _Value = Vector4.Transform(vec._Value, q._Value)
+            };
+        }
+
+        public static NbVector4 Transform(NbVector4 vec, NbMatrix4 mat)
+        {
+            return new NbVector4()
+            {
+                _Value = Vector4.TransformRow(vec._Value, mat._Value)
+            };
+        }
+
+        public static NbVector4 Transform(NbMatrix4 mat, NbVector4 vec)
+        {
+            return new NbVector4()
+            {
+                _Value = Vector4.TransformColumn(mat._Value, vec._Value)
+            };
+        }
+
         public void Serialize(JsonTextWriter writer)
         {
             writer.WriteStartObject();

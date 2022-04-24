@@ -106,7 +106,15 @@ namespace NbCore.Math
         {
             return v * a;
         }
-        
+
+        public static NbVector3 Transform(NbVector3 vec, NbQuaternion q)
+        {
+            return new NbVector3()
+            {
+                _Value = Vector3.Transform(vec._Value, q._Value)
+            };
+        }
+
         public static NbVector3 Lerp(NbVector3 a, NbVector3 b, float blend)
         {
             return new NbVector3()
