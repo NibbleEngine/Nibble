@@ -61,8 +61,9 @@ void main()
     
     mat4 lWorldMat = instanceData[gl_InstanceID].worldMat;
     vec4 wPos = vPosition;
+    
     //Check F02_SKINNED
-    #ifdef _F02_SKINNED
+    #ifdef _D_SKINNED
         ivec4 index;
         
         index.x = int(blendIndices.x);

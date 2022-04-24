@@ -16,7 +16,8 @@ namespace NbCore
         public readonly List<SceneGraphNode> Nodes = new();
         public readonly List<SceneGraphNode> MeshNodes = new();
         public readonly List<SceneGraphNode> LightNodes = new();
-        public readonly Dictionary<string, SceneGraphNode> JointNodes = new();
+        public readonly List<SceneGraphNode> JointNodes = new();
+        public readonly Dictionary<string, SceneGraphNode> NodeMap = new();
         
         public SceneComponent()
         {
@@ -36,6 +37,11 @@ namespace NbCore
         public bool HasNode(SceneGraphNode n)
         {
             return Nodes.Contains(n);
+        }
+
+        public bool HasNode(string node_name)
+        {
+            return NodeMap.ContainsKey(node_name);
         }
 
         public SceneGraphNode GetNodeByName(string name)
@@ -78,7 +84,15 @@ namespace NbCore
                 return;
             }
 
+            if (HasNode(n.Name))
+            {
+                string msg = string.Format("A node with the same name {0} already belongs to scene", n.Name);
+                Callbacks.Logger.Log(this, msg, LogVerbosityLevel.WARNING);
+                return;
+            }
+
             Nodes.Add(n);
+            NodeMap[n.Name] = n;
             
             if (n.HasComponent<MeshComponent>())
                 MeshNodes.Add(n);
@@ -87,7 +101,8 @@ namespace NbCore
                 LightNodes.Add(n);
 
             if (n.HasComponent<JointComponent>())
-                JointNodes[n.Name] = n;
+                JointNodes.Add(n);
+                
         }
 
         protected override void Dispose(bool disposing)

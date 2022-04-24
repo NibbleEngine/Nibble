@@ -13,6 +13,7 @@ namespace NbCore
     public class GLSLShaderSource : Entity
     {
         public string Name = "";
+        public ulong Hash;
         public NbShaderTextType SourceType;
         private List<GLSLShaderSource> _dynamicTextParts = new();
         private List<string> _staticTextParts = new();
@@ -50,16 +51,11 @@ namespace NbCore
             SourceType = NbShaderTextType.Static;
             SourceText = text;
             Name = "Shader_" + RenderState.engineRef.GetShaderSourceCount();
+            Hash = (ulong) DateTime.Now.Ticks;
             //Automatically register to engine
             RenderState.engineRef.RegisterEntity(this);
         }
 
-        public void SetConfigReference(GLSLShaderConfig conf)
-        {
-            if (!ReferencedByConfigs.Contains(conf))
-                ReferencedByConfigs.Add(conf);
-        }
-        
         public GLSLShaderSource(string filepath, bool watchFile) : base(EntityType.ShaderSource)
         {
             SourceType = NbShaderTextType.Dynamic;
@@ -71,6 +67,7 @@ namespace NbCore
             {
                 addFileWatcher(SourceFilePath);
             }
+            Hash = NbHasher.Hash(SourceFilePath);
             //Automatically register to engine
             RenderState.engineRef.RegisterEntity(this);
         }

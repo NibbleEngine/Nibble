@@ -222,7 +222,7 @@ namespace NbCore.Platform.Graphics
 
         public int CreateGroupBuffer()
         {
-            int size = (256 * 16 + 128) * 4; //FIXED SIZE FOR NOW
+            int size = 256 * 16 * 4; //FIXED SIZE FOR NOW
             int ssbo_id = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo_id);
             GL.BufferStorage(BufferTarget.ShaderStorageBuffer, size,
@@ -475,6 +475,12 @@ namespace NbCore.Platform.Graphics
             GL.BindBuffer(BufferTarget.UniformBuffer, 0); //Unbind UBOs
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void BindGroupBuffer(NbMeshGroup mg)
+        {
+            //GL.BindBuffer(BufferTarget.ShaderStorageBuffer, mg.GroupTBO1);
+            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, mg.GroupTBO1);
+        }
 
         #region RENDERING
 
@@ -1213,7 +1219,7 @@ namespace NbCore.Platform.Graphics
                 GL.UniformBlockBinding(shdr_program_id, ubo_index, binding_point);
         }
 
-        public void AttachSSBOToShaderBindingPoint(NbShader shader, string var_name, int binding_point)
+        public static void AttachSSBOToShaderBindingPoint(NbShader shader, string var_name, int binding_point)
         {
             //Binding Position 0 - Matrices UBO
             int shdr_program_id = shader.ProgramID;
@@ -1354,7 +1360,7 @@ namespace NbCore.Platform.Graphics
             //Attach UBO binding Points
             AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_FRAME", 0);
             AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_MESH", 1);
-            AttachUBOToShaderBindingPoint(shader, "_COMMON_PER_MESHGROUP", 2);
+            AttachSSBOToShaderBindingPoint(shader, "_COMMON_PER_MESHGROUP", 2);
 
             return true;
         }
