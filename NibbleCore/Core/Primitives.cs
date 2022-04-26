@@ -1148,7 +1148,7 @@ namespace NbCore.Primitives
             {
                 count = 3,
                 normalize = false,
-                offset = 20, //Skipping position data
+                offset = 20, //Skipping position + uv data
                 sem_text = "nPosition",
                 semantic = 2,
                 stride = geom.vx_size, 
