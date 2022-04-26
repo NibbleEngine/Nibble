@@ -127,17 +127,17 @@ namespace NbCore.Systems
         {
             //Create gbuffer
             gBuffer = Renderer.CreateFrameBuffer(width, height);
-            gBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.Rgba16f, false); //albedo
-            gBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.Rgba16f, false); //normals
-            gBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.Rgba16f, false); //info
-            gBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.DepthComponent, true); //depth
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //albedo
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //normals
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //info
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, true); //depth
             
             renderBuffer = Renderer.CreateFrameBuffer(width, height);
-            renderBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.Rgba16f, false); //final pass
-            renderBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.Rgba16f, false); //color 0 - blur 0
-            renderBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.Rgba16f, false); //color 1 - blur 1
-            renderBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.Rgba16f, false); //composite
-            renderBuffer.AddAttachment(TextureTarget.Texture2D, PixelInternalFormat.DepthComponent, true); //depth
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //final pass
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //color 0 - blur 0
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //color 1 - blur 1
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //composite
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, true); //depth
 
 
             //Rebind the default framebuffer
@@ -252,7 +252,7 @@ namespace NbCore.Systems
             }
 
             //Check if the shader has been registered to the rendering system
-            if (!ShaderMgr.ShaderIDExists(m.Mesh.Material.Shader.GetID()))
+            if (!ShaderMgr.ShaderIDExists(m.Mesh.Material.Shader.ID))
             {
                 ShaderMgr.AddShader(m.Mesh.Material.Shader);
             }
@@ -409,9 +409,9 @@ namespace NbCore.Systems
         {
             group.Meshes.Sort((NbMesh a, NbMesh b) =>
             {
-                MeshMaterial ma = MaterialMgr.Get(a.Material.GetID());
-                MeshMaterial mb = MaterialMgr.Get(b.Material.GetID());
-                return ma.Shader.GetID().CompareTo(mb.Shader.GetID());
+                MeshMaterial ma = MaterialMgr.Get(a.Material.ID);
+                MeshMaterial mb = MaterialMgr.Get(b.Material.ID);
+                return ma.Shader.ID.CompareTo(mb.Shader.ID);
             });
         }
 
@@ -643,7 +643,7 @@ namespace NbCore.Systems
                     if (mesh.InstanceCount == 0)
                         continue;
 
-                    MeshMaterial mat = MaterialMgr.Get(mesh.Material.GetID());
+                    MeshMaterial mat = MaterialMgr.Get(mesh.Material.ID);
                     Renderer.SetProgram(mat.Shader.ProgramID);
                     Renderer.RenderMesh(mesh, mat);
                     frameStats.RenderedVerts += mesh.InstanceCount * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics);
@@ -726,8 +726,8 @@ namespace NbCore.Systems
                                  renderBuffer.Size.X, renderBuffer.Size.Y);
             
             //Render the first pass in the first channel of the pbuf
-            GL.ClearTexImage(renderBuffer.GetChannel(1), 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
-            GL.ClearTexImage(renderBuffer.GetChannel(2), 0, PixelFormat.Rgba, PixelType.Float, new float[] { 1.0f, 1.0f ,1.0f, 1.0f});
+            GL.ClearTexImage(renderBuffer.GetTexture(NbFBOAttachment.Attachment1).texID, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
+            GL.ClearTexImage(renderBuffer.GetTexture(NbFBOAttachment.Attachment2).texID, 0, PixelFormat.Rgba, PixelType.Float, new float[] { 1.0f, 1.0f ,1.0f, 1.0f});
 
             //Enable writing to both channels after clearing
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
@@ -781,16 +781,14 @@ namespace NbCore.Systems
             bwoit_composite_shader.CurrentState.AddSampler("in1Tex",
                 new()
                 {
-                    Target = NbTextureTarget.Texture2D,
-                    TextureID = renderBuffer.GetChannel(1)
+                    Texture = renderBuffer.GetTexture(NbFBOAttachment.Attachment1)
                 }
             );
 
             bwoit_composite_shader.CurrentState.AddSampler("in2Tex",
                 new()
                 {
-                    Target = NbTextureTarget.Texture2D,
-                    TextureID = renderBuffer.GetChannel(2)
+                    Texture = renderBuffer.GetTexture(NbFBOAttachment.Attachment2)
                 }
             );
 
@@ -949,7 +947,7 @@ namespace NbCore.Systems
         }
         */
 
-        private void pass_tex(int to_fbo, DrawBufferMode to_channel, int InTex)
+        private void pass_tex(int to_fbo, DrawBufferMode to_channel, NbTexture InTex)
         {
             //passthrough a texture to the specified to_channel of the to_fbo
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, to_fbo);
@@ -962,8 +960,7 @@ namespace NbCore.Systems
             shader.ClearCurrentState();
             shader.CurrentState.AddSampler("InTex", new NbSamplerState()
             {
-                Target = NbTextureTarget.Texture2D,
-                TextureID = InTex
+                Texture = InTex
             });
 
             Renderer.RenderQuad(EngineRef.GetMesh(NbHasher.Hash("default_renderquad")),
@@ -1080,7 +1077,7 @@ namespace NbCore.Systems
             //Copy Color to first channel
             pass_tex(renderBuffer.fbo, 
                 DrawBufferMode.ColorAttachment1, 
-                renderBuffer.GetChannel(0)); //LOOKS OK!
+                renderBuffer.GetTexture(0)); //LOOKS OK!
 
             //Apply Tone Mapping
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
@@ -1091,8 +1088,7 @@ namespace NbCore.Systems
             shader.CurrentState.AddSampler("inTex", new NbSamplerState()
             {
                 SamplerID = 0,
-                Target = NbTextureTarget.Texture2D,
-                TextureID = renderBuffer.GetChannel(1)
+                Texture = renderBuffer.GetTexture(NbFBOAttachment.Attachment1)
             });
             
             Renderer.RenderQuad(EngineRef.GetMesh(NbHasher.Hash("default_renderquad")),
@@ -1209,10 +1205,10 @@ namespace NbCore.Systems
 
             //Upload samplers
             string[] sampler_names = new string[] { "albedoTex", "depthTex", "normalTex", "parameterTex" };
-            int[] texture_ids = new int[] { gBuffer.GetChannel(0),
-                                            gBuffer.GetChannel(3),
-                                            gBuffer.GetChannel(1),
-                                            gBuffer.GetChannel(2) };
+            int[] texture_ids = new int[] { gBuffer.GetTexture(NbFBOAttachment.Attachment0).texID,
+                                            gBuffer.GetTexture(NbFBOAttachment.Depth).texID,
+                                            gBuffer.GetTexture(NbFBOAttachment.Attachment1).texID,
+                                            gBuffer.GetTexture(NbFBOAttachment.Attachment2).texID };
             TextureTarget[] sampler_targets = new TextureTarget[] { TextureTarget.Texture2D, TextureTarget.Texture2D,
                                                             TextureTarget.Texture2D, TextureTarget.Texture2D };
             for (int i = 0; i < sampler_names.Length; i++)

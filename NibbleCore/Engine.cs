@@ -1,12 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Text;
-using System.Threading;
-using OpenTK;
-using OpenTK.Input;
-using OpenTK.Graphics;
-using OpenTK.Graphics.OpenGL4;
 using NbCore;
 using NbCore.Systems;
 using NbCore.Common;
@@ -447,7 +440,6 @@ namespace NbCore
         public void ClearActiveSceneGraph()
         {
             sceneMgmtSys.ClearSceneGraph(sceneMgmtSys.ActiveSceneGraph);
-
         }
 
         #endregion
@@ -897,7 +889,7 @@ namespace NbCore
         public NbTexture CreateTexture(string filepath, bool keepData = false)
         {
             byte[] data = File.ReadAllBytes(filepath);
-            return CreateTexture(data, Path.GetFileName(filepath), keepData);
+            return CreateTexture(data, filepath, keepData);
         }
         
         public NbTexture CreateTexture(byte[] data, string name, bool keepData= false)
@@ -1085,35 +1077,31 @@ namespace NbCore
                 IO.NbSerializer.Serialize(conf, writer);
             writer.WriteEndArray();
 
-            //Step C: Export Materials
-            writer.WritePropertyName("MATERIALS");
-            writer.WriteStartArray();
-            foreach (MeshMaterial mat in materials)
-                IO.NbSerializer.Serialize(mat, writer);
-            writer.WriteEndArray();
-
-            //Step C: Export Textures
             writer.WritePropertyName("TEXTURES");
             writer.WriteStartArray();
             foreach (NbTexture tex in textures)
                 IO.NbSerializer.Serialize(tex, writer);
             writer.WriteEndArray();
 
-            //Step D: Export Meshes
+            writer.WritePropertyName("MATERIALS");
+            writer.WriteStartArray();
+            foreach (MeshMaterial mat in materials)
+                IO.NbSerializer.Serialize(mat, writer);
+            writer.WriteEndArray();
+
+            writer.WritePropertyName("MESH_DATA");
+            writer.WriteStartArray();
+            foreach (NbMeshData data in mesh_data)
+                IO.NbSerializer.Serialize(data, writer);
+            writer.WriteEndArray();
+
             writer.WritePropertyName("MESHES");
             writer.WriteStartArray();
             foreach (NbMesh mesh in meshes)
                 IO.NbSerializer.Serialize(mesh, writer);
             writer.WriteEndArray();
 
-            //Step E: Export Mesh Data
-            writer.WritePropertyName("MESH_DATA");
-            writer.WriteStartArray();
-            foreach (NbMeshData data in mesh_data)
-                IO.NbSerializer.Serialize(data, writer);
-            writer.WriteEndArray();
             
-            //Step F: Export SceneGraph
             writer.WritePropertyName("SCENEGRAPH");
             IO.NbSerializer.Serialize(g.Root, writer);
             
@@ -1121,8 +1109,11 @@ namespace NbCore
             writer.Close();
         }
 
-        public void DeserializeScene(string filepath)
+        public void OpenScene(string filepath)
         {
+            //Clear Scene
+            EngineRef.ClearActiveSceneGraph();
+
             StreamReader sr = new(filepath);
             Newtonsoft.Json.JsonTextReader reader = new Newtonsoft.Json.JsonTextReader(sr);
             var serializer = new Newtonsoft.Json.JsonSerializer();
@@ -1135,7 +1126,9 @@ namespace NbCore
             foreach (var s in ob["SHADER_CONFIGS"])
             {
                 GLSLShaderConfig conf = (GLSLShaderConfig)IO.NbDeserializer.Deserialize(s);
-                RegisterEntity(conf);
+                
+                if (GetShaderConfigByHash(conf.Hash) == null)
+                    RegisterEntity(conf);
             }
                 
             foreach (var s in ob["TEXTURES"])

@@ -4,16 +4,27 @@ using System.ComponentModel;
 using System.Drawing;
 using NbCore.Math;
 using OpenTK.Mathematics;
+using NbCore.Platform.Graphics;
 using OpenTK.Graphics.OpenGL4;
 
 
 namespace NbCore
 {
 
-    public struct FBOAttachment
+    public enum NbFBOAttachment
     {
-        public TextureTarget target;
-        public PixelInternalFormat format;
+        Attachment0,
+        Attachment1,
+        Attachment2,
+        Attachment3,
+        Attachment4,
+        Depth
+    }
+
+    public struct FBOAttachmentDescription
+    {
+        public NbTextureTarget target;
+        public NbTextureInternalFormat format;
     }
 
     [Flags]
@@ -26,10 +37,10 @@ namespace NbCore
     public class FBO : IDisposable
     {
         public int fbo = -1;
-        private List<FBOAttachment> ColorAttachments;
-        private FBOAttachment DepthAttachment;
+        private List<FBOAttachmentDescription> ColorAttachments;
+        private FBOAttachmentDescription DepthAttachment;
         private FBOOptions options = FBOOptions.None;
-        private List<int> channels;
+        private Dictionary<NbFBOAttachment, NbTexture> textures;
         public int depth_channel = -1;
         
         //Buffer Specs
@@ -41,15 +52,15 @@ namespace NbCore
             //Setup properties
             Size = new(x, y);
             ColorAttachments = new();
-            channels = new();
+            textures = new();
             options = opts;
 
             setup();
         }
 
-        public int GetChannel(int i)
+        public NbTexture GetTexture(NbFBOAttachment attachment)
         {
-            return channels[i];
+            return textures[attachment];
         }
 
         public void setup()
@@ -69,9 +80,9 @@ namespace NbCore
             GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
         }
 
-        public void AddAttachment(TextureTarget target, PixelInternalFormat format, bool isDepth)
+        public void AddAttachment(NbTextureTarget target, NbTextureInternalFormat format, bool isDepth)
         {
-            FBOAttachment attachment = new()
+            FBOAttachmentDescription attachment = new()
             {
                 target = target,
                 format = format
@@ -79,29 +90,33 @@ namespace NbCore
 
             //TODO: Add check so that depth attachment is not overriden
 
+            int attachment_id = ColorAttachments.Count;
+            
             if (!isDepth)
             {
-                int channel_id = setup_texture(target, fbo, FramebufferAttachment.ColorAttachment0 + channels.Count, format);
+                NbTexture tex = setup_texture(target, fbo, FramebufferAttachment.ColorAttachment0 + attachment_id, format);
+                textures[NbFBOAttachment.Attachment0 + attachment_id] = tex;
                 ColorAttachments.Add(attachment);
-                channels.Add(channel_id);
             } else
             {
-                depth_channel = setup_texture(target, fbo, FramebufferAttachment.DepthAttachment, PixelInternalFormat.DepthComponent);
-                channels.Add(depth_channel);
+                NbTexture tex = setup_texture(target, fbo, FramebufferAttachment.DepthAttachment, NbTextureInternalFormat.DEPTH);
                 DepthAttachment = attachment;
+                textures[NbFBOAttachment.Depth] = tex;
             }
         }
 
-        public int setup_texture(TextureTarget textarget, int attach_to_fbo, FramebufferAttachment attachment_id, PixelInternalFormat format)
+        public NbTexture setup_texture(NbTextureTarget target, int attach_to_fbo, FramebufferAttachment attachment_id, NbTextureInternalFormat format)
         {
             int handle = GL.GenTexture();
+            PixelInternalFormat pif = (PixelInternalFormat) GraphicsAPI.InternalFormatMap[format];
+            TextureTarget textarget = GraphicsAPI.TextureTargetMap[target];
 
             if (textarget == TextureTarget.Texture2DMultisample)
             {
                 GL.BindTexture(TextureTarget.Texture2DMultisample, handle);
 
                 //GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, size[0], size[1], 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
-                GL.TexImage2DMultisample(TextureTargetMultisample.Texture2DMultisample, msaa_samples, format, Size.X, Size.Y, true);
+                GL.TexImage2DMultisample(TextureTargetMultisample.Texture2DMultisample, msaa_samples, pif, Size.X, Size.Y, true);
                 //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
                 //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
                 //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
@@ -121,11 +136,11 @@ namespace NbCore
 
                 switch (format)
                 {
-                    case PixelInternalFormat.DepthComponent:
+                    case NbTextureInternalFormat.DEPTH:
                         GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, Size.X, Size.Y, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
                         break;
                     default:
-                        GL.TexImage2D(TextureTarget.Texture2D, 0, format, Size.X, Size.Y, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
+                        GL.TexImage2D(TextureTarget.Texture2D, 0, pif, Size.X, Size.Y, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
                         break;
                 }
 
@@ -148,7 +163,23 @@ namespace NbCore
             if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) != FramebufferErrorCode.FramebufferComplete)
                 Console.WriteLine("MALAKIES STO FRAMEBUFFER tou GBuffer" + GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt));
 
-            return handle;
+
+            //Create Texture
+            NbTexture tex = new NbTexture()
+            {
+                Data = new NbTextureData()
+                {
+                    Width = Size.X,
+                    Height = Size.Y,
+                    Depth = 1,
+                    MipMapCount = 1,
+                    target = NbTextureTarget.Texture2D,
+                    pif = format
+                },
+                texID = handle
+            };
+            
+            return tex;
         }
 
 
@@ -156,21 +187,23 @@ namespace NbCore
         {
             Size = new(w, h);
             Cleanup();
-            channels.Clear();
-
+            
             setup();
             //Add color attachments
+            NbTexture tex;
             for (int i = 0; i < ColorAttachments.Count; i++)
             {
-                channels.Add(setup_texture(ColorAttachments[i].target,
+                tex = setup_texture(ColorAttachments[i].target,
                                            fbo,
-                                           FramebufferAttachment.ColorAttachment0 + channels.Count,
-                                           ColorAttachments[i].format));
+                                           FramebufferAttachment.ColorAttachment0 + i,
+                                           ColorAttachments[i].format);
+                textures[NbFBOAttachment.Attachment0 + i] = tex;
             }
 
-            channels.Add(setup_texture(DepthAttachment.target,
+            tex = setup_texture(DepthAttachment.target,
                                            fbo, FramebufferAttachment.DepthAttachment,
-                                           DepthAttachment.format));
+                                           DepthAttachment.format);
+            textures[NbFBOAttachment.Depth] = tex;
         }
 
         public void Cleanup()
@@ -180,9 +213,10 @@ namespace NbCore
             //Delete Buffer
             GL.DeleteFramebuffer(fbo);
 
-            for (int i = 0; i < channels.Count; i++)
-                GL.DeleteTexture(channels[i]);
-
+            foreach (NbTexture tex in textures.Values)
+                tex.Dispose();
+            
+            textures.Clear();
         }
 
         //STATIC HELPER METHODS
@@ -248,10 +282,9 @@ namespace NbCore
             
             //Free unmanaged resources
             GL.DeleteFramebuffer(fbo);
-            foreach (int tex_id in channels)
-                GL.DeleteTexture(tex_id);
-            
-            
+            foreach (NbTexture tex in textures.Values)
+                tex.Dispose();
+
             disposedValue = true;
         }
         

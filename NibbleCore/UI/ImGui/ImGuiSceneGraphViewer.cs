@@ -125,23 +125,31 @@ namespace NbCore.UI.ImGui
             }
         }
 
+        private int DrawChildren(SceneGraphNode node)
+        {
+            int index = 0;
+            while (index < node.Children.Count)
+            {
+                DrawNode(node.Children[index]);
+                index++;
+            }
+            return index;
+        }
             
         public void Draw()
         {
             entity_added = false;
             DrawNode(_root);
+            //DrawChildren(_root);
             DrawModals();
         }
 
         private void DrawNode(SceneGraphNode n)
         {
-            if (n is null)
-                return;
-
             //Draw using ImGUI
             ImGuiNET.ImGuiTreeNodeFlags base_flags = ImGuiNET.ImGuiTreeNodeFlags.OpenOnArrow | 
                                                      ImGuiNET.ImGuiTreeNodeFlags.SpanAvailWidth;
-
+            
             if (n.Children.Count == 0)
                 base_flags |= ImGuiNET.ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiNET.ImGuiTreeNodeFlags.Leaf;
 
@@ -151,21 +159,17 @@ namespace NbCore.UI.ImGui
                 _selected = n;
             }
 
-            //DrawCheckbox for non root nodes
-            if (n != _root)
+
+            if (ImGuiCore.Checkbox("##Entity" + n.ID, ref n.IsRenderable))
             {
-                if (ImGuiCore.Checkbox("##Entity" + n.GetID(), ref n.IsRenderable))
-                {
-                    n.SetRenderableStatusRec(n.IsRenderable);
-                }
-                ImGuiCore.SameLine();    
+                n.SetRenderableStatusRec(n.IsRenderable);
             }
+            ImGuiCore.SameLine();
 
             ImGuiCore.SetNextItemOpen(n.IsOpen);
-            bool node_open = ImGuiCore.TreeNodeEx(n.GetID().ToString(), base_flags, n.Name);
+            bool node_open = ImGuiCore.TreeNodeEx(n.ID.ToString(), base_flags, n.Name);
             
             n.IsOpen = node_open;
-            Vector2 ctxPos = Vector2.Zero;
             if (ImGuiCore.IsItemClicked(ImGuiNET.ImGuiMouseButton.Left))
             {
                 _clicked = n;
@@ -275,18 +279,7 @@ namespace NbCore.UI.ImGui
 
             if (n.IsOpen)
             {
-
-                int index = 0;
-                bool node_drawn = false;
-                while(index < n.Children.Count)
-                {
-                    node_drawn = true;
-                    SceneGraphNode nc = n.Children[index];
-                    DrawNode(nc);
-                    index++;
-                }
-
-                if (node_drawn)
+                if (DrawChildren(n) > 0)
                     ImGuiCore.TreePop();
             }
 

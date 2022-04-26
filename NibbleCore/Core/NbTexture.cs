@@ -4,6 +4,7 @@ using System;
 using NbCore.Math;
 using System.IO;
 using NbCore.Common;
+using Newtonsoft.Json;
 
 namespace NbCore
 {
@@ -24,14 +25,16 @@ namespace NbCore
         RGTC2,
         BC7,
         DX10,
-        RGBA8
+        RGBA8,
+        RGBA16F,
+        DEPTH
     }
 
+    [NbSerializable]
     public class NbTexture : Entity
     {
         public int texID = -1;
         private bool disposed = false;
-        [NbSerializable]
         public string Path = "";
         public PaletteOpt palOpt;
         public NbVector4 procColor;
@@ -163,7 +166,22 @@ namespace NbCore
             return (ulong)((r << 24) | (g << 16) | (b << 8) | a);
         }
 
-        
+
+        public void Serialize(JsonWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().ToString());
+            writer.WritePropertyName("Path");
+            writer.WriteValue(Path);
+            writer.WriteEndObject();
+        }
+
+        public static NbTexture Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+            string path = token.Value<string>("Path");
+            return RenderState.engineRef.CreateTexture(path, false);
+        }
 
     }
 

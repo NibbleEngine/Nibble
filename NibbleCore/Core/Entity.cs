@@ -40,6 +40,10 @@ namespace NbCore
         //Public
         public ulong NameHash;
         public EntityType Type;
+        public ulong ID = 0xFFFFFFFF;
+        public long testID = 0; //TODO: remove that when we're happy with memory disposal
+        public bool Initialized = false;
+        public static long test_counter = 1;
 
         //Private
         private readonly Dictionary<Type, Component> _componentMap = new();
@@ -53,16 +57,15 @@ namespace NbCore
         public Entity(EntityType typ)
         {
             Type = typ;
-            
-            //Add GUID Component by default to all entities
-            GUIDComponent c = new GUIDComponent();
-            AddComponent<GUIDComponent>(c);
+            testID = test_counter++;
         }
 
-        public ulong GetID()
+        public void Init(ulong id)
         {
-            GUIDComponent gc = GetComponent<GUIDComponent>() as GUIDComponent;
-            return gc.ID;
+            if (Initialized)
+                return;
+            ID = id;
+            Initialized = true;
         }
 
         public bool HasComponent(Component comp)
@@ -160,7 +163,7 @@ namespace NbCore
             // If this finalizer runs, someone somewhere failed to
             // call Dispose, which means we've failed to leave
             // a monitor!
-            Common.Callbacks.Logger.Log(this, $"Undisposed lock. Object Type {GetType()}, Entity ID: {GetID()}", LogVerbosityLevel.WARNING);
+            Common.Callbacks.Logger.Log(this, $"Undisposed lock. Object Type {GetType()}, Entity ID: {ID}", LogVerbosityLevel.WARNING);
         }
 #endif
 

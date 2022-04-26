@@ -113,8 +113,7 @@ namespace NbCore
 
         public void findNodeByID(ulong id, ref SceneGraphNode m)
         {
-            GUIDComponent gc = m.GetComponent<GUIDComponent>() as GUIDComponent;
-            if (gc.ID == id)
+            if (m.ID == id)
             {
                 m = this;
                 return;

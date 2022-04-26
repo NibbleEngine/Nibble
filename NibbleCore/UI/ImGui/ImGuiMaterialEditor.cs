@@ -89,7 +89,8 @@ namespace NbCore.UI.ImGui
                     ImGuiNET.ImGui.Text("Mode");
                     ImGuiNET.ImGui.TableSetColumnIndex(1);
                     ImGuiNET.ImGui.SetNextItemWidth(-1);
-                    ImGuiNET.ImGui.Text(_ActiveMaterial.Shader.GetShaderConfig().ShaderMode.ToString());
+
+                    ImGuiNET.ImGui.Text(_ActiveMaterial.Shader != null ? _ActiveMaterial.Shader.GetShaderConfig().ShaderMode.ToString() : "None");
 
                     ImGuiNET.ImGui.TableNextRow();
                     ImGuiNET.ImGui.TableSetColumnIndex(0);
@@ -99,16 +100,13 @@ namespace NbCore.UI.ImGui
 
                     List<Entity> shaderconfs = RenderState.engineRef.GetEntityTypeList(EntityType.ShaderConfig);
                     string[] shaderconfItems = new string[shaderconfs.Count];
+                    
                     for (int i = 0; i < shaderconfs.Count; i++)
-                    {
                         shaderconfItems[i] = ((GLSLShaderConfig)shaderconfs[i]).Name;
-                    }
-                    int currentShaderConfigId = shaderconfs.IndexOf(_ActiveMaterial.Shader.GetShaderConfig());
+                    
+                    int currentShaderConfigId = _ActiveMaterial.Shader != null ? shaderconfs.IndexOf(_ActiveMaterial.Shader.GetShaderConfig()) : -1;
                     if (ImGuiNET.ImGui.Combo("##MaterialShader", ref currentShaderConfigId, shaderconfItems, shaderconfs.Count))
                     {
-                        GLSLShaderConfig old = _ActiveMaterial.Shader.GetShaderConfig();
-                        _ActiveMaterial.Shader.SetShaderConfig(shaderconfs[currentShaderConfigId] as GLSLShaderConfig);
-                        
                         //Calculate requested shader hash
                         ulong shader_hash = RenderState.engineRef.CalculateShaderHash(shaderconfs[currentShaderConfigId] as GLSLShaderConfig,
                             RenderState.engineRef.GetMaterialShaderDirectives(_ActiveMaterial));
@@ -118,16 +116,23 @@ namespace NbCore.UI.ImGui
                         if (new_shader == null)
                         {
                             //Create new Shader
-                            new_shader = new(_ActiveMaterial.Shader);
+                            if (_ActiveMaterial.Shader != null)
+                                new_shader = new(_ActiveMaterial.Shader);
+                            else
+                            {
+                                new_shader = new()
+                                {
+                                    IsGeneric = false
+                                };    
+                            }
                             new_shader.SetShaderConfig(shaderconfs[currentShaderConfigId] as GLSLShaderConfig);
                             RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(new_shader);
-                            
-                            _ActiveMaterial.Shader.IsUpdated -= _ActiveMaterial.OnShaderUpdate;
-                            new_shader.IsUpdated += _ActiveMaterial.OnShaderUpdate;
                         }
 
+                        _ActiveMaterial.AttachShader(new_shader);
                     }
 
+                    
                     ImGuiNET.ImGui.TableNextRow();
                     ImGuiNET.ImGui.TableSetColumnIndex(0);
                     ImGuiNET.ImGui.Text("Shader Hash");
@@ -242,7 +247,7 @@ namespace NbCore.UI.ImGui
                                     if (samplerTex.Data.target != NbTextureTarget.Texture2DArray)
                                         ImGuiNET.ImGui.Image((IntPtr)samplerTex.texID, new Vector2(512, 512));
                                     ImGuiNET.ImGui.Text(current_sampler.Name);
-                                    ImGuiNET.ImGui.Text(current_sampler.Map);
+                                    ImGuiNET.ImGui.Text(current_sampler.GetTexture().Path);
                                     ImGuiNET.ImGui.EndTooltip();
                                 }
                             }

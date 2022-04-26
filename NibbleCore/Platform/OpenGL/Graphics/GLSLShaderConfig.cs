@@ -147,6 +147,7 @@ namespace NbCore
 
             GLSLShaderConfig config = new GLSLShaderConfig(vs, fs, null, null, null, mode);
             config.Name = name;
+            config.Hash = GetHash(vs, fs, null, null, null, mode);
             
             return config;
         }

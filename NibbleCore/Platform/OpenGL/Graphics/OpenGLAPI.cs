@@ -62,7 +62,12 @@ namespace NbCore.Platform.Graphics
         public static readonly int SizeInBytes = 8592;
     };
 
-    
+    public enum NbBufferMask
+    {
+        Color,
+        Depth
+    }
+
     public class GraphicsAPI
     {
         private const string RendererName = "OPENGL_RENDERER";
@@ -92,7 +97,9 @@ namespace NbCore.Platform.Graphics
             { NbTextureInternalFormat.DXT5, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext },
             { NbTextureInternalFormat.RGTC2, InternalFormat.CompressedRgRgtc2 },
             { NbTextureInternalFormat.BC7, InternalFormat.CompressedSrgbAlphaBptcUnorm },
-            { NbTextureInternalFormat.RGBA8, InternalFormat.Rgba8}
+            { NbTextureInternalFormat.RGBA8, InternalFormat.Rgba8},
+            { NbTextureInternalFormat.RGBA16F, InternalFormat.Rgba16f},
+            { NbTextureInternalFormat.DEPTH, InternalFormat.DepthComponent},
         };
 
         //UBO structs
@@ -144,6 +151,25 @@ namespace NbCore.Platform.Graphics
 
             GL.DebugMessageInsert(DebugSourceExternal.DebugSourceApplication, DebugType.DebugTypeMarker, 0, DebugSeverity.DebugSeverityNotification, -1, "Debug output enabled");
 #endif
+
+#if (DEBUG)
+            //Query GL Extensions
+            Log("OPENGL AVAILABLE EXTENSIONS:", LogVerbosityLevel.INFO);
+            string[] ext = GL.GetString(StringNameIndexed.Extensions, 0).Split(' ');
+            foreach (string s in ext)
+            {
+                if (s.Contains("explicit"))
+                    Log(s, LogVerbosityLevel.INFO);
+                if (s.Contains("texture"))
+                    Log(s, LogVerbosityLevel.INFO);
+                if (s.Contains("16"))
+                    Log(s, LogVerbosityLevel.INFO);
+            }
+
+            //Query maximum buffer sizes
+            Log($"MaxUniformBlock Size {GL.GetInteger(GetPName.MaxUniformBlockSize)}", LogVerbosityLevel.INFO);
+#endif
+
             //Default Enables
             EnableBlend();
             
@@ -419,20 +445,20 @@ namespace NbCore.Platform.Graphics
             Callbacks.Assert(mesh.Hash != 0x0, 
                 "Default mesh hash. Something went wrong during mesh generation");
 
-            Callbacks.Assert(mesh.GetID() != 0x0,
+            Callbacks.Assert(mesh.ID != 0x0,
                 "WARNING. Mesh Object probably not registered");
 
-            if (MeshMap.ContainsKey(mesh.GetID()))
+            if (MeshMap.ContainsKey(mesh.ID))
             {
-                Log($"Mesh Hash already exists in map. Entity ID: {mesh.GetID()}. Mesh Hash {mesh.Hash}", LogVerbosityLevel.WARNING);
+                Log($"Mesh Hash already exists in map. Entity ID: {mesh.ID}. Mesh Hash {mesh.Hash}", LogVerbosityLevel.WARNING);
                 return false;
             }
             
             //Generate instanced mesh
             GLInstancedMesh imesh = GenerateAPIMesh(mesh);
-            MeshMap[mesh.GetID()] = imesh;
+            MeshMap[mesh.ID] = imesh;
 
-            Log($"Mesh was successfully registered to the Renderer. Entity ID: {mesh.GetID()}. Mesh Hash {mesh.Hash}", LogVerbosityLevel.DEBUG);
+            Log($"Mesh was successfully registered to the Renderer. Entity ID: {mesh.ID}. Mesh Hash {mesh.Hash}", LogVerbosityLevel.DEBUG);
             return true;
         }
 
@@ -486,7 +512,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderQuad(NbMesh quadMesh, NbShader shader, NbShaderState state)
         {
-            GLInstancedMesh glmesh = MeshMap[quadMesh.GetID()];
+            GLInstancedMesh glmesh = MeshMap[quadMesh.ID];
 
             GL.UseProgram(shader.ProgramID);
             GL.BindVertexArray(glmesh.vao.vao_id);
@@ -510,7 +536,7 @@ namespace NbCore.Platform.Graphics
                             NbSamplerState nbSamplerState = (NbSamplerState) sstate.Value;
                             GL.Uniform1(shader.uniformLocations[key].loc, nbSamplerState.SamplerID);
                             GL.ActiveTexture(TextureUnit.Texture0 + sampler_id);
-                            GL.BindTexture(TextureTargetMap[nbSamplerState.Target], nbSamplerState.TextureID);
+                            GL.BindTexture(TextureTargetMap[nbSamplerState.Texture.Data.target], nbSamplerState.Texture.texID);
                             sampler_id++;
                             break;
                         }
@@ -554,7 +580,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderMesh(NbMesh mesh)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.GetID()]; //Fetch GL Mesh
+            GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -571,7 +597,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderMesh(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.GetID()]; //Fetch GL Mesh
+            GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -590,7 +616,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderLocator(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
+            GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -609,7 +635,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderJoint(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
+            GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -628,7 +654,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderCollision(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
+            GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -654,7 +680,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderLight(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
+            GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
             if (glmesh.UBO_aligned_size == 0) return;
 
@@ -673,7 +699,7 @@ namespace NbCore.Platform.Graphics
 
         public void RenderLightVolume(NbMesh mesh, MeshMaterial mat)
         {
-            GLInstancedMesh glmesh = MeshMap[mesh.GetID()];
+            GLInstancedMesh glmesh = MeshMap[mesh.ID];
             RenderMesh(glmesh.Mesh, mat);
         }
 
@@ -1152,7 +1178,7 @@ namespace NbCore.Platform.Graphics
             {
                 GL.Uniform1(s.State.ShaderLocation, s.State.SamplerID);
                 GL.ActiveTexture(TextureUnit.Texture0 + s.State.SamplerID);
-                GL.BindTexture(TextureTargetMap[s.State.Target], s.State.TextureID);
+                GL.BindTexture(TextureTargetMap[s.State.Texture.Data.target], s.State.Texture.texID);
             }
         }
         
