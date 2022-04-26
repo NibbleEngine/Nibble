@@ -17,7 +17,6 @@ namespace NbCore.Managers
         {
             if (Add(shader))
             {
-                GUIDComponent gc = shader.GetComponent<GUIDComponent>() as GUIDComponent;
                 ShaderHashMap[shader.Hash] = shader;
                 return true;
             }

@@ -86,7 +86,6 @@ namespace NbCore
         public List<MaterialFlagEnum> Flags = new();
         public List<NbUniform> Uniforms = new();
         public List<NbSampler> Samplers = new();
-        public Dictionary<string, NbSampler> SamplerMap = new();
         
         public float[] material_flags = new float[64];
 
@@ -195,28 +194,28 @@ namespace NbCore
 
         public void AttachShader(NbShader shader)
         {
-            DettachShader(); //Just in case
-            Shader = shader;
-            Shader.AddReference();
-            OnShaderUpdate(shader);
-            shader.IsUpdated += OnShaderUpdate;
+            if (shader != Shader) //Ref Comparison should work
+            {
+                DettachShader(); //Just in case
+                Shader = shader;
+                Shader.AddReference();
+                OnShaderUpdate(shader);
+                shader.IsUpdated += OnShaderUpdate;
+            }
         }
 
         public void DettachShader()
         {
-            Shader?.RemoveReference();
-            Shader = null;
+            if (Shader != null)
+            {
+                Shader.RemoveReference();
+                Shader.IsUpdated -= OnShaderUpdate;
+                Shader = null;
+            }
         }
 
         public void OnShaderUpdate(NbShader shader)
         {
-            if (shader.Hash != Shader.Hash)
-            {
-                DettachShader();
-                AttachShader(shader);
-                return;
-            }
-            
             ActiveSamplers.Clear();
             ActiveUniforms.Clear();
 
@@ -228,7 +227,6 @@ namespace NbCore
             foreach (NbUniform uf in Uniforms)
                 UpdateUniform(uf);
         }
-
 
         protected override void Dispose(bool disposing)
         {
@@ -320,12 +318,17 @@ namespace NbCore
             foreach (Newtonsoft.Json.Linq.JToken tkn in flag_tkns.Children())
                 mat.add_flag((MaterialFlagEnum) IO.NbDeserializer.Deserialize(tkn));
 
+            //Deserialize samplers
+            Newtonsoft.Json.Linq.JToken sampler_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Samplers");
+            foreach (Newtonsoft.Json.Linq.JToken tkn in sampler_tkns.Children())
+                mat.Samplers.Add((NbSampler) IO.NbDeserializer.Deserialize(tkn));
+
             //Deserialize uniforms
             Newtonsoft.Json.Linq.JToken uniform_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Uniforms");
             foreach (Newtonsoft.Json.Linq.JToken tkn in uniform_tkns.Children())
                 mat.Uniforms.Add((NbUniform) IO.NbDeserializer.Deserialize(tkn));
 
-
+            
             //Calculate Shader hash
             ulong shader_hash = RenderState.engineRef.CalculateShaderHash(conf, RenderState.engineRef.GetMaterialShaderDirectives(mat));
 
@@ -342,9 +345,9 @@ namespace NbCore
                 shader.SetShaderConfig(conf);
                 RenderState.engineRef.CompileShader(shader);
 
-                mat.AttachShader(shader);
             }
 
+            mat.AttachShader(shader);
             return mat;
         }
 

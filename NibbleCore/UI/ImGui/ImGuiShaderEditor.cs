@@ -98,7 +98,7 @@ namespace NbCore.UI.ImGui
                     Updated = true;
                 }
 
-                if (ImGuiCore.IsItemHovered())
+                if (ImGuiCore.IsItemHovered() && OriginalVSSourceIndex != -1)
                     ImGuiCore.SetTooltip(sourceItems[OriginalVSSourceIndex]);
 
                 ImGuiCore.PopItemWidth();
@@ -126,7 +126,7 @@ namespace NbCore.UI.ImGui
                     Updated = true;
                 }
 
-                if (ImGuiCore.IsItemHovered())
+                if (ImGuiCore.IsItemHovered() && OriginalFSSourceIndex != -1)
                     ImGuiCore.SetTooltip(sourceItems[OriginalFSSourceIndex]);
 
                 ImGuiCore.PopItemWidth();

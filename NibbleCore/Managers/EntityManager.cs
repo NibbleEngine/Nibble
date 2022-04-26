@@ -24,8 +24,7 @@ namespace NbCore.Managers
 
         private bool Contains(Entity e)
         {
-            GUIDComponent gc = e.GetComponent<GUIDComponent>() as GUIDComponent;
-            return Contains(gc.ID);
+            return Contains(e.ID);
         }
 
         public virtual bool Contains(T item)
@@ -38,8 +37,7 @@ namespace NbCore.Managers
 
         private bool _IsEntityRegistered(Entity e)
         {
-            GUIDComponent gc = e.GetComponent<GUIDComponent>() as GUIDComponent;
-            return gc.Initialized;
+            return e.Initialized;
         }
             
         public virtual bool Add(T item)
@@ -56,7 +54,7 @@ namespace NbCore.Managers
             if (!Contains(e))
             {
                 Entities.Add(item);
-                EntityMap[(e.GetComponent<GUIDComponent>() as GUIDComponent).ID] = item;
+                EntityMap[e.ID] = item;
                 EntityCount++;
                 return true;
             }
@@ -69,7 +67,7 @@ namespace NbCore.Managers
             {
                 Entity e = (Entity) (object) item;
                 Entities.Remove(item);
-                EntityMap.Remove((e.GetComponent<GUIDComponent>() as GUIDComponent).ID);
+                EntityMap.Remove(e.ID);
                 EntityCount--;
                 return true;
             }

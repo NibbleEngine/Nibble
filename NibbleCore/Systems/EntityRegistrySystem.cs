@@ -27,7 +27,7 @@ namespace NbCore.Systems
 
         public Entity GetEntity(EntityType type, ulong ID)
         {
-            return EntityTypeList[type].Find(x=> x.GetID() == ID);
+            return EntityTypeList[type].Find(x=> x.ID == ID);
         }
 
         public List<Entity> GetEntityTypeList(EntityType type)
@@ -37,7 +37,7 @@ namespace NbCore.Systems
         
         public bool RegisterEntity(Entity e)
         {
-            if (e.GetID() != (0xFFFFFFFF))
+            if (e.ID != (0xFFFFFFFF))
             {
                 Log($"Entity of type {e.Type} has no default ID, probably already registered", LogVerbosityLevel.INFO);
                 return false;
@@ -45,14 +45,13 @@ namespace NbCore.Systems
 
             if (IsRegistered(e))
             {
-                Log($"Entity already registered. ID: {e.GetID()}", LogVerbosityLevel.DEBUG);
+                Log($"Entity already registered. ID: {e.ID}", LogVerbosityLevel.DEBUG);
                 return false;
             }
             
-            GUIDComponent gc = e.GetComponent<GUIDComponent>() as GUIDComponent;
-            gc.ID = NextID++;
-            gc.Initialized = true;
-            EntityMap[gc.ID] = e;
+            e.ID = NextID++;
+            e.Initialized = true;
+            EntityMap[e.ID] = e;
             EntityTypeList[e.Type].Add(e);
 
             //Explicitly handle ScenenodeTypes
@@ -67,7 +66,7 @@ namespace NbCore.Systems
             }
 
 
-            Log($"Entity of Type {e.Type} was successfully registered. ID: {e.GetID()}", LogVerbosityLevel.DEBUG);
+            Log($"Entity of Type {e.Type} was successfully registered. ID: {e.ID}", LogVerbosityLevel.DEBUG);
 
             return true;
         }
@@ -79,7 +78,7 @@ namespace NbCore.Systems
                 Log("Entity not registered. Nothing to do", LogVerbosityLevel.INFO);
                 return false;
             }
-            EntityMap.Remove(e.GetID());
+            EntityMap.Remove(e.ID);
             EntityTypeList[e.Type].Remove(e);
 
             //Explicitly handle ScenenodeTypes
@@ -108,7 +107,7 @@ namespace NbCore.Systems
         public bool IsRegistered(Entity e)
         {
             
-            if (EntityMap.ContainsKey(e.GetID()))
+            if (EntityMap.ContainsKey(e.ID))
                 return true;
             return false;
         }

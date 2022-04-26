@@ -135,7 +135,6 @@ namespace NbCore.Text
             
             //Generate Font Material
             material = new MeshMaterial();
-            material.SamplerMap[sampl.Name] = sampl;
         }
 
         private void loadJsonFont(StreamReader fnt_sr, Image<Rgba32> img_data)
@@ -180,7 +179,6 @@ namespace NbCore.Text
 
             //Generate Font Material
             material = new MeshMaterial();
-            material.SamplerMap[sampl.Name] = sampl;
         }
 
         private unsafe int genGLTexture(Image<Rgba32> bmp)

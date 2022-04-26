@@ -32,7 +32,7 @@ namespace NbCore.Systems
 
         public void RegisterEntity(Entity e)
         {
-            if (EntityDataMap.ContainsKey(e.GetID()))
+            if (EntityDataMap.ContainsKey(e.ID))
             {
                 Log("Entity Already Registered", LogVerbosityLevel.INFO);
                 return;
@@ -40,19 +40,19 @@ namespace NbCore.Systems
 
             if (!e.HasComponent<TransformComponent>())
             {
-                Log(string.Format("Entity {0} should have a transform component", e.GetID()), LogVerbosityLevel.INFO);
+                Log(string.Format("Entity {0} should have a transform component", e.ID), LogVerbosityLevel.INFO);
                 return;
             }
             
             TransformComponent tc = e.GetComponent<TransformComponent>() as TransformComponent;
             
             //Insert to Maps
-            EntityDataMap[e.GetID()] = tc;
+            EntityDataMap[e.ID] = tc;
             _Data.Add(tc.Data); //Add ref to TransformData list
             
             if (tc.IsControllable)
             {
-                EntityControllerMap[e.GetID()] = new TransformController(tc.Data);
+                EntityControllerMap[e.ID] = new TransformController(tc.Data);
                 AddDynamicEntity(e);
             }
     
@@ -62,11 +62,11 @@ namespace NbCore.Systems
         {
             if (!e.HasComponent<TransformComponent>())
             {
-                Log($"Entity {e.GetID()} should has no transform component. Nothing to do...", LogVerbosityLevel.INFO);
+                Log($"Entity {e.ID} should has no transform component. Nothing to do...", LogVerbosityLevel.INFO);
                 return;
             }
 
-            if (!EntityDataMap.ContainsKey(e.GetID()))
+            if (!EntityDataMap.ContainsKey(e.ID))
             {
                 Log("Entity not Registered", LogVerbosityLevel.INFO);
                 return;
@@ -75,12 +75,12 @@ namespace NbCore.Systems
             TransformComponent tc = e.GetComponent<TransformComponent>() as TransformComponent;
 
             //Remove from maps
-            EntityDataMap.Remove(e.GetID());
+            EntityDataMap.Remove(e.ID);
             _Data.Remove(tc.Data);
 
             if (tc.IsControllable)
             {
-                EntityControllerMap.Remove(e.GetID());
+                EntityControllerMap.Remove(e.ID);
                 RemoveDynamicEntity(e);
             }
                 
@@ -129,13 +129,13 @@ namespace NbCore.Systems
 
         public void AddDynamicEntity(Entity e)
         {
-            if (EntityDataMap.ContainsKey(e.GetID()) && !DynamicEntities.Contains(e))
+            if (EntityDataMap.ContainsKey(e.ID) && !DynamicEntities.Contains(e))
                 DynamicEntities.Add(e);
         }
 
         public void RequestEntityUpdate(Entity e)
         {
-            if (EntityDataMap.ContainsKey(e.GetID()))
+            if (EntityDataMap.ContainsKey(e.ID))
                 UpdatedEntities.Enqueue(e);
             else
                 Log("Entity not registered to the transformation system", 
@@ -149,8 +149,8 @@ namespace NbCore.Systems
 
         public TransformController GetEntityTransformController(Entity e)
         {
-            if (EntityControllerMap.ContainsKey(e.GetID()))
-                return EntityControllerMap[e.GetID()];
+            if (EntityControllerMap.ContainsKey(e.ID))
+                return EntityControllerMap[e.ID];
             return null;
         }
 

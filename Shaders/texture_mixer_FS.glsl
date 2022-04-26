@@ -34,8 +34,7 @@ Recolour(
     vec3 lRecolourHSVVec3 = RGBToHSV( lRecolourVec3 );
 
     //Adjust Hue
-    //lOriginalHSVVec3.r = fract( lOriginalHSVVec3.r - lAverageHSVVec3.r + lRecolourHSVVec3.r );
-    lOriginalHSVVec3.r = mix(lRecolourHSVVec3.r, lOriginalHSVVec3.r, 0.2);
+    lOriginalHSVVec3.r = fract( lOriginalHSVVec3.r - lAverageHSVVec3.r + lRecolourHSVVec3.r );
     
     //Adjust Saturation
     lOriginalHSVVec3.g = min( lOriginalHSVVec3.g, lRecolourHSVVec3.g );
@@ -70,11 +69,20 @@ vec4 MixTextures(){
 
 	//Storage Arrays
 	vec4 lLayerXVec4[8];
+	vec3 calcAverageColors[8];
 	float lfAlpha[8];
 
 	//Fetch Diffuse Colors
 	for (int i=0; i<8; i++){
 		lLayerXVec4[i] = texture(mainTex[i], uv.xy);
+		calcAverageColors[i] = lLayerXVec4[i].rgb;
+		calcAverageColors[i] += texture(mainTex[i], uv.xy + vec2(-0.01, -0.01)).rgb;
+		calcAverageColors[i] += texture(mainTex[i], uv.xy + vec2(-0.01, 0.01)).rgb;
+		calcAverageColors[i] += texture(mainTex[i], uv.xy + vec2(0.01, -0.01)).rgb;
+		calcAverageColors[i] += texture(mainTex[i], uv.xy + vec2(0.01, 0.01)).rgb;
+		calcAverageColors[i] *= 0.2;
+		//calcAverageColors[i] = vec3(0.0);
+		
 		if (use_alpha_textures > 0.0) {
 			lfAlpha[i] = texture(alphaTex[i], uv.xy).a;
 		}
@@ -101,18 +109,15 @@ vec4 MixTextures(){
 	if (recolor_flag > 0.0) {
 		// Original Color Mix
 		for (int i=0; i<8; i++){
-			//Maintain original color
-			
-			//Recoloring Modes
-			lLayerXVec4[i].rgb = Recolour(lLayerXVec4[i].rgb, lAverageColors[i].rgb, lRecolours[i].rgb, lRecolours[i].a);
+			lLayerXVec4[i].rgb = Recolour(lLayerXVec4[i].rgb, calcAverageColors[i].rgb, lRecolours[i].rgb, lRecolours[i].a);
 		}
 	}
 	
 
 	//Blend Layers together
 	//Blend the opposite way
-	vec4 lFinalDiffColor = vec4(1.0, 1.0, 1.0, 0.0);
-	for (int i=0; i<8; i++) {
+	vec4 lFinalDiffColor = vec4(0.0, 0.0, 0.0, 1.0);
+	for (int i=7; i>=0; i--) {
 		lFinalDiffColor = mix(lFinalDiffColor, lLayerXVec4[i], lfAlpha[i]);
 	}
 

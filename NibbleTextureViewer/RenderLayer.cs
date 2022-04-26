@@ -173,8 +173,7 @@ namespace NibbleTextureViewer
 
                 _shader.CurrentState.AddSampler("InTex", new()
                 {
-                    Target = _texture.Data.target,
-                    TextureID = _texture.texID
+                    Texture = _texture
                 });
 
                 _shader.CurrentState.AddUniform("texture_depth", (float)_renderData.depth_id);

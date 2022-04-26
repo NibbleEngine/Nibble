@@ -46,7 +46,7 @@ namespace NbCore.UI.ImGui
             if (openFileDialog.Draw(new() { X = 640, Y = 480 }))
             {
                 texture_path = System.IO.Path.GetDirectoryName(openFileDialog.GetSelectedFile());
-                NbTexture tex = new(openFileDialog.GetSelectedFile());
+                NbTexture tex = RenderState.engineRef.CreateTexture(openFileDialog.GetSelectedFile(), false);
                 RenderState.engineRef.RegisterEntity(tex);
                 SetTexture(tex);
             }

@@ -64,7 +64,6 @@ namespace NbCore.UI.ImGui
 
         private void DrawModel()
         {
-            GUIDComponent gc = _model.GetComponent<GUIDComponent>() as GUIDComponent;
             //Name
             if (ImGuiCore.BeginTable("##NodeInfo", 2, ImGuiTableFlags.None))
             {
@@ -72,7 +71,7 @@ namespace NbCore.UI.ImGui
                 ImGuiCore.TableSetColumnIndex(0);
                 ImGuiCore.Text("GUID");
                 ImGuiCore.TableSetColumnIndex(1);
-                ImGuiCore.Text(gc.ID.ToString());
+                ImGuiCore.Text(_model.ID.ToString());
                 ImGuiCore.TableNextRow();
                 ImGuiCore.TableSetColumnIndex(0);
                 ImGuiCore.Text("Type");

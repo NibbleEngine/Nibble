@@ -39,9 +39,8 @@ namespace NbCore.Systems
             
             foreach (SceneGraphNode m in ActionSceneNodes)
             {
-                GUIDComponent gc = m.GetComponent<GUIDComponent>() as GUIDComponent;
                 TriggerActionComponent tac = m.GetComponent<TriggerActionComponent>() as TriggerActionComponent;
-                ActionTriggerState activeState = tac.StateMap[ActionSceneStateMap[gc.ID]];
+                ActionTriggerState activeState = tac.StateMap[ActionSceneStateMap[m.ID]];
                 
                 //Apply Actions of state
                 Console.WriteLine("Current State {0}", activeState.StateID);
@@ -56,7 +55,7 @@ namespace NbCore.Systems
                         //Execute actions
                         foreach (Action a in at.Actions)
                         {
-                            if (!ActionsExecutedInState[gc.ID].Contains(a))
+                            if (!ActionsExecutedInState[m.ID].Contains(a))
                                 ExecuteAction(m, a);
                         }
                     }   
@@ -147,12 +146,10 @@ namespace NbCore.Systems
 
         private void ExecuteGoToStateAction(SceneGraphNode m, GoToStateAction action)
         {
-            GUIDComponent gc = m.GetComponent<GUIDComponent>() as GUIDComponent;
-            
             //Change State
-            PrevActionSceneStateMap[gc.ID] = ActionSceneStateMap[gc.ID];
-            ActionSceneStateMap[gc.ID] = action.State;
-            ActionsExecutedInState[gc.ID] = new List<Action>(); //Reset executed actions 
+            PrevActionSceneStateMap[m.ID] = ActionSceneStateMap[m.ID];
+            ActionSceneStateMap[m.ID] = action.State;
+            ActionsExecutedInState[m.ID] = new List<Action>(); //Reset executed actions 
         }
 
         private void ExecutePlayAnimAction(SceneGraphNode m, PlayAnimAction action)
@@ -160,7 +157,7 @@ namespace NbCore.Systems
             AnimationSystem.StopActiveLoopAnimations(m); //Not sure if this is correct
             AnimComponent ac = m.GetComponent<AnimComponent>() as AnimComponent;
             AnimationSystem.StartAnimation(ac, action.Animation);
-            ActionsExecutedInState[m.GetID()].Add(action);
+            ActionsExecutedInState[m.ID].Add(action);
         }
 
         private void ExecuteNodeActivationAction(SceneGraphNode m, NodeActivationAction action)
@@ -209,9 +206,9 @@ namespace NbCore.Systems
             if (scn.HasComponent<TriggerActionComponent>())
             {
                 ActionSceneNodes.Add(scn);
-                ActionSceneStateMap[scn.GetID()] = "BOOT"; //Add Default State
-                PrevActionSceneStateMap[scn.GetID()] = "NONE"; //Add Default State
-                ActionsExecutedInState[scn.GetID()] = new();
+                ActionSceneStateMap[scn.ID] = "BOOT"; //Add Default State
+                PrevActionSceneStateMap[scn.ID] = "NONE"; //Add Default State
+                ActionsExecutedInState[scn.ID] = new();
             }
         }
 

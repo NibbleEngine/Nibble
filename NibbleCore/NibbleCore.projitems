@@ -12,7 +12,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Animation\Animation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Animation\AnimationData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\CollisionComponent.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Components\GUIDComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\JointComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\LightComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\ReferenceComponent.cs" />
@@ -41,6 +40,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbShader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\TwosComplement.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\OpenGLWindow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiLog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiOpenFileDialog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderEditor.cs" />
@@ -82,7 +82,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Plugins\PluginSettings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Events\RequestHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\OpenGLAPI.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Platform\RenderAPI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Systems\ActionSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Systems\AnimationSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Systems\EngineSystem.cs" />

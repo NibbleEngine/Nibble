@@ -26,7 +26,7 @@
     <ItemGroup>
       <PackageReference Include="MathNet.Numerics" Version="4.15.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-      <PackageReference Include="OpenTK" Version="4.6.7" />
+      <PackageReference Condition="'$(Configuration)'=='OpenGL_DEBUG'" Include="OpenTK" Version="4.6.7" />
       <PackageReference Include="SixLabors.ImageSharp" Version="1.0.4" />
     </ItemGroup>
 
