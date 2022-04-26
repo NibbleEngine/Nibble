@@ -82,7 +82,7 @@ namespace NbCore
         
         public void updateViewMatrix()
         {
-            lookMat = NbMatrix4.LookAt(Position, Position + Front, BaseUp);
+            lookMat = NbMatrix4.LookAt(Position, Position + 10 * Front, BaseUp);
             float fov_rad = MathUtils.radians(Common.RenderState.settings.camSettings.FOV);
 
             NbVector2i viewport_size = Common.RenderState.engineRef.renderSys.GetViewportSize();
@@ -137,6 +137,12 @@ namespace NbCore
             cam.Up = NbVector3.Transform(BaseUp, q);
             cam.Up.Normalize();
             cam.Right = cam.Front.Cross(cam.Up).Normalized();
+
+            //Console.WriteLine($"Camera Up {cam.Up.X} {cam.Up.Y} {cam.Up.Z}");
+            //Console.WriteLine($"Camera Front {cam.Front.X} {cam.Front.Y} {cam.Front.Z}");
+            //Console.WriteLine($"Camera Right {cam.Right.X} {cam.Right.Y} {cam.Right.Z}");
+
+
         }
 
         public static void CalculateNextCameraState(Camera cam, CameraPos target)

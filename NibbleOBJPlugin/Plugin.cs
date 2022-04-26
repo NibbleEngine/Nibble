@@ -44,12 +44,13 @@ namespace NibbleOBJPlugin
             SceneGraphNode node = ParseObj(filepath);
             foreach (SceneGraphNode child in node.Children)
                 EngineRef.ImportScene(child);
+            node.Dispose(); //Dispose local root
         }
 
-        private NbMesh GenerateMesh(List<NbVector3> lverts, List<NbVector3i> ltris)
+        private NbMesh GenerateMesh(List<NbVector3> lverts, List<NbVector3> lnormals, List<NbVector3i> ltris)
         {
-            NbMeshData data = GenerateGeometryData(lverts, ltris);
-            NbMeshMetaData metadata = GenerateGeometryMetaData(data);
+            NbMeshData data = GenerateGeometryData(lverts, lnormals, ltris);
+            NbMeshMetaData metadata = GenerateGeometryMetaData(lverts.Count, ltris.Count);
 
             //Generate NbMesh
             NbMesh mesh = new()
@@ -62,27 +63,38 @@ namespace NibbleOBJPlugin
             return mesh;
         }
 
-        private NbMeshMetaData GenerateGeometryMetaData(NbMeshData data)
+        private NbMeshMetaData GenerateGeometryMetaData(int vx_count, int tris_count)
         {
             NbMeshMetaData metadata = new()
             {
-                BatchCount = data.IndexBuffer.Length / 0x4,
+                BatchCount = tris_count * 3,
                 FirstSkinMat = 0,
                 LastSkinMat = 0,
-                VertrEndGraphics = data.VertexBuffer.Length / (0x3 * 0x4) - 1,
-                VertrEndPhysics = data.VertexBuffer.Length / (0x3 * 0x4)
+                VertrEndGraphics = vx_count - 1,
+                VertrEndPhysics = vx_count
             };
-
+            
             return metadata;
         }
 
-        private NbMeshData GenerateGeometryData(List<NbVector3> lverts, List<NbVector3i> ltris)
+        private NbMeshData GenerateGeometryData(List<NbVector3> lverts, List<NbVector3> lnormals, List<NbVector3i> ltris)
         {
+            bool has_normals = lnormals.Count > 0;
+            //Estimate buffer count
+            int buffer_count = 1;
+            uint vx_stride = 3 * 4;
+            if (has_normals)
+            {
+                buffer_count++;
+                vx_stride *= 2;
+            }
+                
             NbMeshData data = NbMeshData.Create();
-            
+
             //Save vertices
-            int vxbytecount = lverts.Count * 3 * 4;
-            int ixbytecount = ltris.Count * 3 * 4;
+
+            int vxbytecount = lverts.Count * (int) vx_stride;
+            int ixbytecount = ltris.Count * 3 * 4; //assume int indices
             data.VertexBuffer = new byte[vxbytecount];
             data.IndexBuffer = new byte[ixbytecount];
 
@@ -95,11 +107,15 @@ namespace NibbleOBJPlugin
                 bw.Write(lverts[i].X);
                 bw.Write(lverts[i].Y);
                 bw.Write(lverts[i].Z);
-                
+                if (has_normals)
+                {
+                    bw.Write(lnormals[i].X);
+                    bw.Write(lnormals[i].Y);
+                    bw.Write(lnormals[i].Z);
+                }
             }
             bw.Flush();
             bw.Close();
-
 
             ms = new MemoryStream(data.IndexBuffer);
             bw = new BinaryWriter(ms);
@@ -113,8 +129,9 @@ namespace NibbleOBJPlugin
             }
 
             //Create Buffers
-            data.buffers = new bufInfo[1];
-            
+            data.buffers = new bufInfo[buffer_count];
+            data.VertexBufferStride = vx_stride;
+
             bufInfo buf = new bufInfo()
             {
                 count = 3,
@@ -122,22 +139,46 @@ namespace NibbleOBJPlugin
                 offset = 0,
                 sem_text = "vPosition",
                 semantic = 0,
-                stride = 12,
+                stride = vx_stride,
                 type = NbPrimitiveDataType.Float
             };
-
             data.buffers[0] = buf;
-            //Use buffer information to calculate the per vertex stride
-            data.VertexBufferStride = 0x4 * 0x3;
+            
+            if (has_normals)
+            {
+                buf = new bufInfo()
+                {
+                    count = 3,
+                    normalize = false,
+                    offset = 0,
+                    sem_text = "nPosition",
+                    semantic = 2,
+                    stride = 0,
+                    type = NbPrimitiveDataType.Float
+                };
 
+                bufInfo nbuf = new bufInfo()
+                {
+                    count = 3,
+                    normalize = false,
+                    offset = 12,
+                    sem_text = "nPosition",
+                    semantic = 2,
+                    stride = vx_stride,
+                    type = NbPrimitiveDataType.Float
+                };
+                data.buffers[1] = nbuf;
+            }
+            
             data.Hash = NbHasher.CombineHash(NbHasher.Hash(data.VertexBuffer),
                                              NbHasher.Hash(data.IndexBuffer));
             return data;
         }
 
-        private SceneGraphNode SubmitMesh(string name, MeshMaterial mat, List<NbVector3> Vertices, List<NbVector3i> Tris)
+        private SceneGraphNode SubmitMesh(string name, MeshMaterial mat, 
+            List<NbVector3> Vertices, List<NbVector3> Normals, List<NbVector3i> Tris)
         {
-            NbMesh mesh = GenerateMesh(Vertices, Tris);
+            NbMesh mesh = GenerateMesh(Vertices, Normals, Tris);
             mesh.Material = mat;
             return EngineRef.CreateMeshNode(name, mesh);
         }
@@ -205,7 +246,7 @@ namespace NibbleOBJPlugin
                 else if (line.StartsWith("o"))
                 {
                     if (!mesh_submitted)
-                        root.AddChild(SubmitMesh(node_name, mat, Vertices, Tris));
+                        root.AddChild(SubmitMesh(node_name, mat, Vertices, Normals, Tris));
                     
                     string[] split = line.Split(' ');
                     
@@ -325,7 +366,7 @@ namespace NibbleOBJPlugin
 
             //Submit last mesh
             if (!mesh_submitted)
-                root.AddChild(SubmitMesh(node_name, mat, Vertices, Tris));
+                root.AddChild(SubmitMesh(node_name, mat, Vertices, Normals, Tris));
 
             sr.Close();
             

@@ -520,8 +520,6 @@ namespace NbCore.Platform.Graphics
             //Filter State
             shader.FilterState(ref state);
             
-
-
             int sampler_id = 0;
             foreach (KeyValuePair<string, object> sstate in state.Data)
             {
