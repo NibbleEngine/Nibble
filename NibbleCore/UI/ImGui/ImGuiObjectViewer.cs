@@ -13,15 +13,17 @@ namespace NbCore.UI.ImGui
     {
         private SceneGraphNode _model;
         private ImGuiManager _manager;
-        
+        private string script_path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        private OpenFileDialog openScriptDialog;
+
         //Imgui variables to reference 
-        private int current_material_sampler = 0;
-        private int current_material_flag = 0;
-        private int slider_test = 0;
+        private int _selectedComponentId = -1;
         
         public ImGuiObjectViewer(ImGuiManager mgr)
         {
             _manager = mgr;
+            openScriptDialog = new("script-open-file", ".cs", false); 
+            openScriptDialog.SetDialogPath(script_path);
         }
 
         public void SetModel(SceneGraphNode m)
@@ -56,7 +58,7 @@ namespace NbCore.UI.ImGui
 
         private void RequestNodeUpdateRecursive(SceneGraphNode n)
         {
-            _manager.EngineRef.transformSys.RequestEntityUpdate(n);
+            _manager.EngineRef.GetSystem<Systems.TransformationSystem>().RequestEntityUpdate(n);
             
             foreach (SceneGraphNode child in n.Children)
                 RequestNodeUpdateRecursive(child);
@@ -64,9 +66,13 @@ namespace NbCore.UI.ImGui
 
         private void DrawModel()
         {
+            string[] avail_components = new string[] { "Script", "Collision" };
+
             //Name
             if (ImGuiCore.BeginTable("##NodeInfo", 2, ImGuiTableFlags.None))
             {
+                ImGuiCore.TableSetupColumn("##NodeInfoTable_PathName", ImGuiTableColumnFlags.WidthFixed);
+                ImGuiCore.TableSetupColumn("##NodeInfoTable_Path", ImGuiTableColumnFlags.WidthStretch);
                 ImGuiCore.TableNextRow();
                 ImGuiCore.TableSetColumnIndex(0);
                 ImGuiCore.Text("GUID");
@@ -89,10 +95,28 @@ namespace NbCore.UI.ImGui
                 ImGuiCore.PushItemWidth(-1.0f);
                 ImGuiCore.InputText("##Name", ref _model.Name, 30);
                 ImGuiCore.PopItemWidth();
+                ImGuiCore.TableNextRow();
+                ImGuiCore.TableSetColumnIndex(0);
+                ImGuiCore.Text("Add Component");
+                ImGuiCore.TableSetColumnIndex(1);
+                ImGuiCore.PushItemWidth(-38.0f);
+                ImGuiCore.Combo("##CompList", ref _selectedComponentId, avail_components, avail_components.Length);
+                ImGuiCore.SameLine();
+                if (ImGuiCore.Button("Add"))
+                {
+                    Console.WriteLine($"Adding Component {avail_components[_selectedComponentId]}");
+                    //Add script Component
+                    if (_selectedComponentId == 0)
+                    {
+                        ScriptComponent sc = new ScriptComponent();
+                        _model.AddComponent<ScriptComponent>(sc);
+                    }
+                }
+                ImGuiCore.PopItemWidth();
+
                 ImGuiCore.EndTable();
             }
-            
-            
+
             //Draw Transform
             TransformData td = TransformationSystem.GetEntityTransformData(_model);
             if (ImGuiCore.CollapsingHeader("Transform", ImGuiTreeNodeFlags.DefaultOpen))
@@ -139,8 +163,11 @@ namespace NbCore.UI.ImGui
                 }
             }
 
-            //Draw Components
 
+
+
+
+            //Draw Components
 
             //SceneComponent
             if (_model.HasComponent<SceneComponent>())
@@ -414,6 +441,73 @@ namespace NbCore.UI.ImGui
 
                 }
             }
+            
+            //ScriptComponent
+            if (_model.HasComponent<ScriptComponent>())
+            {
+                ScriptComponent sc = _model.GetComponent<ScriptComponent>() as ScriptComponent;
+
+                float lineheight = ImGuiCore.GetTextLineHeight();
+                if (ImGuiCore.CollapsingHeader("Script Component", ImGuiTreeNodeFlags.DefaultOpen))
+                {
+
+                    if (ImGuiCore.BeginTable("##ScriptCompTable", 3, ImGuiTableFlags.None))
+                    {
+                        ImGuiCore.TableSetupColumn("##ScriptCompTable_PathName", ImGuiTableColumnFlags.WidthFixed);
+                        ImGuiCore.TableSetupColumn("##ScriptCompTable_Path", ImGuiTableColumnFlags.WidthStretch);
+                        ImGuiCore.TableSetupColumn("##ScriptCompTable_Browse", ImGuiTableColumnFlags.WidthFixed);
+                        
+                        ImGuiCore.TableNextRow();
+                        ImGuiCore.TableSetColumnIndex(0);
+                        ImGuiCore.Text("Script Path");
+                        ImGuiCore.TableSetColumnIndex(1);
+                        ImGuiCore.PushItemWidth(-1.0f);
+                        ImGuiCore.InputText("##ScriptPath", ref sc.SourcePath, 200);
+                        if (ImGuiCore.IsItemHovered())
+                        {
+                            ImGuiCore.BeginTooltip();
+                            ImGuiCore.Text(sc.SourcePath);
+                            ImGuiCore.EndTooltip();
+                        }
+                        ImGuiCore.PopItemWidth();
+                        ImGuiCore.TableSetColumnIndex(2);
+                        ImGuiCore.PushItemWidth(-1.0f);
+                        if (ImGuiCore.Button("Browse"))
+                        {
+                            openScriptDialog.Open();
+                        }
+                        ImGuiCore.PopItemWidth();
+                        ImGuiCore.EndTable();
+                    }
+                }
+
+                //Draw Open File Dialog
+                if (openScriptDialog.Draw(new() { X = 640, Y = 480 }))
+                {
+                    string script_filepath = openScriptDialog.GetSelectedFile();
+                    ulong script_hash = NbHasher.Hash(script_filepath);
+                    NbScript old_script = _manager.EngineRef.GetScriptByHash(script_hash);
+
+                    if (old_script != null)
+                    {
+                        //Hack : nullify the hash so that the old script connections will not be removed
+                        _manager.EngineRef.DestroyEntity(old_script);
+                    }
+                    
+                    NbScript script = _manager.EngineRef.CreateScript(script_filepath);
+                    
+                    if (script != null)
+                    {
+                        sc.SourcePath = script_filepath;
+                        sc.ScriptHash = script_hash;
+                        _manager.EngineRef.GetSystem<ScriptingSystem>().RegisterEntity(_model);
+                    }
+                }
+
+            }
+
+            
+
         }
 
         ~ImGuiObjectViewer()

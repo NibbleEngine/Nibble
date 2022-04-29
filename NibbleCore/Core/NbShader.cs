@@ -79,7 +79,7 @@ namespace NbCore
         public void OnShaderUpdate()
         {
             //Issue shader for re-compilation
-            Common.RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(this);
+            Common.RenderState.engineRef.GetSystem<Systems.RenderingSystem>().ShaderMgr.AddShaderForCompilation(this);
         }
 
         public void FilterState(ref NbShaderState state)

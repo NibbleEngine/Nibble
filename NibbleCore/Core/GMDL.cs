@@ -105,8 +105,7 @@ namespace NbCore
         //Joint info
         public int jointCount;
         public List<JointBindingData> jointData = new();
-        public float[] invBMats = new float[256 * 16];
-
+        
         private bool disposed = false;
         private Microsoft.Win32.SafeHandles.SafeFileHandle handle = new(IntPtr.Zero, true);
 
@@ -269,7 +268,6 @@ namespace NbCore
                 vbuffer = null;
                 small_vbuffer = null;
                 boneRemap = null;
-                invBMats = null;
                     
                 bIndices.Clear();
                 bWeights.Clear();

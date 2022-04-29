@@ -67,17 +67,17 @@ namespace NbCore.Systems
                         //instances that will be removed and instance that will be added
                         //which will be passed per frame update to the rendering system
                         //which has direct access to the renderer
-                        EngineRef.renderSys.Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
+                        EngineRef.GetSystem<RenderingSystem>().Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
                     }
                     else if (!td.IsOccluded && td.WasOccluded)
                     {
                         Log($"Adding Instance {n.Name}", LogVerbosityLevel.DEBUG);
-                        EngineRef.renderSys.Renderer.AddRenderInstance(ref mc, td);
+                        EngineRef.GetSystem<RenderingSystem>().Renderer.AddRenderInstance(ref mc, td);
                     }
                     else if (!td.IsOccluded)
                     {
-                        EngineRef.renderSys.Renderer.SetInstanceWorldMat(mc.Mesh, mc.InstanceID, td.WorldTransformMat);
-                        EngineRef.renderSys.Renderer.SetInstanceWorldMatInv(mc.Mesh, mc.InstanceID, td.InverseTransformMat);
+                        EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceWorldMat(mc.Mesh, mc.InstanceID, td.WorldTransformMat);
+                        EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceWorldMatInv(mc.Mesh, mc.InstanceID, td.InverseTransformMat);
                     }
 
                     td.IsUpdated = false; //Reset updated status to prevent further updates on the same frame update
@@ -87,10 +87,10 @@ namespace NbCore.Systems
                 if (mc.IsUpdated && !td.IsOccluded)
                 {
                     //Upload Uniforms
-                    EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 0, mc.InstanceUniforms[0].Values);
-                    EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 1, mc.InstanceUniforms[1].Values);
-                    EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 2, mc.InstanceUniforms[2].Values);
-                    EngineRef.renderSys.Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 3, mc.InstanceUniforms[3].Values);
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 0, mc.InstanceUniforms[0].Values);
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 1, mc.InstanceUniforms[1].Values);
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 2, mc.InstanceUniforms[2].Values);
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 3, mc.InstanceUniforms[3].Values);
                     mc.IsUpdated = false;
                 }
             }
@@ -109,21 +109,21 @@ namespace NbCore.Systems
                     //instances that will be removed and instance that will be added
                     //which will be passed per frame update to the rendering system
                     //which has direct access to the renderer
-                    EngineRef.renderSys.Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
                 }
                 else if (lc.Data.IsRenderable && lc.InstanceID == -1)
                 {
                     Log($"Adding Instance {n.Name}", LogVerbosityLevel.DEBUG);
-                    EngineRef.renderSys.Renderer.AddLightRenderInstance(ref lc, td);
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.AddLightRenderInstance(ref lc, td);
                 }
                 else if (lc.Data.IsRenderable)
                 {
-                    EngineRef.renderSys.Renderer.SetInstanceWorldMat(lc.Mesh, lc.InstanceID, td.WorldTransformMat);
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceWorldMat(lc.Mesh, lc.InstanceID, td.WorldTransformMat);
                 }
                 
                 if (lc.Data.IsUpdated && lc.InstanceID != -1)
                 {
-                    EngineRef.renderSys.Renderer.SetLightInstanceData(lc);
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetLightInstanceData(lc);
                     lc.Data.IsUpdated = false;
                 }
                     

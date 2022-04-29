@@ -18,6 +18,16 @@ namespace NbCore
         [NbSerializable] public float ScaleY = 1.0f;
         [NbSerializable] public float ScaleZ = 1.0f;
 
+
+        public static TransformData CreateFromMatrix(NbMatrix4 transform)
+        {
+            TransformData td = new();
+            td.localTranslation = NbMatrix4.ExtractTranslation(transform);
+            td.localRotation = NbMatrix4.ExtractRotation(transform);
+            td.localScale = NbMatrix4.ExtractScale(transform);
+            return td;
+        }
+
         //Raw values 
         public NbVector3 localTranslation
         {
@@ -156,5 +166,7 @@ namespace NbCore
             ScaleY = OldScaleY;
             ScaleZ = OldScaleZ;
         }
+
+        
     }
 }

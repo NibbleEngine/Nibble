@@ -13,6 +13,7 @@ namespace NbCore.Systems
         RENDERING_SYSTEM,
         ANIMATION_SYSTEM,
         ACTION_SYSTEM,
+        SCRIPTING_SYSTEM,
         PHYSICS_SYSTEM,
         REGISTRY_SYSTEM,
         SCENE_MANAGEMENT_SYSTEM,

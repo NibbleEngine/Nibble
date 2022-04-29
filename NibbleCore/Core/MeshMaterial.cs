@@ -83,7 +83,7 @@ namespace NbCore
         public bool IsGeneric = false;
         public TextureManager texMgr;
         public NbShader Shader;
-        public List<MaterialFlagEnum> Flags = new();
+        private List<MaterialFlagEnum> Flags = new();
         public List<NbUniform> Uniforms = new();
         public List<NbSampler> Samplers = new();
         
@@ -166,14 +166,30 @@ namespace NbCore
 
 
         //Wrapper to support uberflags
-        public bool has_flag(MaterialFlagEnum flag)
+        public bool HasFlag(MaterialFlagEnum flag)
         {
             return material_flags[(int) flag] > 0.0f;
         }
 
-        public bool add_flag(MaterialFlagEnum flag)
+        public List<MaterialFlagEnum> GetFlags()
         {
-            if (has_flag((flag)))
+            return Flags;
+        }
+
+        public void RemoveFlag(MaterialFlagEnum flag)
+        {
+            if (!HasFlag((flag)))
+                return;
+            
+            material_flags[(int)flag] = 0.0f;
+            Flags.Remove(flag);
+            //Raise Material Modified event
+
+        }
+
+        public bool AddFlag(MaterialFlagEnum flag)
+        {
+            if (HasFlag((flag)))
                 return false;
 
             material_flags[(int) flag] = 1.0f;
@@ -247,23 +263,6 @@ namespace NbCore
             Dispose(false);
         }
 
-        public static int calculateShaderHash(List<MaterialFlagEnum> flags)
-        {
-            string hash = "";
-
-            for (int i = 0; i < flags.Count; i++)
-            {
-                if (supported_flags.Contains(flags[i]))
-                    hash += "_" + flags[i];
-            }
-
-            if (hash == "")
-                hash = "DEFAULT";
-
-            return hash.GetHashCode();
-        }
-
-        
         public void Serialize(JsonTextWriter writer)
         {
             writer.WriteStartObject();
@@ -316,7 +315,7 @@ namespace NbCore
             //Deserialize flags
             Newtonsoft.Json.Linq.JToken flag_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Flags");
             foreach (Newtonsoft.Json.Linq.JToken tkn in flag_tkns.Children())
-                mat.add_flag((MaterialFlagEnum) IO.NbDeserializer.Deserialize(tkn));
+                mat.AddFlag((MaterialFlagEnum) Enum.Parse(typeof(MaterialFlagEnum), tkn.ToString()));
 
             //Deserialize samplers
             Newtonsoft.Json.Linq.JToken sampler_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Samplers");

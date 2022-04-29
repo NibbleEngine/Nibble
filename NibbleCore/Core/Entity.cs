@@ -95,7 +95,7 @@ namespace NbCore
             AddComponent(typeof(T), comp);
         }
 
-        public void AddComponent(Type t, Component comp)
+        public virtual void AddComponent(Type t, Component comp)
         {
             if (HasComponent(t))
                 return;

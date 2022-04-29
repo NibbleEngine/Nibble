@@ -34,7 +34,7 @@ namespace NbCore.UI.ImGui
         public void Draw()
         {
             //Items
-            List<MeshMaterial> materialList = RenderState.engineRef.renderSys.MaterialMgr.Entities;
+            List<MeshMaterial> materialList = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().MaterialMgr.Entities;
             string[] items = new string[materialList.Count];
             for (int i = 0; i < items.Length; i++)
                 items[i] = materialList[i].Name == "" ? "Material_" + i : materialList[i].Name;
@@ -107,32 +107,9 @@ namespace NbCore.UI.ImGui
                     int currentShaderConfigId = _ActiveMaterial.Shader != null ? shaderconfs.IndexOf(_ActiveMaterial.Shader.GetShaderConfig()) : -1;
                     if (ImGuiNET.ImGui.Combo("##MaterialShader", ref currentShaderConfigId, shaderconfItems, shaderconfs.Count))
                     {
-                        //Calculate requested shader hash
-                        ulong shader_hash = RenderState.engineRef.CalculateShaderHash(shaderconfs[currentShaderConfigId] as GLSLShaderConfig,
-                            RenderState.engineRef.GetMaterialShaderDirectives(_ActiveMaterial));
-
-                        NbShader new_shader = RenderState.engineRef.GetShaderByHash(shader_hash);
-
-                        if (new_shader == null)
-                        {
-                            //Create new Shader
-                            if (_ActiveMaterial.Shader != null)
-                                new_shader = new(_ActiveMaterial.Shader);
-                            else
-                            {
-                                new_shader = new()
-                                {
-                                    IsGeneric = false
-                                };    
-                            }
-                            new_shader.SetShaderConfig(shaderconfs[currentShaderConfigId] as GLSLShaderConfig);
-                            RenderState.engineRef.renderSys.ShaderMgr.AddShaderForCompilation(new_shader);
-                        }
-
-                        _ActiveMaterial.AttachShader(new_shader);
+                        RenderState.engineRef.SetMaterialShader(_ActiveMaterial, shaderconfs[currentShaderConfigId] as GLSLShaderConfig);
                     }
 
-                    
                     ImGuiNET.ImGui.TableNextRow();
                     ImGuiNET.ImGui.TableSetColumnIndex(0);
                     ImGuiNET.ImGui.Text("Shader Hash");
@@ -154,8 +131,9 @@ namespace NbCore.UI.ImGui
                     //Flags
                     //Create string list of flags
                     List<string> flags = new();
-                    for (int i = 0; i < _ActiveMaterial.Flags.Count; i++)
-                        flags.Add(_ActiveMaterial.Flags[i].ToString());
+                    List<MaterialFlagEnum> mat_flags = _ActiveMaterial.GetFlags();
+                    for (int i = 0; i < mat_flags.Count; i++)
+                        flags.Add(mat_flags[i].ToString());
 
                     string[] allflags = Enum.GetNames(typeof(MaterialFlagEnum));
                     
@@ -167,8 +145,10 @@ namespace NbCore.UI.ImGui
                     if (ImGuiNET.ImGui.Button("Add"))
                     {
                         MaterialFlagEnum new_flag = (MaterialFlagEnum) current_material_flag;
-                        if (!_ActiveMaterial.Flags.Contains(new_flag))
-                            _ActiveMaterial.Flags.Add(new_flag);
+                        _ActiveMaterial.AddFlag(new_flag);
+                        //Compile a new shader only if a shader exists
+                        if (_ActiveMaterial.Shader != null)
+                            RenderState.engineRef.SetMaterialShader(_ActiveMaterial, _ActiveMaterial.Shader.GetShaderConfig());
                     }
 
                     ImGuiNET.ImGui.SetNextItemWidth(-1);
@@ -182,7 +162,11 @@ namespace NbCore.UI.ImGui
                             {
                                 if (ImGuiNET.ImGui.MenuItem("Remove ##flag"))
                                 {
-                                    _ActiveMaterial.Flags.Remove((MaterialFlagEnum) Enum.Parse(typeof(MaterialFlagEnum), flag));
+                                    _ActiveMaterial.RemoveFlag((MaterialFlagEnum)Enum.Parse(typeof(MaterialFlagEnum), flag));
+
+                                    //Compile a new shader only if a shader exists
+                                    if (_ActiveMaterial.Shader != null)
+                                        RenderState.engineRef.SetMaterialShader(_ActiveMaterial, _ActiveMaterial.Shader.GetShaderConfig());
                                 }
                                 ImGuiNET.ImGui.EndPopup();
                             }
@@ -470,7 +454,7 @@ namespace NbCore.UI.ImGui
         public void SetMaterial(MeshMaterial mat)
         {
             _ActiveMaterial = mat;
-            List<MeshMaterial> materialList = RenderState.engineRef.renderSys.MaterialMgr.Entities;
+            List<MeshMaterial> materialList = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().MaterialMgr.Entities;
             _SelectedId = materialList.IndexOf(mat);
         }
     }

@@ -85,7 +85,7 @@ namespace NbCore
             lookMat = NbMatrix4.LookAt(Position, Position + 10 * Front, BaseUp);
             float fov_rad = MathUtils.radians(Common.RenderState.settings.camSettings.FOV);
 
-            NbVector2i viewport_size = Common.RenderState.engineRef.renderSys.GetViewportSize();
+            NbVector2i viewport_size = Common.RenderState.engineRef.GetSystem<Systems.RenderingSystem>().GetViewportSize();
             float aspect = (float) viewport_size.X / viewport_size.Y;
 
             if (type == 0) {
@@ -125,7 +125,7 @@ namespace NbCore
         public static void UpdateCameraDirectionalVectors(Camera cam)
         {
             //Update Camera Vectors
-            TransformController t_controller = Common.RenderState.engineRef.transformSys.GetEntityTransformController(cam);
+            TransformController t_controller = Common.RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
             
             //Rotation
             NbQuaternion q = t_controller.Rotation;
@@ -147,7 +147,7 @@ namespace NbCore
 
         public static void CalculateNextCameraState(Camera cam, CameraPos target)
         {
-            TransformController t_controller = Common.RenderState.engineRef.transformSys.GetEntityTransformController(cam);
+            TransformController t_controller = Common.RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
 
             //Calculate actual camera speed
             float pitch = Common.RenderState.settings.camSettings.Sensitivity * MathUtils.radians(target.Rotation.Y);
