@@ -149,9 +149,7 @@ namespace NbCore.Systems
 
         public TransformController GetEntityTransformController(Entity e)
         {
-            if (EntityControllerMap.ContainsKey(e.ID))
-                return EntityControllerMap[e.ID];
-            return null;
+            return EntityControllerMap[e.ID];
         }
 
         public static void AddTransformComponentToEntity(Entity e)

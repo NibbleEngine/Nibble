@@ -248,7 +248,7 @@ namespace NbCore.Platform.Graphics
 
         public int CreateGroupBuffer()
         {
-            int size = 256 * 16 * 4; //FIXED SIZE FOR NOW
+            int size = 512 * 16 * 4; //FIXED SIZE FOR NOW
             int ssbo_id = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo_id);
             GL.BufferStorage(BufferTarget.ShaderStorageBuffer, size,

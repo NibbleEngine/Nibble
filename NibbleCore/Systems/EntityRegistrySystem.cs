@@ -92,6 +92,8 @@ namespace NbCore.Systems
                     break;
             }
 
+            Log($"Entity of Type {e.Type} was successfully unregistered. ID: {e.ID}", LogVerbosityLevel.DEBUG);
+
             return true;
         }
 

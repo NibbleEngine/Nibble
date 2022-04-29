@@ -19,6 +19,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Linq;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace NbCore
 {
@@ -33,15 +34,15 @@ namespace NbCore
     public class Engine : EngineSystem
     {
         //Init Systems
-        private EntityRegistrySystem registrySys;
-        public TransformationSystem transformSys;
-        public ActionSystem actionSys;
-        public AnimationSystem animationSys;
-        public SceneManagementSystem sceneMgmtSys;
-        public RenderingSystem renderSys; //TODO: Try to make it private. Noone should have a reason to access it
+        //private EntityRegistrySystem registrySys;
+        //public TransformationSystem transformSys;
+        //public ActionSystem actionSys;
+        //public AnimationSystem animationSys;
+        //public SceneManagementSystem sceneMgmtSys;
+        //public RenderingSystem renderSys; //TODO: Try to make it private. Noone should have a reason to access it
         private readonly RequestHandler reqHandler;
 
-        private Dictionary<EngineSystemEnum, EngineSystem> _engineSystemMap = new(); //TODO fill up
+        private Dictionary<Type, EngineSystem> _engineSystemMap = new(); //TODO fill up
 
         //Events
         public delegate void NewSceneEventHandler(SceneGraph s);
@@ -75,20 +76,35 @@ namespace NbCore
         private void InitSystems()
         {
             //Systems Init
-            renderSys = new RenderingSystem(); //Init renderManager of the engine
-            registrySys = new EntityRegistrySystem();
-            actionSys = new ActionSystem();
-            animationSys = new AnimationSystem();
-            transformSys = new TransformationSystem();
-            sceneMgmtSys = new SceneManagementSystem();
-
+            RenderingSystem renderSys = new(); //Init renderManager of the engine
+            EntityRegistrySystem registrySys = new EntityRegistrySystem();
+            ActionSystem actionSys = new ActionSystem();
+            AnimationSystem animationSys = new AnimationSystem();
+            TransformationSystem transformSys = new TransformationSystem();
+            SceneManagementSystem sceneMgmtSys = new SceneManagementSystem();
+            ScriptingSystem scriptMgmtSys = new ScriptingSystem();
+            
             SetEngine(this);
-            renderSys.SetEngine(this);
-            registrySys.SetEngine(this);
-            actionSys.SetEngine(this);
-            animationSys.SetEngine(this);
-            transformSys.SetEngine(this);
-            sceneMgmtSys.SetEngine(this);
+            AddSystem(renderSys);
+            AddSystem(registrySys);
+            AddSystem(actionSys);
+            AddSystem(animationSys);
+            AddSystem(transformSys);
+            AddSystem(sceneMgmtSys);
+            AddSystem(scriptMgmtSys);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AddSystem<T>(T system) where T: EngineSystem
+        {
+            system.SetEngine(this);
+            _engineSystemMap[typeof(T)] = system;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T GetSystem<T>() where T : EngineSystem
+        {
+            return (T) _engineSystemMap[typeof(T)];
         }
 
         #region plugin_loader
@@ -286,7 +302,7 @@ namespace NbCore
             Image<Rgba32> FontAtlas = SixLabors.ImageSharp.Image.Load<Rgba32>(fontAtlasData);
 
             Font f = new Font(fontData, FontAtlas, 1);
-            renderSys.FontMgr.addFont(f);
+            GetSystem<RenderingSystem>().FontMgr.addFont(f);
             return f;
         }
 
@@ -297,49 +313,54 @@ namespace NbCore
 
             scene.SetParent(GetActiveSceneGraph().Root);
             scene.Root = scene.Parent;
-            
+
             //Post Import procedures
-            renderSys.SubmitOpenMeshGroups();
+            GetSystem<RenderingSystem>().SubmitOpenMeshGroups();
             
             //Invoke Event
             NewSceneEvent?.Invoke(GetActiveSceneGraph());
         }
 
         //Entity Registration Methods
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsEntityRegistered(Entity e)
         {
-            return registrySys.IsRegistered(e);
+            return GetSystem<EntityRegistrySystem>().IsRegistered(e);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RegisterEntity(NbShader shader)
         {
-            if (registrySys.RegisterEntity(shader))
+            if (GetSystem<EntityRegistrySystem>().RegisterEntity(shader))
             {
-                renderSys.ShaderMgr.AddShader(shader);
+                GetSystem<RenderingSystem>().ShaderMgr.AddShader(shader);
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RegisterEntity(NbMesh mesh)
         {
-            if (registrySys.RegisterEntity(mesh))
+            if (GetSystem<EntityRegistrySystem>().RegisterEntity(mesh))
             {
-                renderSys.RegisterEntity(mesh);
+                GetSystem<RenderingSystem>().RegisterEntity(mesh);
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RegisterEntity(NbTexture tex)
         {
-            if (registrySys.RegisterEntity(tex))
+            if (GetSystem<EntityRegistrySystem>().RegisterEntity(tex))
             {
-                renderSys.TextureMgr.Add(tex.Path, tex);
+                GetSystem<RenderingSystem>().TextureMgr.Add(tex.Path, tex);
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RegisterEntity(MeshMaterial mat)
         {
-            if (registrySys.RegisterEntity(mat))
+            if (GetSystem<EntityRegistrySystem>().RegisterEntity(mat))
             {
-                renderSys.MaterialMgr.AddMaterial(mat);
+                GetSystem<RenderingSystem>().MaterialMgr.AddMaterial(mat);
 
                 //Register Textures as well
                 foreach (NbSampler sampl in mat.Samplers)
@@ -351,12 +372,13 @@ namespace NbCore
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RegisterSceneGraphTree(SceneGraphNode e, bool recurse = true)
         {
             //Add Entity to main registry
             if (RegisterEntity(e))
             {
-                sceneMgmtSys.AddNode(e);
+                GetSystem<SceneManagementSystem>().AddNode(e);
 
                 if (recurse)
                 {
@@ -365,15 +387,15 @@ namespace NbCore
                 }
             }
         }
-
-        public bool RegisterEntity(Entity e)
+        
+        public bool RegisterEntity(SceneGraphNode e)
         {
             //Add Entity to main registry
-            if (registrySys.RegisterEntity(e))
+            if (GetSystem<EntityRegistrySystem>().RegisterEntity(e))
             {
                 //Register to transformation System
                 if (e.HasComponent<TransformComponent>())
-                    transformSys.RegisterEntity(e);
+                    GetSystem<TransformationSystem>().RegisterEntity(e);
 
                 //Register to rendering System
                 if (e.HasComponent<MeshComponent>())
@@ -384,7 +406,7 @@ namespace NbCore
                     RegisterEntity(mc.Mesh);
                     RegisterEntity(mc.Mesh.Material);
 
-                    renderSys.RegisterEntity(mc); //Register Mesh to Rendering System
+                    GetSystem<RenderingSystem>().RegisterEntity(mc); //Register Mesh to Rendering System
                 }
 
                 if (e.HasComponent<AnimComponent>())
@@ -396,8 +418,12 @@ namespace NbCore
                         RegisterEntity(anim);
                     }
 
-                    animationSys.RegisterEntity(ac);
+                    GetSystem<AnimationSystem>().RegisterEntity(ac);
+                }
 
+                if (e.HasComponent<ScriptComponent>())
+                {
+                    GetSystem<ScriptingSystem>().RegisterEntity(e);
                 }
 
                 return true;
@@ -405,74 +431,122 @@ namespace NbCore
             return false;
         }
 
-        public void DestroyEntity(MeshMaterial mat)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool RegisterEntity(NbScript e)
         {
-            //Remove from main registry
-            if (registrySys.DeleteEntity(mat))
+            //Add Entity to main registry
+            if (GetSystem<EntityRegistrySystem>().RegisterEntity(e))
             {
-                renderSys.MaterialMgr.Remove(mat);
+                GetSystem<ScriptingSystem>().RegisterEntity(e);
+                return true;
             }
+            return false;
         }
 
-        public void DestroyEntity(Entity e)
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool RegisterEntity(Entity e)
         {
-            //Remove from main registry
-            if (registrySys.DeleteEntity(e))
+            //Add Entity to main registry
+            if (GetSystem<EntityRegistrySystem>().RegisterEntity(e))
             {
                 //Register to transformation System
                 if (e.HasComponent<TransformComponent>())
-                    transformSys.DeleteEntity(e);
+                    GetSystem<TransformationSystem>().RegisterEntity(e);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DestroyEntity(NbScript script)
+        {
+            //Remove from main registry
+            if (GetSystem<EntityRegistrySystem>().DeleteEntity(script))
+            {
+                GetSystem<ScriptingSystem>().Remove(script);
+            }
+            script.Dispose();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DestroyEntity(MeshMaterial mat)
+        {
+            //Remove from main registry
+            if (GetSystem<EntityRegistrySystem>().DeleteEntity(mat))
+            {
+                GetSystem<RenderingSystem>().MaterialMgr.Remove(mat);
+            }
+            mat.Dispose();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void DestroyEntity(Entity e)
+        {
+            //Remove from main registry
+            if (GetSystem<EntityRegistrySystem>().DeleteEntity(e))
+            {
+                //Register to transformation System
+                if (e.HasComponent<TransformComponent>())
+                    GetSystem<TransformationSystem>().DeleteEntity(e);
             }
 
             e.Dispose();
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RequestEntityTransformUpdate(SceneGraphNode node)
         {
-            transformSys.RequestEntityUpdate(node);
+            GetSystem<TransformationSystem>().RequestEntityUpdate(node);
             foreach (SceneGraphNode child in node.Children)
                 RequestEntityTransformUpdate(child);
         }
 
         #region SceneManagement
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ClearActiveSceneGraph()
         {
-            sceneMgmtSys.ClearSceneGraph(sceneMgmtSys.ActiveSceneGraph);
+            GetSystem<SceneManagementSystem>().ClearSceneGraph(GetSystem<SceneManagementSystem>().ActiveSceneGraph);
         }
 
         #endregion
 
 
-
-
         #region EngineQueries
 
         //Asset Getter
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Entity GetEntityByID(ulong id)
         {
-            return registrySys.GetEntity(id);
+            return GetSystem<EntityRegistrySystem>().GetEntity(id);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NbTexture GetTexture(string name)
         {
-            return renderSys.TextureMgr.Get(name);
+            return GetSystem<RenderingSystem>().TextureMgr.Get(name);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NbMesh GetMesh(ulong hash)
         {
-            return registrySys.GetEntityTypeList(EntityType.Mesh).Find(x => ((NbMesh)x).Hash == hash) as NbMesh;
-        }
-        
-        public MeshMaterial GetMaterialByName(string name)
-        {
-            return renderSys.MaterialMgr.GetByName(name);
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.Mesh).Find(x => ((NbMesh)x).Hash == hash) as NbMesh;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public MeshMaterial GetMaterialByName(string name)
+        {
+            return GetSystem<RenderingSystem>().MaterialMgr.GetByName(name);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public SceneGraphNode GetSceneNodeByName(string name)
         {
-            return registrySys.GetEntityTypeList(EntityType.SceneNode).Find(x=>((SceneGraphNode) x).Name == name) as SceneGraphNode;
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.SceneNode).Find(x=>((SceneGraphNode) x).Name == name) as SceneGraphNode;
         }
         
         public SceneGraphNode GetSceneNodeByNameType(SceneNodeType type, string name)
@@ -493,51 +567,66 @@ namespace NbCore
                     etype = EntityType.SceneNodeLight;
                     break;
             }
-            return registrySys.GetEntityTypeList(etype).Find(x=>((SceneGraphNode) x).Name == name && ((SceneGraphNode) x).Type == type) as SceneGraphNode;
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(etype).Find(x=>((SceneGraphNode) x).Name == name && ((SceneGraphNode) x).Type == type) as SceneGraphNode;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GLSLShaderSource GetShaderSourceByFilePath(string path)
         {
-            return registrySys.GetEntityTypeList(EntityType.ShaderSource)
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.ShaderSource)
                 .Find(x => ((GLSLShaderSource)x).SourceFilePath == FileUtils.FixPath(path)) as GLSLShaderSource;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GLSLShaderConfig GetShaderConfigByName(string name)
         {
-            return registrySys.GetEntityTypeList(EntityType.ShaderConfig)
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.ShaderConfig)
                 .Find(x => ((GLSLShaderConfig)x).Name == name) as GLSLShaderConfig;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GLSLShaderConfig GetShaderConfigByHash(ulong hash)
         {
-            return registrySys.GetEntityTypeList(EntityType.ShaderConfig)
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.ShaderConfig)
                 .Find(x => ((GLSLShaderConfig)x).Hash == hash) as GLSLShaderConfig;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public NbShader GetShaderByHash(ulong hash)
         {
-            return registrySys.GetEntityTypeList(EntityType.Shader)
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.Shader)
                 .Find(x => ((NbShader)x).Hash == hash) as NbShader;
         }
 
-        public int GetEntityListCount(EntityType type)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NbScript GetScriptByHash(ulong hash)
         {
-            return registrySys.GetEntityTypeList(type).Count;
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.Script)
+                .Find(x => ((NbScript)x).Hash == hash) as NbScript;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetEntityListCount(EntityType type)
+        {
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(type).Count;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetShaderSourceCount()
         {
             return GetEntityListCount(EntityType.ShaderSource);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetLightCount()
         {
             return GetEntityListCount(EntityType.LightComponent);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public List<Entity> GetEntityTypeList(EntityType type)
         {
-            return registrySys.GetEntityTypeList(type);
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(type);
         }
 
         #endregion
@@ -545,7 +634,7 @@ namespace NbCore
         public void init(int width, int height)
         {
             //Initialize the render manager
-            renderSys.init(width, height);
+            GetSystem<RenderingSystem>().init(width, height);
             
             Log("Initialized", LogVerbosityLevel.INFO);
         }
@@ -556,7 +645,7 @@ namespace NbCore
 
         private void rt_ResizeViewport(int w, int h)
         {
-            renderSys.Resize(w, h);
+            GetSystem<RenderingSystem>().Resize(w, h);
         }
 
 #if DEBUG
@@ -568,8 +657,8 @@ namespace NbCore
             //Import.NMS.Palettes.set_palleteColors();
 
             //Clear Systems
-            actionSys.CleanUp();
-            animationSys.CleanUp();
+            GetSystem<ActionSystem>().CleanUp();
+            GetSystem<AnimationSystem>().CleanUp();
 
             //Clear Resources
             //ModelProcGen.procDecisions.Clear();
@@ -707,16 +796,11 @@ namespace NbCore
 
         public override void CleanUp()
         {
-            actionSys.CleanUp();
-            animationSys.CleanUp();
-            transformSys.CleanUp();
-            
-            renderSys.CleanUp();
-            sceneMgmtSys.CleanUp();
-            registrySys.CleanUp();
-
+            foreach (EngineSystem sys in _engineSystemMap.Values)
+            {
+                sys.CleanUp();
+            }
         }
-
 
         //API
         //The following static methods should be used to expose
@@ -907,11 +991,11 @@ namespace NbCore
         public List<string> GetMaterialShaderDirectives(MeshMaterial mat)
         {
             List<string> includes = new();
-
-            for (int i = 0; i < mat.Flags.Count; i++)
+            List<MaterialFlagEnum> mat_flags = mat.GetFlags();
+            for (int i = 0; i < mat_flags.Count; i++)
             {
-                if (MeshMaterial.supported_flags.Contains(mat.Flags[i]))
-                    includes.Add(mat.Flags[i].ToString().Split(".")[^1]);
+                if (MeshMaterial.supported_flags.Contains(mat_flags[i]))
+                    includes.Add(mat_flags[i].ToString().Split(".")[^1]);
             }
 
             return includes;
@@ -939,36 +1023,21 @@ namespace NbCore
 
         public ulong CalculateShaderHash(GLSLShaderConfig conf, List<string> extradirectives = null)
         {
-            List<string> finaldirectives = new();
-            finaldirectives.AddRange(CreateShaderDirectivesFromMode(conf.ShaderMode));
+            ulong hash = conf.Hash;
             if (extradirectives != null)
-                finaldirectives.AddRange(extradirectives);
-            finaldirectives.Add(conf.Name);
-            return CalculateShaderHash(finaldirectives);
+            {
+                for (int i = 0; i < extradirectives.Count;i++)
+                {
+                    hash = NbHasher.CombineHash(hash, NbHasher.Hash(extradirectives[i]));
+                }
+            }
+
+            return hash;
         }
-        
-        public ulong CalculateShaderHash(List<string> includes)
-        {
-            //Directive ordering
-            //1: General directives
-            //2: Material directives
-            //3: Config unique name
-
-            string hash = "";
-
-            for (int i = 0; i < includes.Count; i++)
-                hash += includes[i].ToString();
-
-            if (hash == "")
-                hash = "DEFAULT";
-
-            return NbHasher.Hash(hash);
-        }
-
 
         public GLSLShaderConfig CreateShaderConfig(GLSLShaderSource vs, GLSLShaderSource fs,
                                                 GLSLShaderSource gs, GLSLShaderSource tcs,
-                                                GLSLShaderSource tes, NbShaderMode mode, 
+                                                GLSLShaderSource tes, NbShaderMode mode,
                                                 string name, bool isGeneric = false)
         {
 
@@ -978,6 +1047,16 @@ namespace NbCore
             return shader_conf;
         }
 
+        public NbScript CreateScript(string filepath)
+        {
+            NbScript script = GetSystem<ScriptingSystem>().CompileScript(filepath);
+            if (script != null)
+            {
+                RegisterEntity(script);
+            }
+            return script;
+        }
+
         public NbShader CreateShader(GLSLShaderConfig conf, List<string> extradirectives = null)
         {
             NbShader shader = new(conf);
@@ -985,6 +1064,26 @@ namespace NbCore
                 shader.directives = new(extradirectives);
             return shader;
         }
+
+        public void SetMaterialShader(MeshMaterial mat, GLSLShaderConfig conf)
+        {
+            //Calculate requested shader hash
+            ulong shader_hash = CalculateShaderHash(conf, GetMaterialShaderDirectives(mat));
+
+            NbShader new_shader = GetShaderByHash(shader_hash);
+
+            if (new_shader == null)
+            {
+                //Create new Shader
+                new_shader = RenderState.engineRef.CreateShader(conf, 
+                    GetMaterialShaderDirectives(mat));
+                
+                CompileShader(new_shader);
+            }
+            
+            mat.AttachShader(new_shader);
+        }
+
 
         public bool CompileShader(NbShader shader)
         {
@@ -1140,7 +1239,7 @@ namespace NbCore
             foreach (var s in ob["MESH_DATA"])
             {
                 NbMeshData meshdata = (NbMeshData) IO.NbDeserializer.Deserialize(s);
-                renderSys.MeshDataMgr.Add(meshdata.Hash, meshdata);
+                GetSystem<RenderingSystem>().MeshDataMgr.Add(meshdata.Hash, meshdata);
             }
 
             foreach (var s in ob["MATERIALS"])
@@ -1179,14 +1278,14 @@ namespace NbCore
         public void DisposeSceneGraphNode(SceneGraphNode node)
         {
             //Remove from SceneGraph
-            sceneMgmtSys.ActiveSceneGraph.RemoveNode(node);
+            GetSystem<SceneManagementSystem>().ActiveSceneGraph.RemoveNode(node);
             
             //Mesh Node Disposal
             if (node.HasComponent<MeshComponent>())
             {
                 MeshComponent mc = node.GetComponent<MeshComponent>() as MeshComponent;
                 if (mc.InstanceID >= 0)
-                    renderSys.Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
+                    GetSystem<RenderingSystem>().Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
             }
 
             //Light Node Disposal
@@ -1194,17 +1293,17 @@ namespace NbCore
             {
                 LightComponent lc = node.GetComponent<LightComponent>() as LightComponent;
                 if (lc.InstanceID >= 0)
-                    renderSys.Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
+                    GetSystem<RenderingSystem>().Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
             }
 
             if (node.HasComponent<AnimComponent>())
             {
                 AnimComponent ac = node.GetComponent<AnimComponent>() as AnimComponent;
                 ac.AnimationDict.Clear();
-                animationSys.AnimationGroups.Remove(ac.AnimGroup);
+                GetSystem<AnimationSystem>().AnimationGroups.Remove(ac.AnimGroup);
                 foreach (Animation anim in ac.AnimGroup.Animations)
                 {
-                    animationSys.AnimMgr.Remove(anim);
+                    GetSystem<AnimationSystem>().AnimMgr.Remove(anim);
                 }
 
                 //TODO: Remove animation data objects as well
@@ -1233,7 +1332,7 @@ namespace NbCore
             //Ideally we would like to have multiple scenegraphs
             //With different objects on each one and just render the
             //visible one
-            return sceneMgmtSys.ActiveSceneGraph;
+            return GetSystem<SceneManagementSystem>().ActiveSceneGraph;
         }
 
         public override void OnRenderUpdate(double dt)

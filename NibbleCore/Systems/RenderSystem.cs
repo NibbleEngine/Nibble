@@ -100,9 +100,9 @@ namespace NbCore.Systems
             NbMeshGroup group = new()
             {
                 ID = 0,
-                GroupTBO1Data = new NbMatrix4[256],
-                PrevFrameJointData = new NbMatrix4[256],
-                NextFrameJointData = new NbMatrix4[256],
+                GroupTBO1Data = new NbMatrix4[512],
+                PrevFrameJointData = new NbMatrix4[512],
+                NextFrameJointData = new NbMatrix4[512],
                 GroupTBO1 = Renderer.CreateGroupBuffer(),
                 boneRemapIndices = new int[1],
                 Meshes = new()
@@ -673,7 +673,8 @@ namespace NbCore.Systems
             //renderDecalMeshes(); //Render Decals
             renderDefaultMeshes(); //Collisions, Locators, Joints
             
-            renderDeferredLightPass(); //Deferred Lighting Pass to pbuf
+            if (RenderState.settings.renderSettings.UseLighting)
+                renderDeferredLightPass(); //Deferred Lighting Pass to pbuf
 
             //FORWARD STAGE - TRANSPARENT MESHES
             //renderTransparent(); //Directly to Pbuf

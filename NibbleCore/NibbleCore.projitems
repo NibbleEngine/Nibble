@@ -16,7 +16,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Components\LightComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\ReferenceComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\SceneComponent.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Components\TransformData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Components\ScriptComponent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\TransformData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\DDSImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ApplicationLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimationGroup.cs" />
@@ -41,6 +42,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\TwosComplement.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\OpenGLWindow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\NbScript.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Systems\ScriptingSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiLog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiOpenFileDialog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderEditor.cs" />

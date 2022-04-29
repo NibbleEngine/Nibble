@@ -22,7 +22,6 @@ namespace NibbleOBJPlugin
 
         private OpenFileDialog openFileDialog;
 
-        
         public Plugin(Engine e) : base(e)
         {
             Name = PluginName;
@@ -47,9 +46,10 @@ namespace NibbleOBJPlugin
             node.Dispose(); //Dispose local root
         }
 
-        private NbMesh GenerateMesh(List<NbVector3> lverts, List<NbVector3> lnormals, List<NbVector3i> ltris)
+        private NbMesh GenerateMesh(List<NbVector3> lverts, List<NbVector3> lnormals, 
+                                    List<NbVector2> luvs, List<NbVector3i> ltris)
         {
-            NbMeshData data = GenerateGeometryData(lverts, lnormals, ltris);
+            NbMeshData data = GenerateGeometryData(lverts, lnormals, luvs, ltris);
             NbMeshMetaData metadata = GenerateGeometryMetaData(lverts.Count, ltris.Count);
 
             //Generate NbMesh
@@ -77,22 +77,30 @@ namespace NibbleOBJPlugin
             return metadata;
         }
 
-        private NbMeshData GenerateGeometryData(List<NbVector3> lverts, List<NbVector3> lnormals, List<NbVector3i> ltris)
+        private NbMeshData GenerateGeometryData(List<NbVector3> lverts, List<NbVector3> lnormals, 
+                                                List<NbVector2> luvs, List<NbVector3i> ltris)
         {
             bool has_normals = lnormals.Count > 0;
+            bool has_uvs = luvs.Count > 0;
+            
             //Estimate buffer count
             int buffer_count = 1;
             uint vx_stride = 3 * 4;
             if (has_normals)
             {
                 buffer_count++;
-                vx_stride *= 2;
+                vx_stride += 3 * 4; //Use full floats for the normals
             }
-                
+
+            if (has_uvs)
+            {
+                buffer_count++;
+                vx_stride += 2 * 4; //Use full floats for the uvs 
+            }
+
             NbMeshData data = NbMeshData.Create();
 
             //Save vertices
-
             int vxbytecount = lverts.Count * (int) vx_stride;
             int ixbytecount = ltris.Count * 3 * 4; //assume int indices
             data.VertexBuffer = new byte[vxbytecount];
@@ -112,6 +120,11 @@ namespace NibbleOBJPlugin
                     bw.Write(lnormals[i].X);
                     bw.Write(lnormals[i].Y);
                     bw.Write(lnormals[i].Z);
+                }
+                if (has_uvs)
+                {
+                    bw.Write(luvs[i].X);
+                    bw.Write(luvs[i].Y);
                 }
             }
             bw.Flush();
@@ -146,17 +159,6 @@ namespace NibbleOBJPlugin
             
             if (has_normals)
             {
-                buf = new bufInfo()
-                {
-                    count = 3,
-                    normalize = false,
-                    offset = 0,
-                    sem_text = "nPosition",
-                    semantic = 2,
-                    stride = 0,
-                    type = NbPrimitiveDataType.Float
-                };
-
                 bufInfo nbuf = new bufInfo()
                 {
                     count = 3,
@@ -169,16 +171,31 @@ namespace NibbleOBJPlugin
                 };
                 data.buffers[1] = nbuf;
             }
-            
+
+            if (has_uvs)
+            {
+                bufInfo uvbuf = new bufInfo()
+                {
+                    count = 2,
+                    normalize = false,
+                    offset = 24,
+                    sem_text = "uvPosition",
+                    semantic = 1,
+                    stride = vx_stride,
+                    type = NbPrimitiveDataType.Float
+                };
+                data.buffers[2] = uvbuf;
+            }
+
             data.Hash = NbHasher.CombineHash(NbHasher.Hash(data.VertexBuffer),
                                              NbHasher.Hash(data.IndexBuffer));
             return data;
         }
 
         private SceneGraphNode SubmitMesh(string name, MeshMaterial mat, 
-            List<NbVector3> Vertices, List<NbVector3> Normals, List<NbVector3i> Tris)
+            List<NbVector3> Vertices, List<NbVector3> Normals, List<NbVector2> UVs, List<NbVector3i> Tris)
         {
-            NbMesh mesh = GenerateMesh(Vertices, Normals, Tris);
+            NbMesh mesh = GenerateMesh(Vertices, Normals, UVs, Tris);
             mesh.Material = mat;
             return EngineRef.CreateMeshNode(name, mesh);
         }
@@ -191,14 +208,17 @@ namespace NibbleOBJPlugin
             List<NbVector3> VertexPositions = new();
             List<NbVector3> VertexNormals = new();
             List<NbVector2> VertexUVs = new();
-
-            //Final Data
+            
+            //Mesh Data
             List<NbVector3> Vertices = new();
+            List<NbVector2> UVs = new();
             List<NbVector3> Normals = new();
             List<NbVector3i> Tris = new();
             int indexCount = 0;
+            int object_counter = 0;
             bool mesh_submitted = true;
             string node_name = "";
+            string old_line_dir = "#";
 
             //Generate Material
             //TODO: Parse all material from the mtl file.
@@ -240,33 +260,32 @@ namespace NibbleOBJPlugin
             while (!sr.EndOfStream)
             {
                 string line = sr.ReadLine();
+                string new_line_dir = line.Split(' ')[0];
 
-                if (line.StartsWith("#"))
+                if (new_line_dir == "#")
                     continue;
-                else if (line.StartsWith("o"))
+                else if (new_line_dir == "o")
                 {
-                    if (!mesh_submitted)
-                        root.AddChild(SubmitMesh(node_name, mat, Vertices, Normals, Tris));
-                    
                     string[] split = line.Split(' ');
-                    
-                    //Start new mesh
                     node_name = split[1];
-                    
-                    //Final Data
-                    Vertices = new();
-                    Tris = new();
-                    indexCount = 0;
-                    mesh_submitted = false;
                 }
-                else if (line.StartsWith("vt"))
+                else if (new_line_dir == "usemtl")
+                {
+                    //Set Active material
+                }
+                else if (new_line_dir == "mtllib")
+                {
+                    //TODO Parse Material
+                }
+                else if (new_line_dir == "vt")
                 {
                     //Parse Vertex
                     string[] split = line.Split(' ');
                     float.TryParse(split[1], out var x);
                     float.TryParse(split[2], out var y);
-                    VertexUVs.Add(new NbVector2(x, y));
-                } else if (line.StartsWith("vn"))
+                    VertexUVs.Add(new NbVector2(x, 1.0f - y)); //Inverted Y
+                } 
+                else if (new_line_dir == "vn")
                 {
                     //Parse Vertex
                     string[] split = line.Split(' ');
@@ -275,7 +294,7 @@ namespace NibbleOBJPlugin
                     float.TryParse(split[3], out var z);
                     VertexNormals.Add(new NbVector3(x, y, z));
                 }
-                else if (line.StartsWith("v"))
+                else if (new_line_dir == "v")
                 {
                     //Parse Vertex
                     string[] split = line.Split(' ');
@@ -284,7 +303,7 @@ namespace NibbleOBJPlugin
                     float.TryParse(split[3], out var z);
                     VertexPositions.Add(new NbVector3(x, y, z));
                 }
-                else if (line.StartsWith("f"))
+                else if (new_line_dir == "f")
                 {
                     //Parse Face Data
                     string[] split = line.Split(' ');
@@ -348,7 +367,11 @@ namespace NibbleOBJPlugin
                         Normals.Add(VertexNormals[v1_norm_id]);
                         Normals.Add(VertexNormals[v2_norm_id]);
                         Normals.Add(VertexNormals[v3_norm_id]);
-                        
+
+                        UVs.Add(VertexUVs[v1_uv_id]);
+                        UVs.Add(VertexUVs[v2_uv_id]);
+                        UVs.Add(VertexUVs[v3_uv_id]);
+
                         //Save triangle
                         Tris.Add(new NbVector3i(indexCount, indexCount + 1, indexCount + 2));
                         indexCount += 3;
@@ -361,16 +384,33 @@ namespace NibbleOBJPlugin
                 {
                     Log($"Unknown obj directive {line}. Skipping...", LogVerbosityLevel.WARNING);
                 }
-            
+
+                if (old_line_dir == "f" && new_line_dir != "f")
+                {
+                    //Submit Mesh
+                    if (node_name == "")
+                        node_name = "object_" + object_counter;
+
+                    root.AddChild(SubmitMesh(node_name, mat, Vertices, Normals, UVs, Tris));
+                    object_counter += 1;
+
+                    //Final Data
+                    Vertices = new();
+                    Normals = new();
+                    Tris = new();
+                    UVs = new();
+                    indexCount = 0;
+                    node_name = "";
+                }
+
+                old_line_dir = new_line_dir;
             }
 
             //Submit last mesh
-            if (!mesh_submitted)
-                root.AddChild(SubmitMesh(node_name, mat, Vertices, Normals, Tris));
+            root.AddChild(SubmitMesh(node_name == "" ? "object_" + object_counter : node_name, 
+                                         mat, Vertices, Normals, UVs, Tris));
 
             sr.Close();
-            
-            
             return root;
         }
 

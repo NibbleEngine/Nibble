@@ -34,7 +34,7 @@ layout (std430, binding=1) buffer _COMMON_PER_MESH
 
 layout (std430, binding=2) buffer _COMMON_PER_MESHGROUP
 {
-    mat4 boneMatricesTBO[256];
+    mat4 boneMatricesTBO[512];
 };
 
 //Outputs

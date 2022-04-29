@@ -61,6 +61,14 @@ namespace NbCore.Math
                 _Value = Matrix4.CreateTranslation(v._Value)
             };
         }
+
+        public static NbVector3 ExtractTranslation(NbMatrix4 mat)
+        {
+            return new NbVector3()
+            {
+                _Value = mat._Value.ExtractTranslation()
+            };
+        }
         
         public static NbMatrix4 CreateScale(NbVector3 v)
         {
@@ -69,7 +77,15 @@ namespace NbCore.Math
                 _Value = Matrix4.CreateScale(v._Value)
             };
         }
-        
+
+        public static NbVector3 ExtractScale(NbMatrix4 mat)
+        {
+            return new NbVector3()
+            {
+                _Value = mat._Value.ExtractScale()
+            };
+        }
+
         public static NbMatrix4 CreateScale(float s)
         {
             return new NbMatrix4()
@@ -108,7 +124,15 @@ namespace NbCore.Math
             {
                 _Value = Matrix4.CreateRotationZ(r)
             };
-        } 
+        }
+
+        public static NbQuaternion ExtractRotation(NbMatrix4 mat)
+        {
+            return new NbQuaternion()
+            {
+                _Value = mat._Value.ExtractRotation()
+            };
+        }
 
         public NbMatrix4 Inverted()
         {

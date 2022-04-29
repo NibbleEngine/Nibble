@@ -108,12 +108,12 @@ namespace NbCore.UI.ImGui
             {
                 //Register new locator node to engine
                 _manager.EngineRef.RegisterEntity(new_node);
-                _manager.EngineRef.sceneMgmtSys.AddNode(new_node);
+                _manager.EngineRef.GetSystem<Systems.SceneManagementSystem>().AddNode(new_node);
 
                 //Set parent
                 new_node.SetParent(_clicked);
                 
-                _manager.EngineRef.transformSys.RequestEntityUpdate(new_node);
+                _manager.EngineRef.GetSystem<Systems.TransformationSystem>().RequestEntityUpdate(new_node);
 
                 _clicked.IsOpen = true; //Make sure to open the node so that the new node is visible
 
