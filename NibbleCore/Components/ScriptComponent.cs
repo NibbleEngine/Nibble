@@ -26,8 +26,6 @@ namespace NbCore
             writer.WriteValue(GetType().ToString());
             writer.WritePropertyName("Path");
             writer.WriteValue(SourcePath);
-            writer.WritePropertyName("Hash");
-            writer.WriteValue(ScriptHash.ToString());
             writer.WriteEndObject();
         }
 
@@ -35,7 +33,7 @@ namespace NbCore
         {
             ScriptComponent sc = new();
             sc.SourcePath = token.Value<string>("Path");
-            sc.ScriptHash = ulong.Parse(token.Value<string>("Hash"));
+            sc.ScriptHash = NbHasher.Hash(sc.SourcePath);
             return sc;
         }
     }

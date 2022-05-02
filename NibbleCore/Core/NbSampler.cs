@@ -6,22 +6,24 @@ namespace NbCore
     public class NbSampler
     {
         public string Name = "";
-        private NbTexture Tex = null;
+        public int SamplerID = -1;
         public bool IsCube = false;
         public bool IsSRGB = true;
         public bool UseCompression = false;
         public bool UseMipMaps = false;
-        public NbSamplerState State;
+        public string ShaderBinding;
+        public int ShaderLocation;
+        public NbTexture Texture;
         public bool isProcGen = false; //TODO : to be removed once we are done with the stupid proc gen texture parsing
 
         //Override Properties
         public NbSampler()
         {
             //Init State
-            State.SamplerID = -1;
-            State.ShaderBinding = "";
-            State.ShaderLocation = -1;
-            State.Texture = null;
+            SamplerID = -1;
+            ShaderBinding = "";
+            ShaderLocation = -1;
+            Texture = null;
         }
 
         public NbSampler Clone()
@@ -32,29 +34,11 @@ namespace NbCore
                 IsSRGB = IsSRGB,
                 IsCube = IsCube,
                 UseCompression = UseCompression,
-                UseMipMaps = UseMipMaps,
-                Tex = Tex,
-                State = State
+                UseMipMaps = UseMipMaps
             };
 
             return newsampler;
         }
-
-        public void SetTexture(NbTexture tex)
-        {
-            if (Tex == null || Tex != tex)
-            {
-                Tex = tex;
-                State.Texture = tex;
-                tex.Refs++;
-            }
-        }
-
-        public NbTexture GetTexture()
-        {
-            return Tex;
-        }
-
 
         public void Serialize(JsonTextWriter writer)
         {
@@ -63,10 +47,14 @@ namespace NbCore
             writer.WriteValue(GetType().ToString());
             writer.WritePropertyName("Name");
             writer.WriteValue(Name);
-            writer.WritePropertyName("Path");
-            writer.WriteValue(Tex != null ? Tex.Path : "");
-            writer.WritePropertyName("State");
-            IO.NbSerializer.Serialize(State, writer);
+            writer.WritePropertyName("SamplerID");
+            writer.WriteValue(SamplerID);
+            writer.WritePropertyName("ShaderBinding");
+            writer.WriteValue(ShaderBinding);
+            writer.WritePropertyName("ShaderLocation");
+            writer.WriteValue(ShaderLocation);
+            writer.WritePropertyName("Texture");
+            writer.WriteValue(Texture.Path);
             writer.WritePropertyName("IsSRGB");
             writer.WriteValue(IsSRGB);
             writer.WritePropertyName("IsCube");
@@ -80,27 +68,19 @@ namespace NbCore
 
         public static NbSampler Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
-            var test = token.Value<Newtonsoft.Json.Linq.JToken>("State");
             NbSampler sam = new NbSampler()
             {
                 Name = token.Value<string>("Name"),
+                SamplerID = token.Value<int>("SamplerID"),
                 IsCube = token.Value<bool>("IsCube"),
                 IsSRGB = token.Value<bool>("IsSRGB"),
-                State = (NbSamplerState) IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("State")),
+                ShaderBinding = token.Value<string>("ShaderBinding"),
+                ShaderLocation = token.Value<int>("ShaderLocation"),    
+                Texture = Common.RenderState.engineRef.GetTexture(token.Value<string>("Texture")),
                 UseCompression = token.Value<bool>("UseCompression"),
                 UseMipMaps = token.Value<bool>("UseMipMaps")
             };
 
-            //Try to load texture
-            string tex_path = token.Value<string>("Path");
-            if (tex_path != "")
-            {
-                NbTexture tex = Common.RenderState.engineRef.GetTexture(tex_path);
-                if (tex == null)
-                    tex = Common.RenderState.engineRef.CreateTexture(tex_path, false);
-                sam.SetTexture(tex);
-            }
-            
             return sam;
         }
         

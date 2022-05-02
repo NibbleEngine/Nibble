@@ -17,20 +17,6 @@ namespace NbCore.UI.ImGui
         private int _SelectedId = -1;
 
 
-        static void HelpMarker(string desc)
-        {
-            ImGuiNET.ImGui.TextDisabled("(?)");
-            if (ImGuiNET.ImGui.IsItemHovered())
-            {
-                ImGuiNET.ImGui.BeginTooltip();
-                ImGuiNET.ImGui.PushTextWrapPos(ImGuiNET.ImGui.GetFontSize()* 35.0f);
-                ImGuiNET.ImGui.TextUnformatted(desc);
-                ImGuiNET.ImGui.PopTextWrapPos();
-                ImGuiNET.ImGui.EndTooltip();
-            }
-        }
-
-
         public void Draw()
         {
             //Items
@@ -220,7 +206,7 @@ namespace NbCore.UI.ImGui
                             ImGuiNET.ImGui.TableSetColumnIndex(0);
                             ImGuiNET.ImGui.Text("Preview");
                             ImGuiNET.ImGui.TableSetColumnIndex(1);
-                            NbTexture samplerTex = current_sampler.GetTexture();
+                            NbTexture samplerTex = current_sampler.Texture;
                             if (samplerTex is not null && samplerTex.Data.target != NbTextureTarget.Texture2DArray)
                             {
                                 ImGuiNET.ImGui.Image((IntPtr)samplerTex.texID, new Vector2(64, 64));
@@ -231,7 +217,7 @@ namespace NbCore.UI.ImGui
                                     if (samplerTex.Data.target != NbTextureTarget.Texture2DArray)
                                         ImGuiNET.ImGui.Image((IntPtr)samplerTex.texID, new Vector2(512, 512));
                                     ImGuiNET.ImGui.Text(current_sampler.Name);
-                                    ImGuiNET.ImGui.Text(current_sampler.GetTexture().Path);
+                                    ImGuiNET.ImGui.Text(current_sampler.Texture.Path);
                                     ImGuiNET.ImGui.EndTooltip();
                                 }
                             }
@@ -255,7 +241,7 @@ namespace NbCore.UI.ImGui
                             ImGuiNET.ImGui.SetNextItemWidth(-1);
                             if (ImGuiNET.ImGui.Combo("##SamplerTexture" + i, ref currentTexImageID, textureItems, textureItems.Length))
                             {
-                                current_sampler.SetTexture((NbTexture) textureList[currentTexImageID]);
+                                current_sampler.Texture = (NbTexture) textureList[currentTexImageID];
                             }
 
                             if (samplerTex != null)
@@ -266,7 +252,7 @@ namespace NbCore.UI.ImGui
                                 ImGuiNET.ImGui.Text("Sampler ID");
                                 ImGuiNET.ImGui.TableSetColumnIndex(1);
                                 ImGuiNET.ImGui.SetNextItemWidth(-1);
-                                ImGuiNET.ImGui.Combo("##SamplerID" + i, ref current_sampler.State.SamplerID,
+                                ImGuiNET.ImGui.Combo("##SamplerID" + i, ref current_sampler.SamplerID,
                                     new string[] { "0", "1", "2", "3", "4", "5", "6", "7" }, 8);
                             }
                                 
@@ -280,7 +266,7 @@ namespace NbCore.UI.ImGui
                                         compatibleShaderBindings.Add(pair.Key);
                                 }
 
-                                int currentShaderBinding = compatibleShaderBindings.IndexOf(current_sampler.State.ShaderBinding);
+                                int currentShaderBinding = compatibleShaderBindings.IndexOf(current_sampler.ShaderBinding);
                                 ImGuiNET.ImGui.TableNextRow();
                                 ImGuiNET.ImGui.TableSetColumnIndex(0);
                                 ImGuiNET.ImGui.Text("Shader Binding");
@@ -291,7 +277,7 @@ namespace NbCore.UI.ImGui
                                 {
 
                                     Console.WriteLine("Change sampler shader binding");
-                                    current_sampler.State.ShaderBinding = compatibleShaderBindings[currentShaderBinding];
+                                    current_sampler.ShaderBinding = compatibleShaderBindings[currentShaderBinding];
                                     _ActiveMaterial.UpdateSampler(current_sampler);
                                 }
                             }
@@ -308,26 +294,43 @@ namespace NbCore.UI.ImGui
                 ImGuiNET.ImGui.TreePop();
             }
 
-            if (ImGuiNET.ImGui.TreeNode("Material Uniforms"))
-            {
-                if (ImGuiNET.ImGui.BeginPopupContextItem("UniformTableCTX", ImGuiPopupFlags.MouseButtonRight))
-                {
-                    if (ImGuiNET.ImGui.MenuItem("Add Uniform ##flag"))
-                    {
-                        Console.WriteLine($"Creating New uniform");
-                        NbUniform new_uniform = new();
-                        _ActiveMaterial.Uniforms.Add(new_uniform);
-                    }
-                    ImGuiNET.ImGui.EndPopup();
-                }
+            bool mat_uniform_tree_open = ImGuiNET.ImGui.TreeNode("Material Uniforms");
 
+            if (ImGuiNET.ImGui.BeginPopupContextItem("UniformTableCTX", ImGuiPopupFlags.MouseButtonRight))
+            {
+                if (ImGuiNET.ImGui.MenuItem("Add Uniform ##flag"))
+                {
+                    Console.WriteLine($"Creating New uniform");
+                    NbUniform new_uniform = new();
+                    _ActiveMaterial.Uniforms.Add(new_uniform);
+                }
+                ImGuiNET.ImGui.EndPopup();
+            }
+
+            if (mat_uniform_tree_open)
+            {
                 for (int i = 0; i < _ActiveMaterial.Uniforms.Count; i++)
                 {
                     NbUniform current_uf = _ActiveMaterial.Uniforms[i];
 
-                    if (ImGuiNET.ImGui.TreeNode(current_uf.Name + "##" + i))
+                    Vector2 node_rect_pos = ImGuiNET.ImGui.GetCursorPos();
+                    bool node_open = ImGuiNET.ImGui.TreeNodeEx(current_uf.Name + "##" + i, ImGuiTreeNodeFlags.SpanAvailWidth| ImGuiTreeNodeFlags.AllowItemOverlap);
+                    Vector2 node_rect_size = ImGuiNET.ImGui.GetItemRectSize();
+                    float button_width = node_rect_size.Y;
+                    float button_height = button_width;
+                    ImGuiNET.ImGui.SameLine();
+                    ImGuiNET.ImGui.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width);
+                    var io = ImGuiNET.ImGui.GetIO();
+                    ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
+                    if (ImGuiNET.ImGui.Button("-", new Vector2(button_width, node_rect_size.Y)))
                     {
-                        if (ImGuiNET.ImGui.BeginTable("##SamplerTable" + i, 2))
+                        Callbacks.Logger.Log(this, "REMOVE UNIFORM", LogVerbosityLevel.INFO);
+                    }
+                    ImGuiNET.ImGui.PopFont();
+
+                    if (node_open)
+                    {
+                        if (ImGuiNET.ImGui.BeginTable("##UniformTable" + i, 2))
                         {
                             ImGuiNET.ImGui.TableSetupColumn("Info", ImGuiTableColumnFlags.WidthFixed, 120.0f);
                             ImGuiNET.ImGui.TableSetupColumn("Data");
@@ -370,7 +373,7 @@ namespace NbCore.UI.ImGui
                             ImGuiNET.ImGui.TableSetColumnIndex(1);
                             ImGuiNET.ImGui.SetNextItemWidth(-1);
 
-                            NbCore.Math.NbVector4 vec = new(current_uf.Values);
+                            Math.NbVector4 vec = new(current_uf.Values);
                             switch (current_uf.State.Type)
                             {
                                 case NbUniformType.Float:

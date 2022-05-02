@@ -148,7 +148,7 @@ namespace NbCore.UI.ImGui
         {
             //Draw using ImGUI
             ImGuiNET.ImGuiTreeNodeFlags base_flags = ImGuiNET.ImGuiTreeNodeFlags.OpenOnArrow | 
-                                                     ImGuiNET.ImGuiTreeNodeFlags.SpanAvailWidth;
+                                                     ImGuiNET.ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiNET.ImGuiTreeNodeFlags.AllowItemOverlap;
             
             if (n.Children.Count == 0)
                 base_flags |= ImGuiNET.ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiNET.ImGuiTreeNodeFlags.Leaf;
@@ -168,7 +168,7 @@ namespace NbCore.UI.ImGui
 
             ImGuiCore.SetNextItemOpen(n.IsOpen);
             bool node_open = ImGuiCore.TreeNodeEx(n.ID.ToString(), base_flags, n.Name);
-            
+
             n.IsOpen = node_open;
             if (ImGuiCore.IsItemClicked(ImGuiNET.ImGuiMouseButton.Left))
             {

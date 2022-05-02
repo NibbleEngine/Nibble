@@ -111,6 +111,11 @@ namespace NbCore
             PixelInternalFormat pif = (PixelInternalFormat) GraphicsAPI.InternalFormatMap[format];
             TextureTarget textarget = GraphicsAPI.TextureTargetMap[target];
 
+            PixelType pixel_type = PixelType.Float;
+            if (pif == PixelInternalFormat.Rgba8)
+                pixel_type = PixelType.UnsignedByte;
+
+
             if (textarget == TextureTarget.Texture2DMultisample)
             {
                 GL.BindTexture(TextureTarget.Texture2DMultisample, handle);
@@ -137,18 +142,17 @@ namespace NbCore
                 switch (format)
                 {
                     case NbTextureInternalFormat.DEPTH:
-                        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, Size.X, Size.Y, 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+                        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, Size.X, Size.Y, 0, PixelFormat.DepthComponent, pixel_type, IntPtr.Zero);
                         break;
                     default:
-                        GL.TexImage2D(TextureTarget.Texture2D, 0, pif, Size.X, Size.Y, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
+                        GL.TexImage2D(TextureTarget.Texture2D, 0, pif, Size.X, Size.Y, 0, PixelFormat.Rgba, pixel_type, IntPtr.Zero);
                         break;
                 }
 
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
 
                 GL.BindFramebuffer(FramebufferTarget.FramebufferExt, attach_to_fbo);
                 GL.FramebufferTexture2D(FramebufferTarget.FramebufferExt, attachment_id, TextureTarget.Texture2D, handle, 0);

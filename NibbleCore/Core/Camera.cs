@@ -155,8 +155,8 @@ namespace NbCore
             
             NbQuaternion yaw_q = NbQuaternion.FromAxis(cam.Up, yaw);
             NbQuaternion pitch_q = NbQuaternion.FromAxis(cam.Right, pitch);
-            NbQuaternion new_rot = NbQuaternion.Mult(pitch_q, yaw_q);
-            new_rot = NbQuaternion.Mult(new_rot, t_controller.Rotation);
+            NbQuaternion new_rot = pitch_q * yaw_q;
+            new_rot = new_rot * t_controller.Rotation;
             
             //Console.WriteLine("Mouse Displacement {0} {1}",
             //                target.Rotation.X, target.Rotation.Y);

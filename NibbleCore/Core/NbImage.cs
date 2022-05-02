@@ -8,6 +8,9 @@ namespace NbCore
     {
         public NbTextureTarget target;
         public NbTextureInternalFormat pif;
+        public NbTextureFilter MinFilter = NbTextureFilter.Linear;
+        public NbTextureFilter MagFilter = NbTextureFilter.Linear;
+        public NbTextureWrapMode WrapMode = NbTextureWrapMode.ClampToEdge;
         public byte[] Data;
         public int Width;
         public int Height;

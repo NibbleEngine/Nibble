@@ -17,6 +17,23 @@ namespace NbCore
         TextureCubeMap
     }
 
+
+    public enum NbTextureWrapMode
+    {
+        ClampToEdge,
+        ClampToBorder,
+        Repeat,
+        MirroredRepeat
+    }
+
+    public enum NbTextureFilter
+    {
+        Linear, //Min and Max Filders
+        Nearest, //Min and Max Filters
+        NearestMipmapLinear, // Min Filter only
+        LinearMipmapNearest // Min Filter only
+    }
+
     public enum NbTextureInternalFormat
     {
         DXT1,
@@ -36,9 +53,6 @@ namespace NbCore
         public int texID = -1;
         private bool disposed = false;
         public string Path = "";
-        public PaletteOpt palOpt;
-        public NbVector4 procColor;
-        public NbVector3 avgColor;
         public NbTextureData Data;
         public int Refs = 0;
         
@@ -69,6 +83,8 @@ namespace NbCore
                     {
                         return new DDSImage(imageData);
                     }
+                case ".JPG":
+                case ".JPEG":
                 case ".PNG":
                     {
                         return new PNGImage(imageData);
@@ -180,7 +196,9 @@ namespace NbCore
         public static NbTexture Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
             string path = token.Value<string>("Path");
-            return RenderState.engineRef.CreateTexture(path, false);
+            //TODO : Serialize texture parameters as well
+            return RenderState.engineRef.CreateTexture(path,
+                        NbTextureWrapMode.Repeat, NbTextureFilter.Linear, NbTextureFilter.Linear, false);
         }
 
     }

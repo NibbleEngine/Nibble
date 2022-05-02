@@ -90,6 +90,22 @@ namespace NbCore.Platform.Graphics
             { NbTextureTarget.TextureCubeMap, TextureTarget.TextureCubeMap}
         };
 
+        public static readonly Dictionary<NbTextureFilter, int> TextureFilterMap = new()
+        {
+            { NbTextureFilter.Nearest , (int) TextureMagFilter.Nearest}, //Nearest enum for Mag and Min filters are the same
+            { NbTextureFilter.Linear , (int) TextureMagFilter.Linear}, //Same
+            { NbTextureFilter.NearestMipmapLinear , (int) TextureMinFilter.NearestMipmapLinear}, //Only min filter
+            { NbTextureFilter.LinearMipmapNearest , (int) TextureMinFilter.LinearMipmapNearest}, //only min filter
+        };
+
+        public static readonly Dictionary<NbTextureWrapMode, int> TextureWrapMap = new()
+        {
+            { NbTextureWrapMode.ClampToEdge , (int) TextureWrapMode.ClampToEdge},
+            { NbTextureWrapMode.ClampToBorder , (int) TextureWrapMode.ClampToBorder},
+            { NbTextureWrapMode.Repeat , (int) TextureWrapMode.Repeat},
+            { NbTextureWrapMode.MirroredRepeat , (int) TextureWrapMode.MirroredRepeat}
+        };
+
         public static readonly Dictionary<NbTextureInternalFormat, InternalFormat> InternalFormatMap = new()
         {
             { NbTextureInternalFormat.DXT1, InternalFormat.CompressedSrgbAlphaS3tcDxt1Ext },
@@ -531,10 +547,10 @@ namespace NbCore.Platform.Graphics
                     case "Sampler":
                         {
                             //Upload sampler
-                            NbSamplerState nbSamplerState = (NbSamplerState) sstate.Value;
-                            GL.Uniform1(shader.uniformLocations[key].loc, nbSamplerState.SamplerID);
+                            NbSampler nbSampler = (NbSampler) sstate.Value;
+                            GL.Uniform1(shader.uniformLocations[key].loc, nbSampler.SamplerID);
                             GL.ActiveTexture(TextureUnit.Texture0 + sampler_id);
-                            GL.BindTexture(TextureTargetMap[nbSamplerState.Texture.Data.target], nbSamplerState.Texture.texID);
+                            GL.BindTexture(TextureTargetMap[nbSampler.Texture.Data.target], nbSampler.Texture.texID);
                             sampler_id++;
                             break;
                         }
@@ -846,16 +862,20 @@ namespace NbCore.Platform.Graphics
             return tex;
         }
 
-        public static void setupTextureParameters(NbTexture tex, int wrapMode, int magFilter, int minFilter, float af_amount)
+        public static void setupTextureParameters(NbTexture tex, NbTextureWrapMode wrapMode, NbTextureFilter magFilter, NbTextureFilter minFilter, float af_amount)
         {
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
             GL.BindTexture(gl_target, tex.texID);
-            GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, wrapMode);
-            GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, wrapMode);
-            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, magFilter);
-            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, minFilter);
-            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, 4.0f);
-
+            GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, TextureWrapMap[wrapMode]);
+            GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, TextureWrapMap[wrapMode]);
+            
+            if (magFilter == NbTextureFilter.NearestMipmapLinear || magFilter == NbTextureFilter.LinearMipmapNearest)
+                Log($"Non compatible mag filter {magFilter}. No Mag filter used", LogVerbosityLevel.WARNING);
+            else
+                GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, TextureFilterMap[magFilter]);
+            
+            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, TextureFilterMap[minFilter]);
+            
             //Use anisotropic filtering
             af_amount = System.Math.Max(af_amount, GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy));
             GL.TexParameter(gl_target, (TextureParameterName)0x84FE, af_amount);
@@ -948,8 +968,7 @@ namespace NbCore.Platform.Graphics
                 }
             }
 
-            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (float)TextureMinFilter.Linear);
-            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (float)TextureMagFilter.Linear);
+            GL.GenerateTextureMipmap(tex_id);
 
             //Cleanup
             GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0); //Unbind texture PBO
@@ -1174,9 +1193,9 @@ namespace NbCore.Platform.Graphics
             //Diffuse Texture
             foreach (NbSampler s in Material.ActiveSamplers)
             {
-                GL.Uniform1(s.State.ShaderLocation, s.State.SamplerID);
-                GL.ActiveTexture(TextureUnit.Texture0 + s.State.SamplerID);
-                GL.BindTexture(TextureTargetMap[s.State.Texture.Data.target], s.State.Texture.texID);
+                GL.Uniform1(Material.Shader.uniformLocations[s.ShaderBinding].loc, s.SamplerID);
+                GL.ActiveTexture(TextureUnit.Texture0 + s.SamplerID);
+                GL.BindTexture(TextureTargetMap[s.Texture.Data.target], s.Texture.texID);
             }
         }
         

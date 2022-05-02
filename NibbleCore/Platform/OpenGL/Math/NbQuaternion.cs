@@ -108,7 +108,7 @@ namespace NbCore.Math
             return n;
         }
 
-        public static NbQuaternion Mult(NbQuaternion q1, NbQuaternion q2)
+        public static NbQuaternion operator *(NbQuaternion q1, NbQuaternion q2)
         {
             return new NbQuaternion()
             {

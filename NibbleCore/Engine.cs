@@ -365,9 +365,10 @@ namespace NbCore
                 //Register Textures as well
                 foreach (NbSampler sampl in mat.Samplers)
                 {
-                    NbTexture tex = sampl.GetTexture();
-                    if (tex != null)
-                        RegisterEntity(tex);
+                    if (sampl.Texture != null)
+                    {
+                        RegisterEntity(sampl.Texture);
+                    }
                 }
             }
         }
@@ -970,17 +971,21 @@ namespace NbCore
         
         #region GLRelatedRequests
 
-        public NbTexture CreateTexture(string filepath, bool keepData = false)
+        public NbTexture CreateTexture(string filepath,
+            NbTextureWrapMode wrapmode, NbTextureFilter minFilter, NbTextureFilter magFilter, bool keepData = false)
         {
             byte[] data = File.ReadAllBytes(filepath);
-            return CreateTexture(data, filepath, keepData);
+            return CreateTexture(data, filepath, wrapmode, minFilter, magFilter, keepData);
         }
         
-        public NbTexture CreateTexture(byte[] data, string name, bool keepData= false)
+        public NbTexture CreateTexture(byte[] data, string name,
+            NbTextureWrapMode wrapmode, NbTextureFilter minFilter, NbTextureFilter magFilter,
+            bool keepData = false)
         {
             //TODO: Possibly move that to a separate rendering thread
             NbTexture tex = new(name, data);
             Platform.Graphics.GraphicsAPI.GenerateTexture(tex);
+            Platform.Graphics.GraphicsAPI.setupTextureParameters(tex, wrapmode, magFilter, minFilter, 8.0f);
             Platform.Graphics.GraphicsAPI.UploadTexture(tex);
             if (!keepData)
                 tex.Data.Data = null;
@@ -1122,6 +1127,7 @@ namespace NbCore
             List<GLSLShaderConfig> configs = new();
             List<MeshMaterial> materials = new();
             List<NbTexture> textures = new();
+            List<string> scripts = new();
             List<NbMesh> meshes = new();
             List<NbMeshData> mesh_data = new();
 
@@ -1154,18 +1160,31 @@ namespace NbCore
                     if (!mesh_data.Contains(mc.Mesh.Data))
                         mesh_data.Add(mc.Mesh.Data);
 
-                    //Save Material
+                    //Save Materiald
                     if (!materials.Contains(mc.Mesh.Material) && !mc.Mesh.Material.IsGeneric)
                         materials.Add(mc.Mesh.Material);
 
                     foreach (NbSampler sampler in mc.Mesh.Material.Samplers)
                     {
-                        NbTexture tex = sampler.GetTexture();
+                        NbTexture tex = sampler.Texture;
+                        if (tex == null)
+                            continue;
                         if (!textures.Contains(tex))
                             textures.Add(tex);
                     }
 
                     
+                }
+
+                if (node.HasComponent<ScriptComponent>())
+                {
+                    ScriptComponent sc = node.GetComponent<ScriptComponent>() as ScriptComponent;
+                    
+                    if (sc.SourcePath != "" && !scripts.Contains(sc.SourcePath))
+                    {
+                        scripts.Add(sc.SourcePath);
+                    }
+                
                 }
             }
 
@@ -1180,6 +1199,12 @@ namespace NbCore
             writer.WriteStartArray();
             foreach (NbTexture tex in textures)
                 IO.NbSerializer.Serialize(tex, writer);
+            writer.WriteEndArray();
+
+            writer.WritePropertyName("SCRIPTS");
+            writer.WriteStartArray();
+            foreach (string script_path in scripts)
+                IO.NbSerializer.Serialize(script_path, writer);
             writer.WriteEndArray();
 
             writer.WritePropertyName("MATERIALS");
@@ -1216,9 +1241,9 @@ namespace NbCore
             StreamReader sr = new(filepath);
             Newtonsoft.Json.JsonTextReader reader = new Newtonsoft.Json.JsonTextReader(sr);
             var serializer = new Newtonsoft.Json.JsonSerializer();
-
             Newtonsoft.Json.Linq.JObject ob = serializer.Deserialize<Newtonsoft.Json.Linq.JObject>(reader);
-
+            reader.Close();
+            
             //Parse Shader Sources
             Dictionary<ulong,NbMeshData> meshes = new();
 
