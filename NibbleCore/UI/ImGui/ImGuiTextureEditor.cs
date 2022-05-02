@@ -16,7 +16,7 @@ namespace NbCore.UI.ImGui
 
         public ImGuiTextureEditor()
         {
-            openFileDialog = new("texture-open-file", ".dds|.png", false); //Initialize OpenFileDialog
+            openFileDialog = new("texture-open-file", ".dds|.png|.jpg|.jpeg", false); //Initialize OpenFileDialog
             openFileDialog.SetDialogPath(texture_path);
         }
 
@@ -46,7 +46,8 @@ namespace NbCore.UI.ImGui
             if (openFileDialog.Draw(new() { X = 640, Y = 480 }))
             {
                 texture_path = System.IO.Path.GetDirectoryName(openFileDialog.GetSelectedFile());
-                NbTexture tex = RenderState.engineRef.CreateTexture(openFileDialog.GetSelectedFile(), false);
+                NbTexture tex = RenderState.engineRef.CreateTexture(openFileDialog.GetSelectedFile(),
+                        NbTextureWrapMode.Repeat, NbTextureFilter.Linear, NbTextureFilter.Linear, false);
                 RenderState.engineRef.RegisterEntity(tex);
                 SetTexture(tex);
             }

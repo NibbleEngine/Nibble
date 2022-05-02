@@ -129,9 +129,10 @@ namespace NbCore.Text
             //Generate Sampler
             NbSampler sampl = new NbSampler();
             //TODO: Remove NMS stuff from here
-            sampl.Name = "mpCustomPerMaterial.gDiffuseMap";
-            sampl.State.SamplerID = 0;
-            sampl.SetTexture(tex);
+            sampl.Name = "gDiffuseMap";
+            sampl.SamplerID = 0;
+            sampl.ShaderBinding = "mpCustomPerMaterial.gDiffuseMap";
+            sampl.Texture = tex;
             
             //Generate Font Material
             material = new MeshMaterial();
@@ -172,11 +173,11 @@ namespace NbCore.Text
 
             //Generate Sampler
             NbSampler sampl = new NbSampler();
-            sampl.Name = "mpCustomPerMaterial.gDiffuseMap";
-            sampl.State.SamplerID = 0;
-            sampl.SetTexture(tex);
+            sampl.Name = "gDiffuseMap";
+            sampl.SamplerID = 0;
+            sampl.ShaderBinding = "mpCustomPerMaterial.gDiffuseMap";
+            sampl.Texture = tex;
             
-
             //Generate Font Material
             material = new MeshMaterial();
         }

@@ -8,6 +8,8 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using NbCore.Common;
 using NbCore.Math;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace NbCore.UI.ImGui
 {
@@ -43,8 +45,17 @@ namespace NbCore.UI.ImGui
             IntPtr context = ImGuiNET.ImGui.CreateContext();
             ImGuiNET.ImGui.SetCurrentContext(context);
             var io = ImGuiNET.ImGui.GetIO();
-            io.Fonts.AddFontDefault();
-
+            //io.Fonts.AddFontDefault();
+            //Load Logo Texture to the GPU
+            byte[] fontdata = Callbacks.getResourceFromAssembly(Assembly.GetEntryAssembly(),
+                "Roboto-Medium.ttf");
+            
+            GCHandle pinnedArray = GCHandle.Alloc(fontdata, GCHandleType.Pinned);
+            IntPtr fontPtr = pinnedArray.AddrOfPinnedObject();
+            io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 16.0f);
+            io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 10.0f);
+            
+            
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
 
             CreateDeviceResources();
@@ -52,6 +63,8 @@ namespace NbCore.UI.ImGui
 
             SetPerFrameImGuiData(1f / 60f);
 
+            pinnedArray.Free();
+            
             ImGuiNET.ImGui.NewFrame();
             _frameBegun = true;
         }

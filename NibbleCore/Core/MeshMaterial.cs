@@ -9,6 +9,16 @@ namespace NbCore
     //Stolen from NMS sorry HG ^.^
     public enum MaterialFlagEnum
     {
+        _NB_DIFFUSE_MAP,
+        _NB_NORMAL_MAP,
+        _NB_TWO_CHANNEL_NORMAL_MAP,
+        _NB_METALLIC_ROUGHNESS_MAP,
+        _NB_AO_MAP,
+        _NB_AO_METALLIC_ROUGHNESS_MAP,
+        _NB_EMISSIVE_MAP,
+        _NB_UNLIT,
+        
+        //OLD FLAGS TO BE TRANSFORMED
         _F01_DIFFUSEMAP,
         _F02_SKINNED,
         _F03_NORMALMAP,
@@ -90,10 +100,15 @@ namespace NbCore
         public float[] material_flags = new float[64];
 
         public static List<MaterialFlagEnum> supported_flags = new() {
-            MaterialFlagEnum._F01_DIFFUSEMAP,
+            MaterialFlagEnum._NB_DIFFUSE_MAP,
+            MaterialFlagEnum._NB_NORMAL_MAP,
+            MaterialFlagEnum._NB_TWO_CHANNEL_NORMAL_MAP,
+            MaterialFlagEnum._NB_METALLIC_ROUGHNESS_MAP,
+            MaterialFlagEnum._NB_AO_METALLIC_ROUGHNESS_MAP,
+            MaterialFlagEnum._NB_AO_MAP,
+            MaterialFlagEnum._NB_EMISSIVE_MAP,
+            MaterialFlagEnum._NB_UNLIT,
             MaterialFlagEnum._F02_SKINNED,
-            MaterialFlagEnum._F03_NORMALMAP,
-            MaterialFlagEnum._F07_UNLIT,
             MaterialFlagEnum._F09_TRANSPARENT,
             MaterialFlagEnum._F22_TRANSPARENT_SCALAR,
             MaterialFlagEnum._F11_ALPHACUTOUT,
@@ -132,15 +147,15 @@ namespace NbCore
 
         public void UpdateSampler(NbSampler sampler)
         {
-            if (Shader.uniformLocations.ContainsKey(sampler.State.ShaderBinding))
+            if (Shader.uniformLocations.ContainsKey(sampler.ShaderBinding))
             {
-                sampler.State.ShaderLocation = Shader.uniformLocations[sampler.State.ShaderBinding].loc;
+                sampler.ShaderLocation = Shader.uniformLocations[sampler.ShaderBinding].loc;
                 if (!ActiveSamplers.Contains(sampler))
                     ActiveSamplers.Add(sampler);
             } else
             {
-                sampler.State.ShaderBinding = "";
-                sampler.State.ShaderLocation = -1;
+                sampler.ShaderBinding = "";
+                sampler.ShaderLocation = -1;
                 if (ActiveSamplers.Contains(sampler))
                     ActiveSamplers.Remove(sampler);
             }
@@ -327,7 +342,6 @@ namespace NbCore
             foreach (Newtonsoft.Json.Linq.JToken tkn in uniform_tkns.Children())
                 mat.Uniforms.Add((NbUniform) IO.NbDeserializer.Deserialize(tkn));
 
-            
             //Calculate Shader hash
             ulong shader_hash = RenderState.engineRef.CalculateShaderHash(conf, RenderState.engineRef.GetMaterialShaderDirectives(mat));
 
@@ -340,7 +354,7 @@ namespace NbCore
                 {
                     directives = RenderState.engineRef.GetMaterialShaderDirectives(mat)
                 };
-
+                
                 shader.SetShaderConfig(conf);
                 RenderState.engineRef.CompileShader(shader);
 

@@ -68,45 +68,6 @@ namespace NbCore
         None
     }
 
-    [NbSerializable]
-    public struct NbSamplerState
-    {
-        public string ShaderBinding;
-        public int ShaderLocation;
-        public int SamplerID; //Should be translated to a TexUnit on render
-        public NbTexture Texture;
-        
-
-        public void Serialize(JsonTextWriter writer)
-        {
-            writer.WriteStartObject();
-            writer.WritePropertyName("ObjectType");
-            writer.WriteValue(GetType().ToString());
-            writer.WritePropertyName("ShaderBinding");
-            writer.WriteValue(ShaderBinding);
-            writer.WritePropertyName("ShaderLocation");
-            writer.WriteValue(ShaderLocation);
-            writer.WritePropertyName("SamplerID");
-            writer.WriteValue(SamplerID);
-            writer.WritePropertyName("Texture");
-            writer.WriteValue(Texture.Path);
-            writer.WriteEndObject();
-        }
-
-        public static NbSamplerState Deserialize(Newtonsoft.Json.Linq.JToken token)
-        {
-            NbSamplerState state = new NbSamplerState()
-            {
-                SamplerID = token.Value<int>("SamplerID"),
-                ShaderBinding = token.Value<string>("ShaderBinding"),
-                ShaderLocation = token.Value<int>("ShaderLocation"),
-                Texture = Common.RenderState.engineRef.GetTexture(token.Value<string>("Texture"))
-            };
-
-            return state;
-        }
-    }
-
     public struct NbUniformState
     {
         [NbSerializable]
@@ -148,7 +109,7 @@ namespace NbCore
             Data["Float:" + name] = val;
         }
 
-        public void AddSampler(string name, NbSamplerState val)
+        public void AddSampler(string name, NbSampler val)
         {
             Data["Sampler:" + name] = val;
         }
