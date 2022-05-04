@@ -53,7 +53,7 @@ namespace NbCore.UI.ImGui
             GCHandle pinnedArray = GCHandle.Alloc(fontdata, GCHandleType.Pinned);
             IntPtr fontPtr = pinnedArray.AddrOfPinnedObject();
             io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 16.0f);
-            io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 10.0f);
+            io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 11.0f);
             
             
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
