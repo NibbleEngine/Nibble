@@ -259,7 +259,7 @@ namespace NbCore.Common
         public static UpdateStatusCallback updateStatus = null;
         public static ShowInfoMsg showInfo = null;
         public static ShowErrorMsg showError = null;
-        public static NbLogger Logger = null;
+        public static NbLogger Logger = null; //TODO Remove the logger from here
         public static AssertCallback Assert = null;
         public static SendRequestCallback issueRequestToGLControl = null;
         public static GetResourceCallback getResource = null;

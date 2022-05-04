@@ -19,6 +19,7 @@ namespace NbCore.UI.ImGui
 
         public void Draw()
         {
+            var io = ImGuiNET.ImGui.GetIO();
             //Items
             List<MeshMaterial> materialList = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().MaterialMgr.Entities;
             string[] items = new string[materialList.Count];
@@ -168,24 +169,52 @@ namespace NbCore.UI.ImGui
                 ImGuiNET.ImGui.TreePop();
             }
 
-            if (ImGuiNET.ImGui.TreeNode("Material Samplers"))
+            //Draw using ImGUI
+            ImGuiTreeNodeFlags base_flags = ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.AllowItemOverlap;
+            
+            if (_ActiveMaterial.Samplers.Count == 0)
+                base_flags |= ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.Leaf;
+            
+            Vector2 node_rect_pos = ImGuiNET.ImGui.GetCursorPos();
+            bool samplers_node_open = ImGuiNET.ImGui.TreeNodeEx("MatSamplers", base_flags, "Samplers");
+            Vector2 node_rect_size = ImGuiNET.ImGui.GetItemRectSize();
+            float button_width = node_rect_size.Y;
+            float button_height = button_width;
+            ImGuiNET.ImGui.SameLine();
+            ImGuiNET.ImGui.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width);
+            ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
+            if (ImGuiNET.ImGui.Button($"+##MatSamplers", new Vector2(button_width, button_height)))
             {
-                if (ImGuiNET.ImGui.BeginPopupContextItem("SamplerTableCTX", ImGuiPopupFlags.MouseButtonRight))
-                {
-                    if (ImGuiNET.ImGui.MenuItem("Add Sampler ##flag"))
-                    {
-                        Console.WriteLine($"Creating New sampler");
-                        NbSampler new_sampler = new();
-                        _ActiveMaterial.Samplers.Add(new_sampler);
-                    }
-                    ImGuiNET.ImGui.EndPopup();
-                }
+                Console.WriteLine($"Creating New sampler");
+                NbSampler new_sampler = new();
+                _ActiveMaterial.Samplers.Add(new_sampler);
+            }
+            ImGuiNET.ImGui.PopFont();
 
+
+            if (samplers_node_open)
+            {
                 for (int i = 0; i < _ActiveMaterial.Samplers.Count; i++)
                 {
                     NbSampler current_sampler = _ActiveMaterial.Samplers[i];
 
-                    if (ImGuiNET.ImGui.TreeNode("Sampler " + i))
+                    node_rect_pos = ImGuiNET.ImGui.GetCursorPos();
+                    bool node_open = ImGuiNET.ImGui.TreeNodeEx(current_sampler.Name + "###Sampler" + i, ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.AllowItemOverlap);
+                    node_rect_size = ImGuiNET.ImGui.GetItemRectSize();
+                    button_width = node_rect_size.Y;
+                    button_height = button_width;
+                    ImGuiNET.ImGui.SameLine();
+                    ImGuiNET.ImGui.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width);
+                    ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
+                    if (ImGuiNET.ImGui.Button($"-##Sampler{i}", new Vector2(button_width, button_height)))
+                    {
+                        Callbacks.Logger.Log(this, "Removing Sampler " + current_sampler.Name, LogVerbosityLevel.INFO);
+                        _ActiveMaterial.RemoveSampler(current_sampler);
+                    }
+                    ImGuiNET.ImGui.PopFont();
+
+
+                    if (node_open)
                     {
                         if (ImGuiNET.ImGui.BeginTable("##SamplerTable"+i, 2))
                         {
@@ -236,7 +265,7 @@ namespace NbCore.UI.ImGui
                             int currentTexImageID = textureList.IndexOf(samplerTex);
                             ImGuiNET.ImGui.TableNextRow();
                             ImGuiNET.ImGui.TableSetColumnIndex(0);
-                            ImGuiNET.ImGui.Text("Sampler Texture");
+                            ImGuiNET.ImGui.Text("Texture");
                             ImGuiNET.ImGui.TableSetColumnIndex(1);
                             ImGuiNET.ImGui.SetNextItemWidth(-1);
                             if (ImGuiNET.ImGui.Combo("##SamplerTexture" + i, ref currentTexImageID, textureItems, textureItems.Length))
@@ -294,18 +323,25 @@ namespace NbCore.UI.ImGui
                 ImGuiNET.ImGui.TreePop();
             }
 
-            bool mat_uniform_tree_open = ImGuiNET.ImGui.TreeNode("Material Uniforms");
+            base_flags = ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.AllowItemOverlap;
+            if (_ActiveMaterial.Uniforms.Count == 0)
+                base_flags |= ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.Leaf;
 
-            if (ImGuiNET.ImGui.BeginPopupContextItem("UniformTableCTX", ImGuiPopupFlags.MouseButtonRight))
+            node_rect_pos = ImGuiNET.ImGui.GetCursorPos();
+            bool mat_uniform_tree_open = ImGuiNET.ImGui.TreeNodeEx("MatUniforms", base_flags, "Uniforms");
+            node_rect_size = ImGuiNET.ImGui.GetItemRectSize();
+            button_width = node_rect_size.Y;
+            button_height = button_width;
+            ImGuiNET.ImGui.SameLine();
+            ImGuiNET.ImGui.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width);
+            ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
+            if (ImGuiNET.ImGui.Button($"+##MatUniforms", new Vector2(button_width, button_height)))
             {
-                if (ImGuiNET.ImGui.MenuItem("Add Uniform ##flag"))
-                {
-                    Console.WriteLine($"Creating New uniform");
-                    NbUniform new_uniform = new();
-                    _ActiveMaterial.Uniforms.Add(new_uniform);
-                }
-                ImGuiNET.ImGui.EndPopup();
+                Console.WriteLine($"Creating New Uniform");
+                NbUniform uf = new();
+                _ActiveMaterial.Uniforms.Add(uf);
             }
+            ImGuiNET.ImGui.PopFont();
 
             if (mat_uniform_tree_open)
             {
@@ -313,20 +349,22 @@ namespace NbCore.UI.ImGui
                 {
                     NbUniform current_uf = _ActiveMaterial.Uniforms[i];
 
-                    Vector2 node_rect_pos = ImGuiNET.ImGui.GetCursorPos();
-                    bool node_open = ImGuiNET.ImGui.TreeNodeEx(current_uf.Name + "##" + i, ImGuiTreeNodeFlags.SpanAvailWidth| ImGuiTreeNodeFlags.AllowItemOverlap);
-                    Vector2 node_rect_size = ImGuiNET.ImGui.GetItemRectSize();
-                    float button_width = node_rect_size.Y;
-                    float button_height = button_width;
+                    
+                    node_rect_pos = ImGuiNET.ImGui.GetCursorPos();
+                    bool node_open = ImGuiNET.ImGui.TreeNodeEx(current_uf.Name + "###Uniform" + i, ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.AllowItemOverlap);
+                    node_rect_size = ImGuiNET.ImGui.GetItemRectSize();
+                    button_width = node_rect_size.Y;
+                    button_height = button_width;
                     ImGuiNET.ImGui.SameLine();
                     ImGuiNET.ImGui.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width);
-                    var io = ImGuiNET.ImGui.GetIO();
                     ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
-                    if (ImGuiNET.ImGui.Button("-", new Vector2(button_width, node_rect_size.Y)))
+                    if (ImGuiNET.ImGui.Button("-##Uniform{i}", new Vector2(button_width, button_height)))
                     {
-                        Callbacks.Logger.Log(this, "REMOVE UNIFORM", LogVerbosityLevel.INFO);
+                        Callbacks.Logger.Log(this, "Removing Uniform " + current_uf.Name, LogVerbosityLevel.INFO);
+                        _ActiveMaterial.RemoveUniform(_ActiveMaterial.Uniforms[i]);
                     }
                     ImGuiNET.ImGui.PopFont();
+                    
 
                     if (node_open)
                     {
@@ -342,12 +380,7 @@ namespace NbCore.UI.ImGui
                             ImGuiNET.ImGui.Text("Name");
                             ImGuiNET.ImGui.TableSetColumnIndex(1);
                             ImGuiNET.ImGui.SetNextItemWidth(-1);
-                            string temp_name = current_uf.Name;
-                            if (ImGuiNET.ImGui.InputText("UniformName" + i, ref temp_name, 30,
-                                ImGuiInputTextFlags.EnterReturnsTrue))
-                            {
-                                current_uf.Name = temp_name;
-                            };
+                            ImGuiNET.ImGui.InputText("Name##Uniform" + i, ref current_uf.Name, 30);
                             
                             //Format
                             ImGuiNET.ImGui.TableNextRow();
@@ -379,14 +412,14 @@ namespace NbCore.UI.ImGui
                                 case NbUniformType.Float:
                                     {
                                         float val = vec.X;
-                                        if (ImGuiNET.ImGui.InputFloat("##UniformValues" + i, ref val))
+                                        if (ImGuiNET.ImGui.DragFloat("##UniformValues" + i, ref val, 0.001f))
                                             vec.X = val;
                                         break;
                                     }
                                 case NbUniformType.Vector2:
                                     {
                                         Vector2 val = new(vec.X, vec.Y);
-                                        if (ImGuiNET.ImGui.InputFloat2("##UniformValues" + i, ref val))
+                                        if (ImGuiNET.ImGui.DragFloat2("##UniformValues" + i, ref val, 0.001f))
                                         {
                                             vec.X = val.X;
                                             vec.Y = val.Y;
@@ -396,7 +429,7 @@ namespace NbCore.UI.ImGui
                                 case NbUniformType.Vector3:
                                     {
                                         Vector3 val = new(vec.X, vec.Y, vec.Z);
-                                        if (ImGuiNET.ImGui.InputFloat3("##UniformValues" + i, ref val))
+                                        if (ImGuiNET.ImGui.DragFloat3("##UniformValues" + i, ref val, 0.01f))
                                         {
                                             vec.X = val.X;
                                             vec.Y = val.Y;
@@ -407,7 +440,7 @@ namespace NbCore.UI.ImGui
                                 case NbUniformType.Vector4:
                                     {
                                         Vector4 val = new(vec.X, vec.Y, vec.Z, vec.W);
-                                        if (ImGuiNET.ImGui.InputFloat4("##UniformValues" + i, ref val))
+                                        if (ImGuiNET.ImGui.DragFloat4("##UniformValues" + i, ref val, 0.01f))
                                         {
                                             vec.X = val.X;
                                             vec.Y = val.Y;

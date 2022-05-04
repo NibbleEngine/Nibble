@@ -161,6 +161,36 @@ namespace NbCore
             }
         }
 
+        public void RemoveSampler(NbSampler sampler)
+        {
+            Samplers.Remove(sampler);
+            ActiveSamplers.Remove(sampler);
+            //No need to dispose the sampler
+        }
+
+        private void AddUniforms()
+        {
+            Uniforms.Clear();
+            ActiveUniforms.Clear();
+            foreach (string uf_name in Shader.uniformLocations.Keys)
+            {
+                NbUniformFormat uf_format = Shader.uniformLocations[uf_name];
+                NbUniform uf = new()
+                {
+                    Name = uf_name,
+                    State = new()
+                    {
+                        ShaderBinding = uf_name,
+                        ShaderLocation = uf_format.loc,
+                        Type = uf_format.type
+                    },
+                    Values = new()
+                };
+                ActiveUniforms.Add(uf);
+                Uniforms.Add(uf);
+            }
+        }
+
         public void UpdateUniform(NbUniform uf) 
         { 
             if (Shader.uniformLocations.ContainsKey(uf.State.ShaderBinding))
@@ -179,6 +209,12 @@ namespace NbCore
             }
         }
 
+        public void RemoveUniform(NbUniform uf)
+        {
+            Uniforms.Remove(uf);
+            ActiveUniforms.Remove(uf);
+            //No need to dispose the uf
+        }
 
         //Wrapper to support uberflags
         public bool HasFlag(MaterialFlagEnum flag)
@@ -254,9 +290,8 @@ namespace NbCore
             foreach (NbSampler s in Samplers)
                 UpdateSampler(s);
 
-            //Re-check uniforms
-            foreach (NbUniform uf in Uniforms)
-                UpdateUniform(uf);
+            //Clear Uniforms and -recreate
+            AddUniforms();
         }
 
         protected override void Dispose(bool disposing)

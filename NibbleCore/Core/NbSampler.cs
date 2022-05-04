@@ -20,6 +20,7 @@ namespace NbCore
         public NbSampler()
         {
             //Init State
+            Name = "Sampler";
             SamplerID = -1;
             ShaderBinding = "";
             ShaderLocation = -1;
