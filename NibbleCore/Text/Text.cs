@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using NbCore.Primitives;
 using NbCore;
 using NbCore.Math;
-using OpenTK.Graphics.OpenGL4;
+using NbCore.Platform.Graphics;
+using OpenTK.Graphics.OpenGL4; //TODO Get rid of that
 
 
 namespace NbCore.Text

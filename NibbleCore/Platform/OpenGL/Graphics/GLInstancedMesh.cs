@@ -6,7 +6,7 @@ using OpenTK.Graphics.OpenGL4;
 using NbCore.Utils;
 
 
-namespace NbCore
+namespace NbCore.Platform.Graphics
 {
     public class GLInstancedMesh
     {

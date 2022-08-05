@@ -50,7 +50,7 @@ namespace NbCore
 #nullable enable
             t = new Thread(() => tr.Method.Invoke(null, (object?[])tr.Data));
 #nullable disable
-            Common.Callbacks.Logger.Log(this, "* Issuing Requested Method", 
+            Common.Callbacks.Log(this, "* Issuing Requested Method", 
                 LogVerbosityLevel.INFO);
 
             tk.thread = t;

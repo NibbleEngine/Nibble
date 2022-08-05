@@ -33,7 +33,7 @@ namespace NbCore.Managers
         {
             return ShaderHashMap[hash];
         }
-
+        
         public NbShader GetGenericShaderByHash(ulong hash)
         {
             return GenericShaderHashMap[hash];

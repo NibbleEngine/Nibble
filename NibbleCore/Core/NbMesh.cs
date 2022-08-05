@@ -47,7 +47,7 @@ namespace NbCore
         public MeshInstance[] InstanceDataBuffer = new MeshInstance[2];
         public int InstanceCount = 0;
         public NbMeshGroup Group = null;
-        public MeshMaterial Material;
+        public NbMaterial Material;
         public bool IsGeneric = false;
         
         //This is needed only for removing render instances, so that InstanceIDs for relocated meshes in the buffer are updated

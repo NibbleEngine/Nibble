@@ -11,7 +11,7 @@ namespace NbCore.UI.ImGui
 {
     public class ImGuiMaterialEditor
     {
-        private MeshMaterial _ActiveMaterial = null;
+        private NbMaterial _ActiveMaterial = null;
         private static int current_material_flag = 0;
         private static int current_material_sampler = 0;
         private int _SelectedId = -1;
@@ -21,7 +21,7 @@ namespace NbCore.UI.ImGui
         {
             var io = ImGuiNET.ImGui.GetIO();
             //Items
-            List<MeshMaterial> materialList = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().MaterialMgr.Entities;
+            List<NbMaterial> materialList = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().MaterialMgr.Entities;
             string[] items = new string[materialList.Count];
             for (int i = 0; i < items.Length; i++)
                 items[i] = materialList[i].Name == "" ? "Material_" + i : materialList[i].Name;
@@ -34,7 +34,7 @@ namespace NbCore.UI.ImGui
             if (ImGuiNET.ImGui.Button("Add"))
             {
                 string name = "Material_" + (new Random()).Next(0x1000, 0xFFFF).ToString();
-                MeshMaterial mat = new();
+                NbMaterial mat = new();
                 mat.Name = name;
                 RenderState.engineRef.RegisterEntity(mat);
                 SetMaterial(mat);
@@ -42,7 +42,7 @@ namespace NbCore.UI.ImGui
             ImGuiNET.ImGui.SameLine();
             if (ImGuiNET.ImGui.Button("Del"))
             {
-                MeshMaterial mat = _ActiveMaterial;
+                NbMaterial mat = _ActiveMaterial;
                 SetMaterial(null);
                 RenderState.engineRef.DestroyEntity(mat);
             }
@@ -208,7 +208,7 @@ namespace NbCore.UI.ImGui
                     ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
                     if (ImGuiNET.ImGui.Button($"-##Sampler{i}", new Vector2(button_width, button_height)))
                     {
-                        Callbacks.Logger.Log(this, "Removing Sampler " + current_sampler.Name, LogVerbosityLevel.INFO);
+                        Callbacks.Log(this, "Removing Sampler " + current_sampler.Name, LogVerbosityLevel.INFO);
                         _ActiveMaterial.RemoveSampler(current_sampler);
                     }
                     ImGuiNET.ImGui.PopFont();
@@ -360,7 +360,7 @@ namespace NbCore.UI.ImGui
                     ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
                     if (ImGuiNET.ImGui.Button("-##Uniform{i}", new Vector2(button_width, button_height)))
                     {
-                        Callbacks.Logger.Log(this, "Removing Uniform " + current_uf.Name, LogVerbosityLevel.INFO);
+                        Callbacks.Log(this, "Removing Uniform " + current_uf.Name, LogVerbosityLevel.INFO);
                         _ActiveMaterial.RemoveUniform(_ActiveMaterial.Uniforms[i]);
                     }
                     ImGuiNET.ImGui.PopFont();
@@ -487,10 +487,10 @@ namespace NbCore.UI.ImGui
             }
         }
 
-        public void SetMaterial(MeshMaterial mat)
+        public void SetMaterial(NbMaterial mat)
         {
             _ActiveMaterial = mat;
-            List<MeshMaterial> materialList = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().MaterialMgr.Entities;
+            List<NbMaterial> materialList = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().MaterialMgr.Entities;
             _SelectedId = materialList.IndexOf(mat);
         }
     }

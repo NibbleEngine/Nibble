@@ -54,7 +54,7 @@ namespace NbCore
             if (!HasNode(n))
             {
                 string msg = string.Format("Node {0} does not belongs to this scene", n.Name);
-                Callbacks.Logger.Log(this, msg, LogVerbosityLevel.WARNING);
+                Callbacks.Log(this, msg, LogVerbosityLevel.WARNING);
                 return;
             }
 
@@ -80,14 +80,14 @@ namespace NbCore
             if (HasNode(n))
             {
                 string msg = string.Format("Node {0} already belongs to scene", n.Name);
-                Callbacks.Logger.Log(this, msg, LogVerbosityLevel.WARNING);
+                Callbacks.Log(this, msg, LogVerbosityLevel.WARNING);
                 return;
             }
 
             if (HasNode(n.Name))
             {
                 string msg = string.Format("A node with the same name {0} already belongs to scene", n.Name);
-                Callbacks.Logger.Log(this, msg, LogVerbosityLevel.WARNING);
+                Callbacks.Log(this, msg, LogVerbosityLevel.WARNING);
                 return;
             }
 

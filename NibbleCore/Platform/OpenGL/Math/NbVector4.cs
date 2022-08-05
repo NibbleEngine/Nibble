@@ -39,8 +39,12 @@ namespace NbCore.Math
             _Value.W = w;
         }
         //Methods
-        
-            
+
+        public override string ToString()
+        {
+            return $"{_Value.X} {_Value.Y} {_Value.Z} {_Value.W}";
+        }
+
         //Exposed Properties
         public NbVector3 Xyz
         {

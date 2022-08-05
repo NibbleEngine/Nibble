@@ -149,7 +149,7 @@ namespace NbCore
 
     public class NbShaderCompilationRequest
     {
-        public MeshMaterial mat;
+        public NbMaterial mat;
         public NbShader shader;
         public GLSLShaderConfig config;
     }

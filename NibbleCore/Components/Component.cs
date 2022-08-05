@@ -44,7 +44,7 @@ namespace NbCore
             // If this finalizer runs, someone somewhere failed to
             // call Dispose, which means we've failed to leave
             // a monitor!
-            Common.Callbacks.Logger.Log(this, $"Undisposed lock. Component Type: {GetType()}", LogVerbosityLevel.WARNING);
+            Common.Callbacks.Log(this, $"Undisposed lock. Component Type: {GetType()}", LogVerbosityLevel.WARNING);
         }
 #endif
         #endregion

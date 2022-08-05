@@ -4,11 +4,11 @@ using System.Text;
 
 namespace NbCore.Managers
 {
-    sealed public class MaterialManager : EntityManager<MeshMaterial>
+    sealed public class MaterialManager : EntityManager<NbMaterial>
     {
-        public readonly Dictionary<string, MeshMaterial> MaterialNameMap = new();
+        public readonly Dictionary<string, NbMaterial> MaterialNameMap = new();
 
-        public bool AddMaterial(MeshMaterial mat)
+        public bool AddMaterial(NbMaterial mat)
         {
             if (Add(mat))
             {
@@ -19,7 +19,7 @@ namespace NbCore.Managers
             return false;
         }
 
-        public MeshMaterial GetByName(string name)
+        public NbMaterial GetByName(string name)
         {
             if (MaterialNameMap.ContainsKey(name))
                 return MaterialNameMap[name];

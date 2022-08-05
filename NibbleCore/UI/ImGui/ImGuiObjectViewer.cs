@@ -217,20 +217,20 @@ namespace NbCore.UI.ImGui
 
                         //Items
                         List<Entity> materialList = _manager.EngineRef.GetEntityTypeList(EntityType.Material);
-                        materialList = materialList.FindAll(x => ((MeshMaterial)x).Shader != null);
-                        materialList = materialList.FindAll(x => ((MeshMaterial)x).Shader.ProgramID != -1);
+                        materialList = materialList.FindAll(x => ((NbMaterial)x).Shader != null);
+                        materialList = materialList.FindAll(x => ((NbMaterial)x).Shader.ProgramID != -1);
 
                         string[] items = new string[materialList.Count];
                         for (int i = 0; i < items.Length; i++)
                         {
-                            MeshMaterial mm = (MeshMaterial) materialList[i];
+                            NbMaterial mm = (NbMaterial) materialList[i];
                             items[i] = mm.Name == "" ? "Material_" + i : mm.Name;
                         }
                         
                         int material_id = materialList.IndexOf(mc.Mesh.Material);
 
                         if (ImGuiCore.Combo("##MaterialCombo", ref material_id, items, items.Length))
-                            mc.Mesh.Material = (MeshMaterial) materialList[material_id];
+                            mc.Mesh.Material = (NbMaterial) materialList[material_id];
 
                         ImGuiCore.EndTable();
                     }
@@ -412,6 +412,8 @@ namespace NbCore.UI.ImGui
                                 
                                 if (ImGuiCore.Button(button_title))
                                 {
+                                    if (anim.IsPlaying == false && anim.animData.MetaData.AnimType == AnimationType.OneShot)
+                                        anim.ActiveFrameIndex = 0;
                                     anim.IsPlaying = !anim.IsPlaying;
                                     ac.AnimGroup.ActiveAnimation = anim;
                                 };
@@ -448,9 +450,24 @@ namespace NbCore.UI.ImGui
                 ScriptComponent sc = _model.GetComponent<ScriptComponent>() as ScriptComponent;
 
                 float lineheight = ImGuiCore.GetTextLineHeight();
-                if (ImGuiCore.CollapsingHeader("Script Component", ImGuiTreeNodeFlags.DefaultOpen))
+                
+                System.Numerics.Vector2 node_rect_pos = ImGuiCore.GetCursorPos();
+                bool header_open = ImGuiCore.CollapsingHeader("Script Component", ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.AllowItemOverlap);
+                System.Numerics.Vector2 node_rect_size = ImGuiCore.GetItemRectSize();
+                float button_width = node_rect_size.Y;
+                float button_height = button_width;
+                ImGuiCore.SameLine();
+                ImGuiCore.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width - 3);
+                ImGuiCore.PushFont(ImGuiCore.GetIO().Fonts.Fonts[1]);
+                if (ImGuiCore.Button("-##ScriptComponent", new System.Numerics.Vector2(button_width, button_height)))
                 {
+                    Common.Callbacks.Log(this, "REMOVING SCRIPT COMPONENT", LogVerbosityLevel.INFO);
+                    _manager.EngineRef.RemoveScriptComponentFromNode(_model);
+                }
+                ImGuiCore.PopFont();
 
+                if (header_open)
+                {
                     if (ImGuiCore.BeginTable("##ScriptCompTable", 3, ImGuiTableFlags.None))
                     {
                         ImGuiCore.TableSetupColumn("##ScriptCompTable_PathName", ImGuiTableColumnFlags.WidthFixed);

@@ -11,7 +11,14 @@ namespace NbCore.Math
         {
             _Value = new Matrix4(v1._Value, v2._Value, v3._Value, v4._Value);
         }
-        
+
+        public override string ToString()
+        {
+            return $"{_Value.Row0.X} {_Value.Row0.Y} {_Value.Row0.Z} {_Value.Row0.W}\n" +
+                   $"{_Value.Row1.X} {_Value.Row1.Y} {_Value.Row1.Z} {_Value.Row1.W}\n" +
+                   $"{_Value.Row2.X} {_Value.Row2.Y} {_Value.Row2.Z} {_Value.Row2.W}\n" +
+                   $"{_Value.Row3.X} {_Value.Row3.Y} {_Value.Row3.Z} {_Value.Row3.W}\n";
+        }
 
         public static NbMatrix4 Identity()
         {

@@ -75,9 +75,11 @@ namespace NbCore
             Sources[t] = s;
 
             //Add shader reference to source object
-            s.IsUpdated += OnSourceUpdate;
-
-        }
+            List<GLSLShaderSource> RefShaderSources = new();
+            s.GetReferencedShaderSources(ref RefShaderSources);
+            foreach (GLSLShaderSource ss in RefShaderSources)
+                ss.IsUpdated += OnSourceUpdate;
+        }   
 
         public override GLSLShaderConfig Clone()
         {

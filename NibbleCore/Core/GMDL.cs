@@ -417,60 +417,6 @@ namespace NbCore
     {
         public NbMatrix4 invBindMatrix = NbMatrix4.Identity();
         public NbMatrix4 BindMatrix = NbMatrix4.Identity();
-
-        public void Load(Stream fs)
-        {
-            //Binary Reader
-            BinaryReader br = new(fs);
-            //Lamest way to read a matrix
-            invBindMatrix.M11 = br.ReadSingle();
-            invBindMatrix.M12 = br.ReadSingle();
-            invBindMatrix.M13 = br.ReadSingle();
-            invBindMatrix.M14 = br.ReadSingle();
-            invBindMatrix.M21 = br.ReadSingle();
-            invBindMatrix.M22 = br.ReadSingle();
-            invBindMatrix.M23 = br.ReadSingle();
-            invBindMatrix.M24 = br.ReadSingle();
-            invBindMatrix.M31 = br.ReadSingle();
-            invBindMatrix.M32 = br.ReadSingle();
-            invBindMatrix.M33 = br.ReadSingle();
-            invBindMatrix.M34 = br.ReadSingle();
-            invBindMatrix.M41 = br.ReadSingle();
-            invBindMatrix.M42 = br.ReadSingle();
-            invBindMatrix.M43 = br.ReadSingle();
-            invBindMatrix.M44 = br.ReadSingle();
-
-            //Calculate Binding Matrix
-            NbVector3 BindTranslate = new();
-            NbVector3 BindScale = new();
-            NbQuaternion BindRotation = new();
-
-            //Get Translate
-            BindTranslate.X = br.ReadSingle();
-            BindTranslate.Y = br.ReadSingle();
-            BindTranslate.Z = br.ReadSingle();
-            //Get Quaternion
-            BindRotation.X = br.ReadSingle();
-            BindRotation.Y = br.ReadSingle();
-            BindRotation.Z = br.ReadSingle();
-            BindRotation.W = br.ReadSingle();
-            //Get Scale
-            BindScale.X = br.ReadSingle();
-            BindScale.Y = br.ReadSingle();
-            BindScale.Z = br.ReadSingle();
-
-            //Generate Matrix
-            BindMatrix = NbMatrix4.CreateScale(BindScale) * 
-                         NbMatrix4.CreateFromQuaternion(BindRotation) * 
-                         NbMatrix4.CreateTranslation(BindTranslate);
-
-            //Check Results [Except from Joint 0, the determinant of the multiplication is always 1,
-            // transforms should be good]
-            //Console.WriteLine((BindMatrix * invBindMatrix).Determinant);
-        }
-
         
-        
-
     }
 }

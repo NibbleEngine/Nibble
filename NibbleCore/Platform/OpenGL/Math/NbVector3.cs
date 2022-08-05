@@ -42,7 +42,12 @@ namespace NbCore.Math
                 _Value = Vector3.Cross(_Value, a._Value)
             };
         }
-            
+
+        public override string ToString()
+        {
+            return $"{_Value.X} {_Value.Y} {_Value.Z}";
+        }
+
         //Exposed Properties
         public float X
         {

@@ -44,9 +44,9 @@ namespace NbCore
         public List<string> Nodes;
         
         //Fully unpacked scheme for now. Optimize later
-        public Dictionary<string, List<NbVector3>> Translations;
-        public Dictionary<string, List<NbQuaternion>> Rotations;
-        public Dictionary<string, List<NbVector3>> Scales;
+        public Dictionary<string, NbVector3[]> Translations;
+        public Dictionary<string, NbQuaternion[]> Rotations;
+        public Dictionary<string, NbVector3[]> Scales;
 
         public new ulong GetHashCode()
         {
@@ -79,9 +79,9 @@ namespace NbCore
             if (!Nodes.Contains(node))
             {
                 Nodes.Add(node);
-                Translations[node] = new List<NbVector3>(FrameCount);
-                Rotations[node] = new List<NbQuaternion>(FrameCount);
-                Scales[node] = new List<NbVector3>(FrameCount);
+                Translations[node] = new NbVector3[FrameCount];
+                Rotations[node] = new NbQuaternion[FrameCount];
+                Scales[node] = new NbVector3[FrameCount];
             }
         }
 

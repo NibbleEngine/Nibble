@@ -45,7 +45,7 @@ namespace NbCore.Plugins
 
         public virtual void Log(string message, LogVerbosityLevel lvl)
         {
-            Callbacks.Logger.Log(Name.ToUpper(), message, lvl);
+            Callbacks.Log(Name.ToUpper(), message, lvl);
         }
 
     }

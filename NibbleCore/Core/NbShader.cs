@@ -89,7 +89,7 @@ namespace NbCore
             {
                 string uf_name = arr[i].Key.Split(':')[1];
                 if (!uniformLocations.ContainsKey(uf_name))
-                    state.Data.Remove(uf_name);
+                    state.Data.Remove(arr[i].Key);
             }
         }
 

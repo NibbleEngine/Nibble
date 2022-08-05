@@ -11,7 +11,17 @@ namespace NbCore.Math
         {
             _Value = q._Value;
         }
-        
+
+        public NbQuaternion(float X, float Y, float Z, float W)
+        {
+            _Value = new Quaternion(X, Y, Z, W);
+        }
+
+        public override string ToString()
+        {
+            return $"{_Value.X} {_Value.Y} {_Value.Z} {_Value.W}";
+        }
+
         //Exposed Properties
         public float X
         {

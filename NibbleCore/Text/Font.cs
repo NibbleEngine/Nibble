@@ -33,7 +33,7 @@ namespace NbCore.Text
         public int texWidth; //Texture width in pixels
         public int texHeight; //Texture height in pixels
         public int texID;
-        public MeshMaterial material;
+        public NbMaterial material;
         public Dictionary<string, Symbol> symbols = new Dictionary<string, Symbol>();
         private bool disposedValue;
 
@@ -135,7 +135,7 @@ namespace NbCore.Text
             sampl.Texture = tex;
             
             //Generate Font Material
-            material = new MeshMaterial();
+            material = new NbMaterial();
         }
 
         private void loadJsonFont(StreamReader fnt_sr, Image<Rgba32> img_data)
@@ -179,7 +179,7 @@ namespace NbCore.Text
             sampl.Texture = tex;
             
             //Generate Font Material
-            material = new MeshMaterial();
+            material = new NbMaterial();
         }
 
         private unsafe int genGLTexture(Image<Rgba32> bmp)

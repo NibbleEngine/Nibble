@@ -190,6 +190,13 @@ namespace NbCore
             Resolved = true;
         }
 
+        public void GetReferencedShaderSources(ref List<GLSLShaderSource> sources)
+        {
+            sources.Add(this);
+            foreach (GLSLShaderSource childSource in _dynamicTextParts)
+                childSource.GetReferencedShaderSources(ref sources);
+        }
+        
         private void file_changed(object sender, FileSystemEventArgs e)
         {
             FileSystemWatcher fw = (FileSystemWatcher)sender;

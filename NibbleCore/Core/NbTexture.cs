@@ -31,7 +31,8 @@ namespace NbCore
         Linear, //Min and Max Filders
         Nearest, //Min and Max Filters
         NearestMipmapLinear, // Min Filter only
-        LinearMipmapNearest // Min Filter only
+        LinearMipmapNearest, // Min Filter only
+        LinearMipmapLinear // Min Filter only
     }
 
     public enum NbTextureInternalFormat
@@ -107,7 +108,7 @@ namespace NbCore
             if (Data is null)
             {
                 string msg = "No Texture Data in memory";
-                Callbacks.Logger.Log(this, msg, LogVerbosityLevel.ERROR);
+                Callbacks.Log(this, msg, LogVerbosityLevel.ERROR);
                 return;
             }
 

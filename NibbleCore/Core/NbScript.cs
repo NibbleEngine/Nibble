@@ -19,7 +19,7 @@ namespace NbCore
         
         public void Log(string msg, LogVerbosityLevel lvl)
         {
-            Common.Callbacks.Logger.Log(this, msg, lvl);
+            Common.Callbacks.Log(this, msg, lvl);
         }
         
         public abstract void OnFrameUpdate(SceneGraphNode node, double dt);

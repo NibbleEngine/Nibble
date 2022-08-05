@@ -50,12 +50,12 @@ namespace NbCore.Systems
                 group.ActiveAnimation.Update((float) dt);
                 float interpolationCoeff = (float)(group.ActiveAnimation.AnimationTime / group.ActiveAnimation.FrameDuration);
                 
-                int jointCount = group.RefMeshGroup.JointBindingDataList.Count;
-                for (int i = 0; i < jointCount; i++)
+                for (int i = 0; i < group.RefMeshGroup.JointCount; i++)
                 {
                     NbMatrix4 prev = group.RefMeshGroup.PrevFrameJointData[i];
                     NbMatrix4 next = group.RefMeshGroup.NextFrameJointData[i];
                     group.RefMeshGroup.GroupTBO1Data[i] = (1.0f - interpolationCoeff) * prev + interpolationCoeff * next;
+
                 }
             }
         }
@@ -124,6 +124,9 @@ namespace NbCore.Systems
                         tc.Data.localRotation = nodeRotation;
                         tc.Data.localScale = nodeScale;
                         tc.Data.localTranslation = nodePosition;
+
+                       
+
                     }
                     EngineRef.RequestEntityTransformUpdate(group.AnimationRoot);
                 }

@@ -74,7 +74,6 @@ namespace NbCore
             if ((animData.MetaData.AnimType == AnimationType.OneShot) && (ActiveFrameIndex == activeFrameCount - 1))
             {
                 IsPlaying = false;
-                ActiveFrameIndex = 0;
             }
             else
             {

@@ -17,18 +17,18 @@
     <Compile Include="$(MSBuildThisFileDirectory)Components\ReferenceComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\SceneComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\ScriptComponent.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\PNGImage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Image\PNGImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\TransformData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\DDSImage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Image\DDSImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ApplicationLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimationGroup.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbHasher.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\NbImage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Image\NbImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbLogger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SceneGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ShaderCommons.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Events\EventData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\GLVao.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLVao.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbMeshGroup.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IO\NbDeserializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IO\NbSerializer.cs" />
@@ -49,7 +49,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Version.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbMeshData.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\MeshMaterial.cs" />
+    <Compile Include="..\NibbleCore\Core\NbMaterial.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\MeshMetaData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\MeshComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Engine.cs" />
@@ -125,5 +125,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Input\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Image\" />
   </ItemGroup>
 </Project>

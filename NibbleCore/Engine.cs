@@ -62,9 +62,11 @@ namespace NbCore
         {
             //gpHandler = new PS4GamePadHandler(0); //TODO: Add support for PS4 controller
             reqHandler = new RequestHandler();
-
+            AppDomain.CurrentDomain.AssemblyResolve += LoadAssembly;
+            string pluginsPath = Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Plugins");
+            Environment.SetEnvironmentVariable("PATH", Environment.GetEnvironmentVariable("PATH") + ";" + pluginsPath);
+                
             InitSystems();
-
             LoadDefaultResources();
         }
 
@@ -77,12 +79,12 @@ namespace NbCore
         {
             //Systems Init
             RenderingSystem renderSys = new(); //Init renderManager of the engine
-            EntityRegistrySystem registrySys = new EntityRegistrySystem();
-            ActionSystem actionSys = new ActionSystem();
-            AnimationSystem animationSys = new AnimationSystem();
-            TransformationSystem transformSys = new TransformationSystem();
-            SceneManagementSystem sceneMgmtSys = new SceneManagementSystem();
-            ScriptingSystem scriptMgmtSys = new ScriptingSystem();
+            EntityRegistrySystem registrySys = new();
+            ActionSystem actionSys = new();
+            AnimationSystem animationSys = new();
+            TransformationSystem transformSys = new();
+            SceneManagementSystem sceneMgmtSys = new();
+            ScriptingSystem scriptMgmtSys = new();
             
             SetEngine(this);
             AddSystem(renderSys);
@@ -134,6 +136,43 @@ namespace NbCore
             return aName;
         }
 
+        /// 
+        /// Include externals dlls
+        /// 
+        private Assembly LoadAssembly(object sender, ResolveEventArgs args)
+        {
+            Log("Looking into Plugins Folder", LogVerbosityLevel.INFO);
+            Assembly result = null;
+            if (args != null && !string.IsNullOrEmpty(args.Name))
+            {
+                //Get current exe fullpath
+                FileInfo info = new FileInfo(Assembly.GetExecutingAssembly().Location);
+
+                //Get folder of the executing .exe
+                var folderPath = Path.Combine(info.Directory.FullName, "Plugins");
+
+                //Build potential fullpath to the loading assembly
+                var assemblyName = args.Name.Split(new string[] { "," }, StringSplitOptions.None)[0];
+                var assemblyExtension = "dll";
+                var assemblyPath = Path.Combine(folderPath, string.Format("{0}.{1}", assemblyName, assemblyExtension));
+
+                //Check if the assembly exists in our "Libs" directory
+                if (File.Exists(assemblyPath))
+                {
+                    //Load the required assembly using our custom path
+                    result = Assembly.LoadFrom(assemblyPath);
+                }
+                else
+                {
+                    //Keep default loading
+                    return args.RequestingAssembly;
+                }
+            }
+
+            return result;
+        }
+
+
         private Assembly GetAssembly(AssemblyName aName)
         {
             Assembly a = null;
@@ -144,18 +183,7 @@ namespace NbCore
             }
             catch (FileNotFoundException ex)
             {
-                Log($"Unable to load assembly {aName.Name}, Looking in plugin directory...", LogVerbosityLevel.WARNING);
-                //Look in plugin directory
-                var plugindirectory = Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Plugins");
-                var path = Path.Join(plugindirectory, aName.Name + ".dll");
-
-                if (File.Exists(path))
-                {
-                    a = Assembly.LoadFrom(path);
-                } else
-                {
-                    Log($"Unable to load assembly {aName.Name}, Error: {ex.Message}", LogVerbosityLevel.WARNING);
-                }
+                Log($"Unable to load assembly {aName.Name}, Error: {ex.Message}", LogVerbosityLevel.WARNING);
             }
 
             return a;
@@ -231,14 +259,14 @@ namespace NbCore
                         if (testNibbleVersion == null)
                         {
                             string msg = "Unable to fetch required Nibble.dll version. Plugin not loaded";
-                            Callbacks.Logger.Log(this, msg, LogVerbosityLevel.WARNING);
+                            Callbacks.Log(this, msg, LogVerbosityLevel.WARNING);
                             continue;
                         }
 
-                        if (testNibbleVersion.Major != NibbleName.Version.Major || testNibbleVersion.Minor != NibbleName.Version.Minor)
+                        if (testNibbleVersion.Major != NibbleName.Version.Major || testNibbleVersion.Minor < NibbleName.Version.Minor)
                         {
                             string msg = $"Plugin incompatible with Nibble.dll Version {NibbleName.Version}. Plugin was build against : {testNibbleVersion}.";
-                            Callbacks.Logger.Log(this, msg, LogVerbosityLevel.WARNING);
+                            Callbacks.Log(this, msg, LogVerbosityLevel.WARNING);
                             continue;
                         }
 
@@ -356,7 +384,7 @@ namespace NbCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RegisterEntity(MeshMaterial mat)
+        public void RegisterEntity(NbMaterial mat)
         {
             if (GetSystem<EntityRegistrySystem>().RegisterEntity(mat))
             {
@@ -473,7 +501,7 @@ namespace NbCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DestroyEntity(MeshMaterial mat)
+        public void DestroyEntity(NbMaterial mat)
         {
             //Remove from main registry
             if (GetSystem<EntityRegistrySystem>().DeleteEntity(mat))
@@ -506,6 +534,14 @@ namespace NbCore
                 RequestEntityTransformUpdate(child);
         }
 
+        public void RemoveScriptComponentFromNode(SceneGraphNode node)
+        {
+            node.RemoveComponent<ScriptComponent>();
+            //Remove scriptcomponent from the Scripting system
+            ScriptingSystem ss = GetSystem<ScriptingSystem>();
+            ss.EntityDataMap.Remove(node.ID);
+        }
+        
         #region SceneManagement
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -517,7 +553,9 @@ namespace NbCore
         #endregion
 
 
-        #region EngineQueries
+
+
+        #region RegistryQueries
 
         //Asset Getter
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -539,7 +577,7 @@ namespace NbCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public MeshMaterial GetMaterialByName(string name)
+        public NbMaterial GetMaterialByName(string name)
         {
             return GetSystem<RenderingSystem>().MaterialMgr.GetByName(name);
         }
@@ -735,7 +773,7 @@ namespace NbCore
             GLSLShaderConfig conf;
 
             //Sphere Material
-            MeshMaterial mat = new();
+            NbMaterial mat = new();
             mat.Name = "default_scn";
             
             NbUniform uf = new();
@@ -993,13 +1031,13 @@ namespace NbCore
             return tex;
         }
 
-        public List<string> GetMaterialShaderDirectives(MeshMaterial mat)
+        public List<string> GetMaterialShaderDirectives(NbMaterial mat)
         {
             List<string> includes = new();
             List<MaterialFlagEnum> mat_flags = mat.GetFlags();
             for (int i = 0; i < mat_flags.Count; i++)
             {
-                if (MeshMaterial.supported_flags.Contains(mat_flags[i]))
+                if (NbMaterial.supported_flags.Contains(mat_flags[i]))
                     includes.Add(mat_flags[i].ToString().Split(".")[^1]);
             }
 
@@ -1070,7 +1108,7 @@ namespace NbCore
             return shader;
         }
 
-        public void SetMaterialShader(MeshMaterial mat, GLSLShaderConfig conf)
+        public void SetMaterialShader(NbMaterial mat, GLSLShaderConfig conf)
         {
             //Calculate requested shader hash
             ulong shader_hash = CalculateShaderHash(conf, GetMaterialShaderDirectives(mat));
@@ -1125,7 +1163,7 @@ namespace NbCore
 
             //Step A: Export SceneGraph
             List<GLSLShaderConfig> configs = new();
-            List<MeshMaterial> materials = new();
+            List<NbMaterial> materials = new();
             List<NbTexture> textures = new();
             List<string> scripts = new();
             List<NbMesh> meshes = new();
@@ -1209,7 +1247,7 @@ namespace NbCore
 
             writer.WritePropertyName("MATERIALS");
             writer.WriteStartArray();
-            foreach (MeshMaterial mat in materials)
+            foreach (NbMaterial mat in materials)
                 IO.NbSerializer.Serialize(mat, writer);
             writer.WriteEndArray();
 
@@ -1269,7 +1307,7 @@ namespace NbCore
 
             foreach (var s in ob["MATERIALS"])
             {
-                MeshMaterial mat = (MeshMaterial)IO.NbDeserializer.Deserialize(s);
+                NbMaterial mat = (NbMaterial)IO.NbDeserializer.Deserialize(s);
                 RegisterEntity(mat);
             }
 

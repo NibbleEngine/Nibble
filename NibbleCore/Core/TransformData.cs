@@ -22,10 +22,16 @@ namespace NbCore
         public static TransformData CreateFromMatrix(NbMatrix4 transform)
         {
             TransformData td = new();
-            td.localTranslation = NbMatrix4.ExtractTranslation(transform);
-            td.localRotation = NbMatrix4.ExtractRotation(transform);
-            td.localScale = NbMatrix4.ExtractScale(transform);
+            td.SetFromMatrix(transform);
             return td;
+        }
+
+        public void SetFromMatrix(NbMatrix4 transform)
+        {
+            localTranslation = NbMatrix4.ExtractTranslation(transform);
+            localRotation = NbMatrix4.ExtractRotation(transform);
+            localScale = NbMatrix4.ExtractScale(transform);
+            LocalTransformMat = transform;
         }
 
         //Raw values 

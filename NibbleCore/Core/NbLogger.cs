@@ -49,7 +49,7 @@ namespace NbCore
             {
                 Console.WriteLine($"{sender.ToString().ToUpper()} - {lvl.ToString().ToUpper()} - {msg}");
 
-                LogElement elem = new LogElement()
+                LogElement elem = new()
                 {
                     message = msg,
                     sender = sender.ToString().ToUpper(),

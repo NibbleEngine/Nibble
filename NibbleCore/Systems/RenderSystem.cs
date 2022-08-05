@@ -103,9 +103,7 @@ namespace NbCore.Systems
                 GroupTBO1Data = new NbMatrix4[512],
                 PrevFrameJointData = new NbMatrix4[512],
                 NextFrameJointData = new NbMatrix4[512],
-                GroupTBO1 = Renderer.CreateGroupBuffer(),
-                boneRemapIndices = new int[1],
-                Meshes = new()
+                GroupTBO1 = Renderer.CreateGroupBuffer()
             };
 
             MeshGroupDict[0] = group;
@@ -205,8 +203,7 @@ namespace NbCore.Systems
 
             //Add to MeshGroup
             if (mesh.Group != null)
-                if (!OpenMeshGroups.ContainsKey(mesh.Group.ID))
-                    AddNewMeshGroup(mesh.Group);
+                AddNewMeshGroup(mesh.Group);
         }
 
         public void RegisterEntity(MeshComponent mc)
@@ -410,8 +407,8 @@ namespace NbCore.Systems
         {
             group.Meshes.Sort((NbMesh a, NbMesh b) =>
             {
-                MeshMaterial ma = MaterialMgr.Get(a.Material.ID);
-                MeshMaterial mb = MaterialMgr.Get(b.Material.ID);
+                NbMaterial ma = MaterialMgr.Get(a.Material.ID);
+                NbMaterial mb = MaterialMgr.Get(b.Material.ID);
                 return ma.Shader.ID.CompareTo(mb.Shader.ID);
             });
         }
@@ -533,7 +530,7 @@ namespace NbCore.Systems
             //Collisions
             if (RenderState.settings.viewSettings.ViewCollisions)
             {
-                MeshMaterial mat = EngineRef.GetMaterialByName("collisionMat");
+                NbMaterial mat = EngineRef.GetMaterialByName("collisionMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes
@@ -549,7 +546,7 @@ namespace NbCore.Systems
             //Lights
             if (RenderState.settings.viewSettings.ViewLights)
             {
-                MeshMaterial mat = EngineRef.GetMaterialByName("lightMat");
+                NbMaterial mat = EngineRef.GetMaterialByName("lightMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes 
@@ -563,7 +560,7 @@ namespace NbCore.Systems
             //Light Volumes
             if (RenderState.settings.viewSettings.ViewLightVolumes)
             {
-                MeshMaterial mat = EngineRef.GetMaterialByName("lightMat");
+                NbMaterial mat = EngineRef.GetMaterialByName("lightMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes
@@ -576,7 +573,7 @@ namespace NbCore.Systems
             //Joints
             if (RenderState.settings.viewSettings.ViewJoints)
             {
-                MeshMaterial mat = EngineRef.GetMaterialByName("jointMat");
+                NbMaterial mat = EngineRef.GetMaterialByName("jointMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes
@@ -594,7 +591,7 @@ namespace NbCore.Systems
             //Locators
             if (RenderState.settings.viewSettings.ViewLocators)
             {
-                MeshMaterial mat = EngineRef.GetMaterialByName("crossMat");
+                NbMaterial mat = EngineRef.GetMaterialByName("crossMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
                 
                 //Render static meshes
@@ -622,7 +619,7 @@ namespace NbCore.Systems
             //Set Test Program
 
 
-            MeshMaterial mat = MaterialMgr.GetByName("redMat");
+            NbMaterial mat = MaterialMgr.GetByName("redMat");
             NbShader shader = mat.Shader;
             Renderer.SetProgram(mat.Shader.ProgramID);
 
@@ -644,7 +641,7 @@ namespace NbCore.Systems
                     if (mesh.InstanceCount == 0)
                         continue;
 
-                    MeshMaterial mat = MaterialMgr.Get(mesh.Material.ID);
+                    NbMaterial mat = MaterialMgr.Get(mesh.Material.ID);
                     Renderer.SetProgram(mat.Shader.ProgramID);
                     Renderer.RenderMesh(mesh, mat);
                     frameStats.RenderedVerts += mesh.InstanceCount * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics);
@@ -676,6 +673,11 @@ namespace NbCore.Systems
             
             if (RenderState.settings.renderSettings.UseLighting)
                 renderDeferredLightPass(); //Deferred Lighting Pass to pbuf
+            else
+            {
+                //Pass albedo to render buffer
+                pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment0, gBuffer.GetTexture(NbFBOAttachment.Attachment0));
+            }
 
             //FORWARD STAGE - TRANSPARENT MESHES
             //renderTransparent(); //Directly to Pbuf
@@ -701,7 +703,7 @@ namespace NbCore.Systems
             //    GL.ActiveTexture(TextureUnit.Texture6);
             //    GL.BindTexture(TextureTarget.Texture2D, gBuffer.GetChannel(4));
 
-            //    foreach (MeshMaterial mat in ShaderMgr.GetShaderMaterials(shader))
+            //    foreach (NbMaterial mat in ShaderMgr.GetShaderMaterials(shader))
             //    {
             //        
             //        //foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
@@ -752,7 +754,7 @@ namespace NbCore.Systems
             //{
             //    Renderer.EnableShaderProgram(shader); //Set Program
                 
-            //    foreach (MeshMaterial mat in ShaderMgr.GetShaderMaterials(shader))
+            //    foreach (NbMaterial mat in ShaderMgr.GetShaderMaterials(shader))
             //    {
                     
             //        //foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
@@ -1190,7 +1192,7 @@ namespace NbCore.Systems
             //Render Light volume
             NbShader shader_conf = ShaderMgr.GetShaderByType(NbShaderType.LIGHT_PASS_LIT_SHADER);
             
-            MeshMaterial mat = EngineRef.GetMaterialByName("lightMat");
+            NbMaterial mat = EngineRef.GetMaterialByName("lightMat");
             Renderer.EnableMaterialProgram(mat);
 
             ////At first blit the albedo (gbuf 0) -> channel 0 of the pbuf

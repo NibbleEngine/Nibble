@@ -96,6 +96,7 @@ namespace NbCore.Platform.Graphics
             { NbTextureFilter.Linear , (int) TextureMagFilter.Linear}, //Same
             { NbTextureFilter.NearestMipmapLinear , (int) TextureMinFilter.NearestMipmapLinear}, //Only min filter
             { NbTextureFilter.LinearMipmapNearest , (int) TextureMinFilter.LinearMipmapNearest}, //only min filter
+            { NbTextureFilter.LinearMipmapLinear , (int) TextureMinFilter.LinearMipmapLinear}, //only min filter
         };
 
         public static readonly Dictionary<NbTextureWrapMode, int> TextureWrapMap = new()
@@ -129,7 +130,7 @@ namespace NbCore.Platform.Graphics
 
         private static void Log(string msg, LogVerbosityLevel lvl)
         {
-            Callbacks.Logger.Log(RendererName.ToUpper(), msg, lvl);
+            Callbacks.Log(RendererName.ToUpper(), msg, lvl);
         }
 
 
@@ -474,6 +475,13 @@ namespace NbCore.Platform.Graphics
             GLInstancedMesh imesh = GenerateAPIMesh(mesh);
             MeshMap[mesh.ID] = imesh;
 
+
+            
+            var err = GL.GetError();
+
+            if (err != ErrorCode.NoError)
+                Log("GL ERROR", LogVerbosityLevel.WARNING);
+
             Log($"Mesh was successfully registered to the Renderer. Entity ID: {mesh.ID}. Mesh Hash {mesh.Hash}", LogVerbosityLevel.DEBUG);
             return true;
         }
@@ -499,7 +507,7 @@ namespace NbCore.Platform.Graphics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void EnableMaterialProgram(MeshMaterial mat)
+        public void EnableMaterialProgram(NbMaterial mat)
         {
             NbShader shader = mat.Shader;
             GL.UseProgram(shader.ProgramID); //Set Program
@@ -609,7 +617,7 @@ namespace NbCore.Platform.Graphics
             GL.BindVertexArray(0);
         }
 
-        public void RenderMesh(NbMesh mesh, MeshMaterial mat)
+        public void RenderMesh(NbMesh mesh, NbMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
 
@@ -628,7 +636,7 @@ namespace NbCore.Platform.Graphics
             GL.BindVertexArray(0);
         }
 
-        public void RenderLocator(NbMesh mesh, MeshMaterial mat)
+        public void RenderLocator(NbMesh mesh, NbMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
@@ -647,7 +655,7 @@ namespace NbCore.Platform.Graphics
             GL.BindVertexArray(0);
         }
 
-        public void RenderJoint(NbMesh mesh, MeshMaterial mat)
+        public void RenderJoint(NbMesh mesh, NbMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
@@ -666,7 +674,7 @@ namespace NbCore.Platform.Graphics
             GL.BindVertexArray(0);
         }
 
-        public void RenderCollision(NbMesh mesh, MeshMaterial mat)
+        public void RenderCollision(NbMesh mesh, NbMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
@@ -692,7 +700,7 @@ namespace NbCore.Platform.Graphics
             GL.BindVertexArray(0);
         }
 
-        public void RenderLight(NbMesh mesh, MeshMaterial mat)
+        public void RenderLight(NbMesh mesh, NbMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
@@ -711,7 +719,7 @@ namespace NbCore.Platform.Graphics
             GL.BindVertexArray(0);
         }
 
-        public void RenderLightVolume(NbMesh mesh, MeshMaterial mat)
+        public void RenderLightVolume(NbMesh mesh, NbMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
             RenderMesh(glmesh.Mesh, mat);
@@ -905,21 +913,10 @@ namespace NbCore.Platform.Graphics
             int mm_count = System.Math.Max(tex.Data.MipMapCount, 1);
 
             GL.BindTexture(gl_target, tex.texID);
-            //TODO: REmove all parameter settings from here, and make it possible to set them using other API calls
+            //TODO: Remove all parameter settings from here, and make it possible to set them using other API calls
             //When manually loading mipmaps, levels should be loaded first
             GL.TexParameter(gl_target, TextureParameterName.TextureBaseLevel, 0);
             
-            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
-            GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(gl_target, TextureParameterName.TextureWrapR, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            if (mm_count > 1)
-                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            else
-                GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            //Console.WriteLine(GL.GetError());
-
             //Use anisotropic filtering
             float af_amount = GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy);
             af_amount = (float)System.Math.Max(af_amount, 4.0f);
@@ -997,11 +994,10 @@ namespace NbCore.Platform.Graphics
                 if (tex_data.header.ddspf.dwFlags.HasFlag(DDS_PIXELFORMAT_DWFLAGS.DDPF_RGB))
                 {
                     //Calculate size of the top layer
-                    temp_size = w * h * 4;
+                    temp_size = w * h * d * 4;
                     byte[] temp_data = new byte[temp_size];
                     System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size);
-
-
+                        
                     //Figure out channel ordering
                     PixelFormat pf = PixelFormat.Rgba;
                     PixelInternalFormat pif = PixelInternalFormat.Rgba8;
@@ -1019,9 +1015,18 @@ namespace NbCore.Platform.Graphics
                     {
                         pf = PixelFormat.Bgra;
                     }
+                    
+                    switch (gl_target)
+                    {
+                        case TextureTarget.Texture2D:
+                            GL.TexImage2D(gl_target, i, pif, w, h, 0, pf, PixelType.UnsignedByte, temp_data);
+                            break;
+                        case TextureTarget.Texture2DArray:
+                            GL.TexImage3D(gl_target, i, pif, w, h, d, 0, pf, PixelType.UnsignedByte, temp_data);
+                            break;
+                    }
 
-                    GL.TexImage2D(gl_target, i, pif, w, h, 0, pf, PixelType.UnsignedByte, temp_data);
-                
+
                 } else 
                 {
                     //Calculate size of the top layer
@@ -1034,7 +1039,7 @@ namespace NbCore.Platform.Graphics
                             //GL.CompressedTexImage3D(gl_target, i, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext, w, h, d, 0, temp_size, temp_data);
                             break;
                         case TextureTarget.Texture2DArray:
-                            GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, d, 0, temp_size, temp_data);
+                            GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, d * face_count, 0, temp_size, temp_data);
                             break;
                         default:
                             GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_size, temp_data);
@@ -1136,7 +1141,7 @@ namespace NbCore.Platform.Graphics
                 }
 
                 GL.VertexAttribPointer(buf.semantic, buf.count, buftype, buf.normalize, (int) buf.stride, buf.offset);
-                GL.EnableVertexAttribArray(buf.semantic);
+                GL.EnableVertexArrayAttrib(vao.vao_id, buf.semantic);
             }
 
             //Upload index buffer
@@ -1145,16 +1150,16 @@ namespace NbCore.Platform.Graphics
                 mesh.Data.IndexBuffer, BufferUsageHint.StaticDraw);
             GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize,
                 out size);
-            Common.Callbacks.Assert(size == mesh.Data.IndexBuffer.Length,
+            Callbacks.Assert(size == mesh.Data.IndexBuffer.Length,
                 "Mesh metadata does not match the index buffer size from the geometry file");
 
             //Unbind
             GL.BindVertexArray(0);
+            //for (int i = 0; i < mesh.Data.buffers.Length; i++)
+            //    GL.DisableVertexAttribArray(mesh.Data.buffers[i].semantic);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-            for (int i = 0; i < mesh.Data.buffers.Length; i++)
-                GL.DisableVertexAttribArray(mesh.Data.buffers[i].semantic);
-
+            
             return vao;
         }
 
@@ -1181,7 +1186,7 @@ namespace NbCore.Platform.Graphics
             }
         }
 
-        private void SetShaderAndUniforms(MeshMaterial Material)
+        private void SetShaderAndUniforms(NbMaterial Material)
         {
             //Upload Material Information
 
@@ -1190,7 +1195,6 @@ namespace NbCore.Platform.Graphics
                 UploadUniform(un);
                 
             //BIND TEXTURES
-            //Diffuse Texture
             foreach (NbSampler s in Material.ActiveSamplers)
             {
                 GL.Uniform1(Material.Shader.uniformLocations[s.ShaderBinding].loc, s.SamplerID);

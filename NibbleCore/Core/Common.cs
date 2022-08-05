@@ -259,7 +259,7 @@ namespace NbCore.Common
         public static UpdateStatusCallback updateStatus = null;
         public static ShowInfoMsg showInfo = null;
         public static ShowErrorMsg showError = null;
-        public static NbLogger Logger = null; //TODO Remove the logger from here
+        public static LogCallback Log = null;
         public static AssertCallback Assert = null;
         public static SendRequestCallback issueRequestToGLControl = null;
         public static GetResourceCallback getResource = null;
@@ -268,14 +268,19 @@ namespace NbCore.Common
         public static GetTextResourceCallback getTextResource = null;
         public static GetResourceWithTypeCallback getResourceWithType = null;
         
-        
         public static void SetDefaultCallbacks()
         {
             Assert = DefaultAssert;
+            Log = DefaultLog;
             getResource = DefaultGetResource;
             getResourceFromAssembly = DefaultGetResourceFromAssembly;
             getTextResource = DefaultGetTextResource;
             getBitMapResource = DefaultGetBitMapResource;
+        }
+
+        public static void DefaultLog(object sender, string msg, LogVerbosityLevel lvl)
+        {
+            Console.WriteLine($"{sender.ToString().ToUpper()} - {lvl.ToString().ToUpper()} - {msg}");
         }
 
         public static void DefaultAssert(bool status, string msg)
@@ -283,7 +288,7 @@ namespace NbCore.Common
             if (!status)
             {
                 string trace = new System.Diagnostics.StackTrace().ToString();
-                Logger.Log(Assembly.GetCallingAssembly(), trace, LogVerbosityLevel.ERROR);
+                Log(Assembly.GetCallingAssembly(), trace, LogVerbosityLevel.ERROR);
                 throw new Exception(msg);
             }
         }
@@ -305,7 +310,7 @@ namespace NbCore.Common
                 data = _textStreamReader.ReadBytes((int) _textStreamReader.BaseStream.Length);
             } catch
             {
-                Logger.Log(Assembly.GetCallingAssembly(), string.Format("Unable to Fetch Resource {0}", resource_name), 
+                Log(Assembly.GetCallingAssembly(), string.Format("Unable to Fetch Resource {0}", resource_name), 
                     LogVerbosityLevel.ERROR);
             }
             

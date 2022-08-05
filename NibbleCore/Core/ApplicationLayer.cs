@@ -84,7 +84,7 @@ namespace NbCore
 
         public void Log(string msg, LogVerbosityLevel lvl)
         {
-            Callbacks.Logger.Log(Name.ToUpper(), msg, lvl);
+            Callbacks.Log(Name.ToUpper(), msg, lvl);
         }
 
         public void Dispose()
