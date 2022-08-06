@@ -58,13 +58,13 @@ namespace NbCore
         public float light_intensity = 1.0f;
         public float scale = 1.0f;
 
-        public Engine(NativeWindow win) : base(EngineSystemEnum.CORE_SYSTEM)
+        public Engine() : base(EngineSystemEnum.CORE_SYSTEM)
         {
             //gpHandler = new PS4GamePadHandler(0); //TODO: Add support for PS4 controller
             reqHandler = new RequestHandler();
-            AppDomain.CurrentDomain.AssemblyResolve += LoadAssembly;
-            string pluginsPath = Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Plugins");
-            Environment.SetEnvironmentVariable("PATH", Environment.GetEnvironmentVariable("PATH") + ";" + pluginsPath);
+            //string pluginsPath = Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Plugins");
+            //Environment.SetEnvironmentVariable("PATH", Environment.GetEnvironmentVariable("PATH") + ";" + Assembly.GetExecutingAssembly().Location);
+            //Environment.SetEnvironmentVariable("PATH", Environment.GetEnvironmentVariable("PATH") + ";" + pluginsPath);
                 
             InitSystems();
             LoadDefaultResources();
@@ -111,83 +111,13 @@ namespace NbCore
 
         #region plugin_loader
 
-        private AssemblyName GetAssemblyName(string name)
-        {
-            //Fetch AssemblyName
-            AssemblyName aName = null;
-            try
-            {
-                aName = AssemblyName.GetAssemblyName(name);
-            }
-            catch (FileNotFoundException)
-            {
-                var plugindirectory = Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "Plugins");
-                var path = Path.Join(plugindirectory, name);
-
-                if (File.Exists(path))
-                {
-                    aName = AssemblyName.GetAssemblyName(path);
-                } else
-                {
-                    Log($"Unable to find assembly {name}", LogVerbosityLevel.WARNING);
-                }
-            }
-
-            return aName;
-        }
-
+        
         /// 
         /// Include externals dlls
         /// 
-        private Assembly LoadAssembly(object sender, ResolveEventArgs args)
-        {
-            Log("Looking into Plugins Folder", LogVerbosityLevel.INFO);
-            Assembly result = null;
-            if (args != null && !string.IsNullOrEmpty(args.Name))
-            {
-                //Get current exe fullpath
-                FileInfo info = new FileInfo(Assembly.GetExecutingAssembly().Location);
+        
 
-                //Get folder of the executing .exe
-                var folderPath = Path.Combine(info.Directory.FullName, "Plugins");
-
-                //Build potential fullpath to the loading assembly
-                var assemblyName = args.Name.Split(new string[] { "," }, StringSplitOptions.None)[0];
-                var assemblyExtension = "dll";
-                var assemblyPath = Path.Combine(folderPath, string.Format("{0}.{1}", assemblyName, assemblyExtension));
-
-                //Check if the assembly exists in our "Libs" directory
-                if (File.Exists(assemblyPath))
-                {
-                    //Load the required assembly using our custom path
-                    result = Assembly.LoadFrom(assemblyPath);
-                }
-                else
-                {
-                    //Keep default loading
-                    return args.RequestingAssembly;
-                }
-            }
-
-            return result;
-        }
-
-
-        private Assembly GetAssembly(AssemblyName aName)
-        {
-            Assembly a = null;
-            try
-            {
-                //First try to load using the assembly name just in case its a system dll    
-                a = Assembly.Load(aName);
-            }
-            catch (FileNotFoundException ex)
-            {
-                Log($"Unable to load assembly {aName.Name}, Error: {ex.Message}", LogVerbosityLevel.WARNING);
-            }
-
-            return a;
-        }
+        
 
         private System.Version GetAssemblyRequiredNibbleVersion(Assembly test)
         {
@@ -205,45 +135,22 @@ namespace NbCore
             return null;
         }
 
-        private void LoadAssembly(string name)
-        {
-            AssemblyName aName = GetAssemblyName(name);
-
-            if (aName == null)
-                return;
-
-            Assembly test = GetAssembly(aName);
-            if (test == null)
-                return;
-
-            //FetchAssembly
-            AppDomain.CurrentDomain.Load(test.GetName());
-            Log($"Loaded Assembly {test.GetName()}", LogVerbosityLevel.WARNING);
-
-            //Load Referenced Assemblies
-            AssemblyName[] l = test.GetReferencedAssemblies();
-            var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            foreach (AssemblyName a2 in l)
-            {
-                var asm = loadedAssemblies.FirstOrDefault(a => a.FullName == a2.FullName);
-
-                if (asm == null)
-                {
-                    LoadAssembly(a2.Name + ".dll");
-                }
-            }
-
-        }
+        
 
         public void LoadPlugin(string filepath)
         {
+            string[] searchpaths = new[]
+            {
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().FullName),
+                Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().FullName), "Lib"),
+                Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().FullName), "Plugins")
+            };
 
             //Load Assembly
             try
             {
                 //Get Nibble Info
-                AssemblyName NibbleName = GetAssemblyName("Nibble.dll");
+                AssemblyName NibbleName = LibUtils.GetAssemblyName("Nibble.dll", searchpaths);
 
                 Assembly a = Assembly.LoadFile(Path.GetFullPath(filepath));
 
@@ -271,7 +178,7 @@ namespace NbCore
                         }
 
                         //Load Assembly to AppDomain and Initialize
-                        LoadAssembly(filepath);
+                        LibUtils.LoadAssembly(filepath, searchpaths);
 
                         object c = Activator.CreateInstance(t, new object[] { this });
                         Plugins[Path.GetFileName(filepath)] = c as PluginBase;

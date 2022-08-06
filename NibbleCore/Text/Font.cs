@@ -184,8 +184,8 @@ namespace NbCore.Text
 
         private unsafe int genGLTexture(Image<Rgba32> bmp)
         {   
-            Span<Rgba32> pixels;
-            bmp.TryGetSinglePixelSpan(out pixels);
+            Memory<Rgba32> pixels;
+            bmp.DangerousTryGetSinglePixelMemory(out pixels);
 
             int texID = GL.GenTexture();
             Console.WriteLine(GL.GetError());
@@ -194,7 +194,7 @@ namespace NbCore.Text
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureBaseLevel, 0);
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMaxLevel, 0);
 
-            fixed (void* ptr = pixels)
+            fixed (void* ptr = pixels.Span)
             {
                 GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, bmp.Width, bmp.Height,
                 0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) ptr);

@@ -67,9 +67,9 @@ namespace NbCore.UI.ImGui
 
             unsafe
             {
-                Span<Rgba32> pixels;
-                image.TryGetSinglePixelSpan(out pixels);
-                fixed (void *ptr = pixels)
+                Memory<Rgba32> pixels;
+                image.DangerousTryGetSinglePixelMemory(out pixels);
+                fixed (void *ptr = pixels.Span)
                 {
                     GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, (IntPtr) ptr);
                 }

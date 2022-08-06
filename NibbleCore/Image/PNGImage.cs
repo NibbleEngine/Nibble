@@ -18,12 +18,12 @@ namespace NbCore
             bmpTexture.Save("test_image.bmp");
 #endif
             //TODO: Check if we need to keep pixels at this level
-            Span<Bgra32> pixels;
-            bmpTexture.TryGetSinglePixelSpan(out pixels);
+            Memory<Bgra32> pixels;
+            bmpTexture.DangerousTryGetSinglePixelMemory(out pixels);
             
             unsafe 
             {
-                var bytes = MemoryMarshal.AsBytes(pixels);
+                var bytes = MemoryMarshal.AsBytes(pixels.Span);
                 Data = new byte[bytes.Length];
                 using (ms = new MemoryStream(Data))
                 {
