@@ -2,61 +2,142 @@
 using OpenTK.Windowing.Desktop;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
+using NbCore.Math;
 
-namespace NbCore.Platform.Graphics
+namespace NbCore.Platform.Windowing
 {
-
-    public delegate void NbWindowOnRender(double dt);
-    public delegate void NbWindowOnLoad();
-    public delegate void NbWindowOnFrameUpdate(double dt);
-    
-    public class NbWindow : GameWindow
+    public class NbOpenGLWindow : NbWindow
     {
-        public NbWindowOnRender OnRenderUpdate;
-        public NbWindowOnFrameUpdate OnFrameUpdate;
-        public NbWindowOnLoad OnWindowLoad;
+        private GameWindow _win;
         
-        public NbWindow() : base(GameWindowSettings.Default,
-            new NativeWindowSettings() { Size = new Vector2i(800, 600), APIVersion = new System.Version(4, 5) })
+        //Properties
+        public string Title
         {
-            
+            get
+            {
+                return _win.Title;
+            }
+
+            set
+            {
+                _win.Title = value;
+            }
         }
 
+        public override NbVector2i Size
+        {
+            get
+            {
+                return new NbVector2i(_win.Size.X, _win.Size.Y);
+            }
+
+            set
+            {
+                _win.Size = new Vector2i(value.X, value.Y);
+            }
+        }
+
+        public override NbVector2i ClientSize
+        {
+            get
+            {
+                return new NbVector2i(_win.ClientSize.X, _win.ClientSize.Y);
+            }
+        }
+
+        //Constructor
+        public NbOpenGLWindow(Math.NbVector2i WindowSize, int opengl_major = 4, int opengl_minor = 5)
+        {
+            _win = new GameWindow(GameWindowSettings.Default,
+            new NativeWindowSettings() { Size = new Vector2i(WindowSize.X, WindowSize.Y), 
+                APIVersion = new System.Version(opengl_major, opengl_minor) });
+            SetWindowCallbacks();
+        }
+        
+        //Methods
+        private void SetWindowCallbacks()
+        {
+            //OnLoad
+            _win.Load += () => {
+                OnWindowLoad();
+            };
+
+            //OnResize
+            _win.Resize += (ResizeEventArgs a) =>
+            {
+                InvokeResizeEvent(new NbResizeArgs(a));
+            };
+
+            //OnRender
+            _win.RenderFrame += (FrameEventArgs a) =>
+            {
+                OnRenderUpdate(a.Time);
+                _win.SwapBuffers();
+            };
+
+            _win.UpdateFrame += (FrameEventArgs a) =>
+            {
+                OnFrameUpdate(a.Time);
+            };
+
+            _win.KeyDown += (KeyboardKeyEventArgs a) =>
+            {
+                InvokeKeyDownEvent(new Windowing.NbKeyArgs(a));
+            };
+
+            _win.KeyUp += (KeyboardKeyEventArgs a) =>
+            {
+                InvokeKeyUpEvent(new Windowing.NbKeyArgs(a));
+            };
+
+            _win.MouseMove += (MouseMoveEventArgs a) =>
+            {
+                InvokeMouseMoveEvent(new NbMouseMoveArgs(a));
+            };
+
+            _win.MouseWheel += (MouseWheelEventArgs a) =>
+            {
+                InvokeMouseWheelEvent(new NbMouseWheelArgs(a));
+            };
+
+            _win.MouseDown += (MouseButtonEventArgs a) =>
+            {
+                InvokeMouseButtonDownEvent(new NbMouseButtonArgs(a));
+            };
+
+            _win.MouseUp += (MouseButtonEventArgs a) =>
+            {
+                InvokeMouseButtonUpEvent(new NbMouseButtonArgs(a));
+            };
+        }
+
+        
         public void SetRenderFrameFrequency(int freq)
         {
-            RenderFrequency = freq;
+            _win.RenderFrequency = freq;
         }
 
         public void SetFrameUpdateFrequency(int freq)
         {
-            UpdateFrequency = freq;
+            _win.UpdateFrequency = freq;
         }
         
         public void SetVSync(bool status)
         {
             if (status)
-                VSync = VSyncMode.On;
+                _win.VSync = VSyncMode.On;
             else
-                VSync = VSyncMode.Off;
+                _win.VSync = VSyncMode.Off;
         }
 
-        protected override void OnLoad()
+        public void Run()
         {
-            base.OnLoad();
-            OnWindowLoad();
+            _win.Run();
         }
 
-        protected override void OnRenderFrame(FrameEventArgs args)
+        public void Close()
         {
-            base.OnRenderFrame(args);
-            OnRenderUpdate(args.Time);
-            SwapBuffers();
-        }
-
-        protected override void OnUpdateFrame(FrameEventArgs args)
-        {
-            base.OnUpdateFrame(args);
-            OnFrameUpdate(args.Time);
+            _win.Close();
         }
 
     }

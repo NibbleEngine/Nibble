@@ -162,15 +162,15 @@ namespace NbCore.Math
             _Value.Transpose();
         }
         
-        public NbVector4 Column0 => new NbVector4(_Value.Column0);
-        public NbVector4 Column1=> new NbVector4(_Value.Column1);
-        public NbVector4 Column2=> new NbVector4(_Value.Column2);
-        public NbVector4 Column3=> new NbVector4(_Value.Column3);
+        public NbVector4 Column0 => new NbVector4(_Value.Column0.X, _Value.Column0.Y, _Value.Column0.Z, _Value.Column0.W);
+        public NbVector4 Column1=> new NbVector4(_Value.Column1.X, _Value.Column1.Y, _Value.Column1.Z, _Value.Column1.W);
+        public NbVector4 Column2=> new NbVector4(_Value.Column2.X, _Value.Column2.Y, _Value.Column2.Z, _Value.Column2.W);
+        public NbVector4 Column3=> new NbVector4(_Value.Column3.X, _Value.Column3.Y, _Value.Column3.Z, _Value.Column3.W);
         
-        public NbVector4 Row0 => new NbVector4(_Value.Row0);
-        public NbVector4 Row1=> new NbVector4(_Value.Row1);
-        public NbVector4 Row2=> new NbVector4(_Value.Row2);
-        public NbVector4 Row3=> new NbVector4(_Value.Row3);
+        public NbVector4 Row0 => new NbVector4(_Value.Row0.X, _Value.Row0.Y, _Value.Row0.Z, _Value.Row0.W);
+        public NbVector4 Row1=> new NbVector4(_Value.Row1.X, _Value.Row1.Y, _Value.Row1.Z, _Value.Row1.W);
+        public NbVector4 Row2=> new NbVector4(_Value.Row2.X, _Value.Row2.Y, _Value.Row2.Z, _Value.Row2.W);
+        public NbVector4 Row3=> new NbVector4(_Value.Row3.X, _Value.Row3.Y, _Value.Row3.Z, _Value.Row3.W);
 
         public float M11
         {

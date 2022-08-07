@@ -155,7 +155,7 @@ namespace NbCore.Math
         public static void ToEulerAngles(NbQuaternion q, out NbVector3 v)
         {
             Quaternion.ToEulerAngles(q._Value, out var vt);
-            v = new NbVector3(vt);
+            v = new NbVector3(vt.X, vt.Y, vt.Z);
         }
 
         public static NbQuaternion Slerp(NbQuaternion a, NbQuaternion b, float c)

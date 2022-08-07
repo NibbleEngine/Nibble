@@ -1224,9 +1224,14 @@ namespace NbCore.Platform.Graphics
 
         public void BindDrawFrameBuffer(FBO fbo, int[] drawBuffers)
         {
+            BindDrawFrameBuffer(fbo.fbo, fbo.Size.X, fbo.Size.Y, drawBuffers);
+        }
+
+        public void BindDrawFrameBuffer(int fbo_id, int size_x, int size_y, int[] drawBuffers)
+        {
             //Bind Gbuffer fbo
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, fbo.fbo);
-            GL.Viewport(0, 0, fbo.Size.X, fbo.Size.Y);
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, fbo_id);
+            GL.Viewport(0, 0, size_x, size_y);
 
             DrawBuffersEnum[] bufferEnums = new DrawBuffersEnum[drawBuffers.Length];
 
@@ -1235,6 +1240,18 @@ namespace NbCore.Platform.Graphics
 
             GL.DrawBuffers(bufferEnums.Length, bufferEnums);
         }
+
+        
+        public void BindFrameBuffer(int fbo_id)
+        {
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo_id);
+        }
+
+        public void SetViewPort(int x, int y, int w, int h)
+        {
+            GL.Viewport(x, y, w, h);
+        }
+
 
         public FBO CreateFrameBuffer(int w, int h)
         {

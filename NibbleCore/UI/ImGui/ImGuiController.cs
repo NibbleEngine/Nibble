@@ -173,7 +173,7 @@ void main()
         /// <summary>
         /// Updates ImGui input and IO configuration state.
         /// </summary>
-        public void Update(GameWindow wnd, float deltaSeconds)
+        public void Update(float deltaSeconds)
         {
             if (_frameBegun)
             {
@@ -181,7 +181,7 @@ void main()
             }
 
             SetPerFrameImGuiData(deltaSeconds);
-            UpdateImGuiInput(wnd);
+            UpdateImGuiInput();
             //Reset Scrolling so that its not used till a new state is set
             MouseState.Scroll = new NbVector2(0.0f);
 
@@ -216,7 +216,7 @@ void main()
             KeyboardState = state;
         }
 
-        private void UpdateImGuiInput(GameWindow wnd)
+        private void UpdateImGuiInput()
         {
             ImGuiIOPtr io = ImGuiNET.ImGui.GetIO();
 

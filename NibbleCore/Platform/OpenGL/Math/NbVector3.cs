@@ -8,11 +8,6 @@ namespace NbCore.Math
     {
         internal Vector3 _Value;
 
-        public NbVector3(Vector3 vec)
-        {
-            _Value = vec;
-        }
-        
         public NbVector3(NbVector3 vec)
         {
             _Value = vec._Value;

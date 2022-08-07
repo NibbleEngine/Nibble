@@ -28,6 +28,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\SceneGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ShaderCommons.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Events\EventData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\NbWindow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLVao.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbMeshGroup.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IO\NbDeserializer.cs" />
@@ -41,8 +42,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbShader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\TwosComplement.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Windowing\NbMouseButtonArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\OpenGLWindow.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbScript.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Windowing\NbKeyArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Windowing\NbMouseMoveArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Windowing\NbMouseWheelArgs.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Windowing\NbResizeArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Systems\ScriptingSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiLog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiOpenFileDialog.cs" />

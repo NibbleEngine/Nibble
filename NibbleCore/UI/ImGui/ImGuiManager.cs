@@ -1,6 +1,6 @@
 ﻿using ImGuiNET;
 using NbCore.Platform.Graphics.OpenGL; //TODO: Abstract
-using OpenTK.Windowing.Desktop;
+using NbCore.Platform.Windowing;
 using System;
 using NbCore;
 
@@ -16,18 +16,16 @@ namespace NbCore.UI.ImGui
         private readonly ImGuiShaderEditor ShaderEditor;
         private readonly ImGuiLog LogViewer;
         private ImGuiController _controller;
-        public GameWindow WindowRef = null;
         public Engine EngineRef = null;
         
         //ImguiPalette Colors
         //Blue
         public static System.Numerics.Vector4 DarkBlue = new(0.04f, 0.2f, 0.96f, 1.0f);
 
-        public ImGuiManager(GameWindow win, Engine engine)
+        public ImGuiManager(int width, int height, Engine engine)
         {
-            WindowRef = win;
             EngineRef = engine;
-            _controller = new ImGuiController(win.ClientSize.X, win.ClientSize.Y); //Init with a start size
+            _controller = new ImGuiController(width, height); //Init with a start size
             
             //Enable docking by default
             ImGuiIOPtr io = ImGuiNET.ImGui.GetIO();
@@ -51,7 +49,7 @@ namespace NbCore.UI.ImGui
 
         public virtual void Update(double dt)
         {
-            _controller.Update(WindowRef, (float) dt);
+            _controller.Update((float) dt);
         }
 
         public virtual void SetMouseState(NbMouseState state)

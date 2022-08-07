@@ -11,7 +11,7 @@
 		<AssemblyName>Nibble</AssemblyName>
 		<Configurations>OpenGL_DEBUG;OpenGL_RELEASE</Configurations>
 		<!--Enable CopyLocalLockFileAssemblies to copy all dlls to the output-->
-		<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<DoNotCopyLocalIfInGac>true</DoNotCopyLocalIfInGac>
 		<!--RestoreProjectStyle>PackageReference</RestoreProjectStyle-->
     </PropertyGroup>

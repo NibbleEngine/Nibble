@@ -8,11 +8,6 @@ namespace NbCore.Math
     {
         internal Vector4 _Value;
 
-        public NbVector4(Vector4 vec)
-        {
-            _Value = vec;
-        }
-
         public NbVector4(NbVector4 vec)
         {
             _Value = vec._Value;
@@ -123,7 +118,8 @@ namespace NbCore.Math
 
         public static NbVector4 operator *(NbVector4 a, NbMatrix4 mat)
         {
-            return new(a._Value * mat._Value);
+            Vector4 res = a._Value * mat._Value;
+            return new(res.X, res.Y, res.Z, res.W);
         }
         
         public static NbVector4 operator *(NbVector4 v, float a)
