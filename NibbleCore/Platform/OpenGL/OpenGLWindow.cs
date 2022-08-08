@@ -109,6 +109,11 @@ namespace NbCore.Platform.Windowing
             {
                 InvokeMouseButtonUpEvent(new NbMouseButtonArgs(a));
             };
+
+            _win.TextInput += (TextInputEventArgs a) =>
+            {
+                InvokeTextInput(new NbTextInputArgs(a));
+            };
         }
 
         

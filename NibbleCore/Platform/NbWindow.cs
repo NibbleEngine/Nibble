@@ -15,6 +15,7 @@ namespace NbCore.Platform.Windowing
     public delegate void NbMouseMoveEventHandler(NbMouseMoveArgs args);
     public delegate void NbMouseWheelEventHandler(NbMouseWheelArgs args);
     public delegate void NbResizeEventHandler(NbResizeArgs args);
+    public delegate void NbTextInputEventHandler(NbTextInputArgs args);
 
     public abstract class NbWindow
     {
@@ -29,6 +30,7 @@ namespace NbCore.Platform.Windowing
         public event NbMouseMoveEventHandler OnMouseMove;
         public event NbMouseWheelEventHandler OnMouseWheel;
         public event NbResizeEventHandler OnResize;
+        public event NbTextInputEventHandler OnTextInput;
         
         public virtual NbVector2i Size { get; set; }
 
@@ -67,6 +69,11 @@ namespace NbCore.Platform.Windowing
         public void InvokeResizeEvent(NbResizeArgs args)
         {
             OnResize?.Invoke(args);
+        }
+
+        public void InvokeTextInput(NbTextInputArgs args)
+        {
+            OnTextInput?.Invoke(args);
         }
 
 

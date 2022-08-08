@@ -14,6 +14,8 @@ namespace NbCore
         Numpad8,
         Numpad9,
         Numpad0,
+        Minus,
+        Equal,
         A,
         B,
         C,
@@ -79,6 +81,11 @@ namespace NbCore
         KeyPadSlash,
         KeyPadColon,
         KeyPadAsterisk,
+        CapsLock,
+        NumLock,
+        ScrlLock,
+        PrintScreen,
+        F1,F2,F3,F4,F5,F6,F7,F8,F9,F10,F11,F12
     }
 
     public unsafe struct NbKeyboardState
