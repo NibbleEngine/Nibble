@@ -58,7 +58,7 @@ namespace NbCore.Systems
         //Control Font and Text Objects
         public int last_text_height;
         
-        private NbVector2i ViewportSize;
+        private NbVector2i ViewportSize = new NbVector2i(1024, 768);
         private const int blur_fbo_scale = 2;
         private double gfTime = 0.0f;
 
@@ -82,15 +82,13 @@ namespace NbCore.Systems
             return ViewportSize;
         }
 
-        public void init(int width, int height)
+        public void init()
         {
             //Identify System
             Log(string.Format("Renderer {0}", GL.GetString(StringName.Vendor)), LogVerbosityLevel.INFO);
             Log(string.Format("Vendor {0}", GL.GetString(StringName.Vendor)), LogVerbosityLevel.INFO);
             Log(string.Format("OpenGL Version {0}", GL.GetString(StringName.Version)), LogVerbosityLevel.INFO);
             Log(string.Format("Shading Language Version {0}", GL.GetString(StringName.ShadingLanguageVersion)), LogVerbosityLevel.INFO);
-
-            ViewportSize = new NbVector2i(width, height);
 
             //Initialize API
             Renderer = new GraphicsAPI(); //Use OpenGL by default
@@ -116,22 +114,22 @@ namespace NbCore.Systems
             octree = new Octree(MAX_OCTREE_WIDTH);
 
             //Initialize Gbuffer
-            setupGBuffer(width, height);
+            setupGBuffer();
 
             Log("Resource Manager Initialized", LogVerbosityLevel.INFO);
         }
 
-        public void setupGBuffer(int width, int height)
+        public void setupGBuffer()
         {
             //Create gbuffer
-            gBuffer = Renderer.CreateFrameBuffer(width, height);
+            gBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y);
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //albedo
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //normals
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //info1
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, false); //info2
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, true); //depth
             
-            renderBuffer = Renderer.CreateFrameBuffer(width, height);
+            renderBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y);
             renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, false); //final pass
             renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //color 0 - blur 0
             renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //color 1 - blur 1
@@ -290,7 +288,7 @@ namespace NbCore.Systems
             //FrameData
             Renderer.SetCameraData(RenderState.activeCam);
             Renderer.SetCommonDataPerFrame(gBuffer, RenderState.rotMat, gfTime);
-            Renderer.SetRenderSettings(RenderState.settings.renderSettings);
+            Renderer.SetRenderSettings(RenderState.settings.RenderSettings);
             Renderer.UploadFrameData();
         }
 
@@ -302,7 +300,6 @@ namespace NbCore.Systems
             gBuffer?.resize(x, y);
             renderBuffer?.resize(x, y);
         }
-
 
         #region MeshGroupActions
         //MeshGroup Actions
@@ -528,7 +525,7 @@ namespace NbCore.Systems
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
             //Collisions
-            if (RenderState.settings.viewSettings.ViewCollisions)
+            if (RenderState.settings.ViewSettings.ViewCollisions)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("collisionMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
@@ -544,7 +541,7 @@ namespace NbCore.Systems
             }
 
             //Lights
-            if (RenderState.settings.viewSettings.ViewLights)
+            if (RenderState.settings.ViewSettings.ViewLights)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("lightMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
@@ -558,9 +555,9 @@ namespace NbCore.Systems
             }
 
             //Light Volumes
-            if (RenderState.settings.viewSettings.ViewLightVolumes)
+            if (RenderState.settings.ViewSettings.ViewLightVolumes)
             {
-                NbMaterial mat = EngineRef.GetMaterialByName("lightMat");
+                NbMaterial mat = EngineRef.GetMaterialByName("collisionMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes
@@ -571,7 +568,7 @@ namespace NbCore.Systems
             }
 
             //Joints
-            if (RenderState.settings.viewSettings.ViewJoints)
+            if (RenderState.settings.ViewSettings.ViewJoints)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("jointMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
@@ -589,7 +586,7 @@ namespace NbCore.Systems
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
 
             //Locators
-            if (RenderState.settings.viewSettings.ViewLocators)
+            if (RenderState.settings.ViewSettings.ViewLocators)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("crossMat");
                 Renderer.SetProgram(mat.Shader.ProgramID);
@@ -630,7 +627,7 @@ namespace NbCore.Systems
         private void renderStaticMeshes()
         {
             //Set polygon mode
-            GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.renderSettings.RENDERMODE);
+            GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
             
             foreach(NbMeshGroup mg in MeshGroups)
             {
@@ -671,7 +668,7 @@ namespace NbCore.Systems
             //renderDecalMeshes(); //Render Decals
             renderDefaultMeshes(); //Collisions, Locators, Joints
             
-            if (RenderState.settings.renderSettings.UseLighting)
+            if (RenderState.settings.RenderSettings.UseLighting)
                 renderDeferredLightPass(); //Deferred Lighting Pass to pbuf
             else
             {
@@ -747,7 +744,7 @@ namespace NbCore.Systems
             GL.BlendFunc(1, BlendingFactorSrc.Zero, BlendingFactorDest.OneMinusSrcAlpha);
 
             //Set polygon mode
-            GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.renderSettings.RENDERMODE);
+            GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
 
             //REWRITE
             //foreach (GLSLShaderConfig shader in ShaderMgr.GLForwardTransparentShaders)
@@ -868,9 +865,8 @@ namespace NbCore.Systems
             //POST-PROCESSING
             post_process();
 
-            //Pass result to Render FBO
+            //Pass results to Screen
             renderFinalPass();
-            
             
             //Pass Result to Render FBO
             //Render to render_fbo
@@ -895,7 +891,7 @@ namespace NbCore.Systems
             //sortTransparent(); //NOT NEEDED ANYMORE
             
             //LOD filtering
-            if (RenderState.settings.renderSettings.LODFiltering)
+            if (RenderState.settings.RenderSettings.LODFiltering)
             {
                 //LOD_filtering(staticMeshQueue); TODO: FIX
                 //LOD_filtering(transparentMeshQueue); TODO: FIX
@@ -1139,7 +1135,7 @@ namespace NbCore.Systems
             //        bloom(); //BLOOM
 
 
-            if (RenderState.settings.renderSettings.UseFXAA)
+            if (RenderState.settings.RenderSettings.UseFXAA)
                 fxaa(); //FXAA (INCLUDING TONE/UNTONE)
 
             //tone_mapping(); //FINAL TONE MAPPING, INCLUDES GAMMA CORRECTION

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using NbCore.Platform.Graphics;
 
 namespace NbCore
 {
@@ -22,6 +21,5 @@ namespace NbCore
         {
             throw new NotImplementedException();
         }
-
     }
 }

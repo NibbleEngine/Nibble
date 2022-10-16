@@ -29,7 +29,7 @@ namespace NbCore.Platform.Graphics.OpenGL
             }
 
             lc.InstanceID = GetNextMeshInstanceID(ref mesh);
-            mesh.instanceRefs[lc.InstanceID] = lc;
+            mesh.InstanceIndexBuffer[lc.InstanceID] = mesh.InstanceCount;
 
             //Uplod worldMat to the meshVao
             NbMatrix4 actualWorldMat = td.WorldTransformMat;

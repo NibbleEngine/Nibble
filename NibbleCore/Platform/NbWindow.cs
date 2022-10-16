@@ -1,8 +1,4 @@
-﻿using NbCore.Platform.Graphics;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using NbCore.Math;
+﻿using NbCore.Math;
 
 namespace NbCore.Platform.Windowing
 {
@@ -10,7 +6,7 @@ namespace NbCore.Platform.Windowing
     public delegate void NbWindowOnLoad();
     public delegate void NbWindowOnFrameUpdate(double dt);
 
-    public delegate void NbKeyEventHandler(Windowing.NbKeyArgs args);
+    public delegate void NbKeyEventHandler(NbKeyArgs args);
     public delegate void NbMouseButtonEventHandler(NbMouseButtonArgs args);
     public delegate void NbMouseMoveEventHandler(NbMouseMoveArgs args);
     public delegate void NbMouseWheelEventHandler(NbMouseWheelArgs args);
@@ -19,32 +15,22 @@ namespace NbCore.Platform.Windowing
 
     public abstract class NbWindow
     {
+        public Engine Engine;
         public NbWindowOnRender OnRenderUpdate;
         public NbWindowOnFrameUpdate OnFrameUpdate;
         public NbWindowOnLoad OnWindowLoad;
-
-        public event NbKeyEventHandler OnKeyUp;
-        public event NbKeyEventHandler OnKeyDown;
-        public event NbMouseButtonEventHandler OnMouseButtonDown;
-        public event NbMouseButtonEventHandler OnMouseButtonUp;
-        public event NbMouseMoveEventHandler OnMouseMove;
-        public event NbMouseWheelEventHandler OnMouseWheel;
-        public event NbResizeEventHandler OnResize;
-        public event NbTextInputEventHandler OnTextInput;
+        public NbKeyEventHandler OnKeyUp;
+        public NbKeyEventHandler OnKeyDown;
+        public NbMouseButtonEventHandler OnMouseButtonDown;
+        public NbMouseButtonEventHandler OnMouseButtonUp;
+        public NbMouseMoveEventHandler OnMouseMove;
+        public NbMouseWheelEventHandler OnMouseWheel;
+        public NbResizeEventHandler OnResize;
+        public NbTextInputEventHandler OnTextInput;
         
         public virtual NbVector2i Size { get; set; }
 
         public virtual NbVector2i ClientSize { get; }
-
-        public void InvokeKeyUpEvent(Windowing.NbKeyArgs args)
-        {
-            OnKeyUp?.Invoke(args);
-        }
-
-        public void InvokeKeyDownEvent(Windowing.NbKeyArgs args)
-        {
-            OnKeyDown?.Invoke(args);
-        }
 
         public void InvokeMouseButtonDownEvent(NbMouseButtonArgs args)
         {

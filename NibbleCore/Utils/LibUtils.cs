@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NbCore.Common;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,10 +18,11 @@ namespace NbCore.Utils
 
         public static Assembly LoadAssembly(object sender, ResolveEventArgs args)
         {
+            Callbacks.Log(Assembly.GetExecutingAssembly().GetName().Name, 
+                $"Looking for Assembly : {args.Name}", LogVerbosityLevel.DEBUG);
             Assembly result = null;
             if (args != null && !string.IsNullOrEmpty(args.Name))
             {
-
                 string[] searchpaths = new[]
                 {
                     Path.GetDirectoryName(Assembly.GetExecutingAssembly().FullName),
@@ -32,7 +34,7 @@ namespace NbCore.Utils
                 //Build potential fullpath to the loading assembly
                 var assemblyName = args.Name.Split(new string[] { "," }, StringSplitOptions.None)[0];
                 var assemblyExtension = "dll";
-                var assemblyFullName = string.Format("{0}.{1}", assemblyName, assemblyExtension);
+                var assemblyFullName = $"{assemblyName}.{assemblyExtension}";
 
                 string assemblyPath = GetAssemblyPath(assemblyFullName, searchpaths);
                 
@@ -40,10 +42,15 @@ namespace NbCore.Utils
                     result = GetAssembly(assemblyPath);
 
                 if (result != null)
+                {
+                    Callbacks.Log(Assembly.GetExecutingAssembly().GetName().Name, 
+                        $"Found and Loaded Assembly from {assemblyPath}", LogVerbosityLevel.DEBUG);
                     return result;
+                }
+                    
             }
 
-            Common.Callbacks.Log(Assembly.GetExecutingAssembly().GetName().Name, $"Unable to load assembly {args.Name}", LogVerbosityLevel.ERROR);
+            Callbacks.Log(Assembly.GetExecutingAssembly().GetName().Name, $"Unable to load Assembly {args.Name}", LogVerbosityLevel.WARNING);
             return args.RequestingAssembly;
         }
 

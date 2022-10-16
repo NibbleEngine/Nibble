@@ -17,8 +17,8 @@ namespace NbCore.Platform.Graphics
         public GLVao bHullVao;
         
         //Instance Data
-        public int UBO_aligned_size = 0; //Actual size of the data for the UBO, multiple to 256
-        public int UBO_offset = 0; //Offset 
+        //public int UBO_aligned_size = 0; //Actual size of the data for the UBO, multiple to 256
+        //public int UBO_offset = 0; //Offset 
 
         //Animation Properties
         //TODO : At some point include that shit into the instance data

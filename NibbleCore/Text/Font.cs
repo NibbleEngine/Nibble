@@ -7,8 +7,7 @@ using OpenTK;
 using OpenTK.Graphics.OpenGL4;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using NbCore.Image;
 
 namespace NbCore.Text
 {
@@ -44,31 +43,30 @@ namespace NbCore.Text
 
             string img_path = Path.ChangeExtension(path, "png");
 
-            Image<Rgba32> bmp = Image.Load<Rgba32>(img_path);
-            
+            byte[] data = File.ReadAllBytes(img_path);
+
             if (format == 1)
-                loadHieroFont(fnt_sr, bmp);
+                loadHieroFont(fnt_sr, data);
             else
-                loadJsonFont(fnt_sr, bmp);
+                loadJsonFont(fnt_sr, data);
         }
 
-        public Font(byte[] fnt_data, Image<Rgba32> img_data, int format)
+        public Font(byte[] fnt_data, byte[] img_data, int format)
         {
             MemoryStream ms = new MemoryStream(fnt_data);
             StreamReader fnt_sr = new StreamReader(ms);
-
+            
             if (format == 1)
                 loadHieroFont(fnt_sr, img_data);
         }
 
-        private void loadHieroFont(StreamReader fnt_sr, Image<Rgba32> img_data)
+
+        private void loadHieroFont(StreamReader fnt_sr, byte[] img_data)
         {
             while (!fnt_sr.EndOfStream)
             {
                 string line = fnt_sr.ReadLine();
                 string[] sp;
-
-
 
                 if (line.StartsWith("info"))
                 {
@@ -133,12 +131,12 @@ namespace NbCore.Text
             sampl.SamplerID = 0;
             sampl.ShaderBinding = "mpCustomPerMaterial.gDiffuseMap";
             sampl.Texture = tex;
-            
+
             //Generate Font Material
             material = new NbMaterial();
         }
 
-        private void loadJsonFont(StreamReader fnt_sr, Image<Rgba32> img_data)
+        private void loadJsonFont(StreamReader fnt_sr, byte[] img_data)
         {
             fnt_sr.BaseStream.Seek(0, SeekOrigin.Begin);
             string data = fnt_sr.ReadToEnd();
@@ -167,6 +165,7 @@ namespace NbCore.Text
             }
 
             //Generate texture
+            //TODO: This should be done by the engine. MOVE IT
             NbTexture tex = new NbTexture();
             tex.Data.target = NbTextureTarget.Texture2DArray;
             tex.texID = genGLTexture(img_data);
@@ -177,16 +176,16 @@ namespace NbCore.Text
             sampl.SamplerID = 0;
             sampl.ShaderBinding = "mpCustomPerMaterial.gDiffuseMap";
             sampl.Texture = tex;
-            
+
             //Generate Font Material
             material = new NbMaterial();
         }
 
-        private unsafe int genGLTexture(Image<Rgba32> bmp)
-        {   
-            Memory<Rgba32> pixels;
-            bmp.DangerousTryGetSinglePixelMemory(out pixels);
-
+        private unsafe int genGLTexture(byte[] img_data)
+        {
+            //img_data is expected to be a complete png image
+            NbTextureData tex_data = NbImagingAPI.Load(img_data, NbTextureInternalFormat.BGRA8);
+            
             int texID = GL.GenTexture();
             Console.WriteLine(GL.GetError());
             GL.BindTexture(TextureTarget.Texture2DArray, texID);
@@ -194,12 +193,9 @@ namespace NbCore.Text
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureBaseLevel, 0);
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMaxLevel, 0);
 
-            fixed (void* ptr = pixels.Span)
-            {
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, bmp.Width, bmp.Height,
-                0, PixelFormat.Rgba, PixelType.UnsignedByte, (IntPtr) ptr);
-            }   
-            
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, tex_data.Width, tex_data.Height,
+                0, PixelFormat.Rgba, PixelType.UnsignedByte, tex_data.Data);
+
             Console.WriteLine(GL.GetError());
             //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
@@ -207,9 +203,8 @@ namespace NbCore.Text
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
 
-
             GL.BindTexture(TextureTarget.Texture2DArray, 0);
-            
+
             return texID;
         }
 

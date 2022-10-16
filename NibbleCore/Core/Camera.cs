@@ -44,11 +44,7 @@ namespace NbCore
         public static float SpeedScale = 0.001f;
         //public float Sensitivity = 0.2f;
         public bool isActive = false;
-        //Projection variables Set defaults
-        //public float fov = 45.0f; //Angle in degrees
-        //public float zNear = 0.02f;
-        //public float zFar = 15000.0f;
-        //public float aspect = 1.0f;
+        public float yaw, pitch, roll = 0.0f;
         
         //Matrices
         public NbMatrix4 projMat;
@@ -83,7 +79,7 @@ namespace NbCore
         public void updateViewMatrix()
         {
             lookMat = NbMatrix4.LookAt(Position, Position + 10 * Front, BaseUp);
-            float fov_rad = MathUtils.radians(Common.RenderState.settings.camSettings.FOV);
+            float fov_rad = MathUtils.radians(Common.RenderState.settings.CamSettings.FOV);
 
             NbVector2i viewport_size = Common.RenderState.engineRef.GetSystem<Systems.RenderingSystem>().GetViewportSize();
             float aspect = (float) viewport_size.X / viewport_size.Y;
@@ -94,21 +90,21 @@ namespace NbCore
                 //projMat = this.ComputeFOVProjection();
                 float w, h;
                 float tangent = (float) System.Math.Tan(fov_rad / 2.0f);   // tangent of half fovY
-                h = Common.RenderState.settings.camSettings.zNear * tangent;  // half height of near plane
+                h = Common.RenderState.settings.CamSettings.zNear * tangent;  // half height of near plane
                 w = h * aspect;       // half width of near plane
 
                 //projMat = Matrix4.CreatePerspectiveOffCenter(-w, w, -h, h, zNear, zFar);
                 projMat = NbMatrix4.CreatePerspectiveFieldOfView(fov_rad, aspect, 
-                    Common.RenderState.settings.camSettings.zNear,
-                    Common.RenderState.settings.camSettings.zFar);
+                    Common.RenderState.settings.CamSettings.zNear,
+                    Common.RenderState.settings.CamSettings.zFar);
                 viewMat = lookMat * projMat;
             }
             else
             {
                 //Create orthographic projection
                 projMat = NbMatrix4.CreateOrthographic(aspect * 2.0f, 2.0f,
-                    Common.RenderState.settings.camSettings.zNear,
-                    Common.RenderState.settings.camSettings.zFar);
+                    Common.RenderState.settings.CamSettings.zNear,
+                    Common.RenderState.settings.CamSettings.zFar);
                 //projMat.Transpose();
                 //Create scale matrix based on the fov
                 NbMatrix4 scaleMat = NbMatrix4.CreateScale(0.8f * fov_rad);
@@ -150,8 +146,8 @@ namespace NbCore
             TransformController t_controller = Common.RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
 
             //Calculate actual camera speed
-            float pitch = Common.RenderState.settings.camSettings.Sensitivity * MathUtils.radians(target.Rotation.Y);
-            float yaw = Common.RenderState.settings.camSettings.Sensitivity * MathUtils.radians(target.Rotation.X);
+            float pitch = Common.RenderState.settings.CamSettings.Sensitivity * MathUtils.radians(target.Rotation.Y);
+            float yaw = Common.RenderState.settings.CamSettings.Sensitivity * MathUtils.radians(target.Rotation.X);
             
             NbQuaternion yaw_q = NbQuaternion.FromAxis(cam.Up, yaw);
             NbQuaternion pitch_q = NbQuaternion.FromAxis(cam.Right, pitch);
@@ -173,9 +169,9 @@ namespace NbCore
             NbVector3 currentScale = new(1.0f);
 
             NbVector3 offset = new();
-            offset += SpeedScale * Common.RenderState.settings.camSettings.Speed * target.PosImpulse.X * cam.Right;
-            offset += SpeedScale * Common.RenderState.settings.camSettings.Speed * target.PosImpulse.Y * cam.Front;
-            offset += SpeedScale * Common.RenderState.settings.camSettings.Speed * target.PosImpulse.Z * cam.Up;
+            offset += SpeedScale * Common.RenderState.settings.CamSettings.Speed * target.PosImpulse.X * cam.Right;
+            offset += SpeedScale * Common.RenderState.settings.CamSettings.Speed * target.PosImpulse.Y * cam.Front;
+            offset += SpeedScale * Common.RenderState.settings.CamSettings.Speed * target.PosImpulse.Z * cam.Up;
 
             //Console.WriteLine(string.Format("Camera offset {0} {1} {2}",
             //                    offset.X, offset.Y, offset.Z));
@@ -304,7 +300,7 @@ namespace NbCore
 
         public bool frustum_occlude(NbVector3 AABBMIN, NbVector3 AABBMAX, NbMatrix4 transform)
         {
-            if (!Common.RenderState.settings.renderSettings.UseFrustumCulling)
+            if (!Common.RenderState.settings.RenderSettings.UseFrustumCulling)
                 return true;
 
             float radius = 0.5f * (AABBMIN - AABBMAX).Length;

@@ -49,14 +49,15 @@ namespace NbCore.Systems
             UpdateActiveSceneGraph();
         }
 
-        public void UpdateSceneGraph(SceneGraph graph)
+        private void UpdateMeshNodes(SceneGraph graph)
         {
             //Add instances to all non occluded Nodes
             foreach (SceneGraphNode n in graph.MeshNodes)
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
                 MeshComponent mc = n.GetComponent<MeshComponent>() as MeshComponent;
-
+                bool instance_updated = false;
+                
                 if (td.IsUpdated)
                 {
                     if (td.IsOccluded && !td.WasOccluded)
@@ -76,6 +77,7 @@ namespace NbCore.Systems
                     }
                     else if (!td.IsOccluded)
                     {
+                        instance_updated = true;
                         EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceWorldMat(mc.Mesh, mc.InstanceID, td.WorldTransformMat);
                         EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceWorldMatInv(mc.Mesh, mc.InstanceID, td.InverseTransformMat);
                     }
@@ -91,15 +93,23 @@ namespace NbCore.Systems
                     EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 1, mc.InstanceUniforms[1].Values);
                     EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 2, mc.InstanceUniforms[2].Values);
                     EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 3, mc.InstanceUniforms[3].Values);
+                    instance_updated = true;
                     mc.IsUpdated = false;
                 }
-            }
 
+                if (instance_updated)
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.UpdateInstance(mc.Mesh, mc.InstanceID);
+            }
+        }
+
+        public void UpdateLightNodes(SceneGraph graph)
+        {
             //Process Lights
             foreach (SceneGraphNode n in graph.LightNodes)
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
                 LightComponent lc = n.GetComponent<LightComponent>() as LightComponent;
+                bool instance_updated = false;
 
                 if (!lc.Data.IsRenderable && lc.InstanceID != -1)
                 {
@@ -113,23 +123,33 @@ namespace NbCore.Systems
                 }
                 else if (lc.Data.IsRenderable && lc.InstanceID == -1)
                 {
-                    Log($"Adding Instance {n.Name}", LogVerbosityLevel.DEBUG);
+                    Log($"Adding Light Volume Instance {n.Name}", LogVerbosityLevel.DEBUG);
                     EngineRef.GetSystem<RenderingSystem>().Renderer.AddLightRenderInstance(ref lc, td);
                 }
                 else if (lc.Data.IsRenderable)
                 {
                     EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceWorldMat(lc.Mesh, lc.InstanceID, td.WorldTransformMat);
+                    instance_updated = true;
                 }
-                
+
                 if (lc.Data.IsUpdated && lc.InstanceID != -1)
                 {
                     EngineRef.GetSystem<RenderingSystem>().Renderer.SetLightInstanceData(lc);
+                    instance_updated = true;
                     lc.Data.IsUpdated = false;
                 }
-                    
+
+                if (instance_updated)
+                    EngineRef.GetSystem<RenderingSystem>().Renderer.UpdateInstance(lc.Mesh, lc.InstanceID);
+
             }
         }
 
+        public void UpdateSceneGraph(SceneGraph graph)
+        {
+            UpdateMeshNodes(graph);
+            UpdateLightNodes(graph);
+        }
 
         public void ClearSceneGraph(SceneGraph graph)
         {

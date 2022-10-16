@@ -17,18 +17,19 @@
     <Compile Include="$(MSBuildThisFileDirectory)Components\ReferenceComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\SceneComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\ScriptComponent.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Image\PNGImage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Image\NbImagingAPI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\TransformData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Image\DDSImage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ApplicationLayer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimationGroup.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbHasher.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Image\NbImage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Image\NbTextureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbLogger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\SceneGraph.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\ShaderCommons.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Events\EventData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\NbWindow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLMeshInstanceManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLVao.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbMeshGroup.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IO\NbDeserializer.cs" />
@@ -134,6 +135,43 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)Input\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Image\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)Shaders\additive_blend_fs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Bound_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Bound_VS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\brdf.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\brightness_extract_shader_fs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\bwoit_shader_fs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\common.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\common_lighting.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\common_structs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\depth_shader_fs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\depth_shader_gs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\depth_shader_vs.vs" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\fxaa_shader_fs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\fxaa_shader_vs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\gaussian_blur_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\gaussian_horizontalBlur_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\gaussian_verticalBlur_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Gbuffer_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Gbuffer_VS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Gizmo_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Gizmo_VS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\inv_tone_mapping_fs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\light_pass_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\light_pass_VS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\PassThrough_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\RedFill.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Simple_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Simple_FSEmpty.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Simple_GS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Simple_VS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Simple_VSEmpty.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Test_fs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Text_FS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\Text_VS.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\tone_mapping_fs.glsl" />
+    <None Include="$(MSBuildThisFileDirectory)Shaders\ubershader_fs.glsl" />
   </ItemGroup>
 </Project>

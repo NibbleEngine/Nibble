@@ -9,7 +9,7 @@ namespace NbCore.Platform.Windowing
 {
     public class NbMouseButtonArgs
     {
-        public static readonly Dictionary<OpenTK.Windowing.GraphicsLibraryFramework.MouseButton, NbMouseButton> OpenTKButtonMap = new()
+        public static readonly Dictionary<MouseButton, NbMouseButton> OpenTKButtonMap = new()
         {
             { MouseButton.Left, NbMouseButton.LEFT},
             { MouseButton.Right, NbMouseButton.RIGHT},

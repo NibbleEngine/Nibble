@@ -1,24 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Text;
-using OpenTK;
 using NbCore.Math;
 using OpenTK.Graphics.OpenGL4;
-using NbCore;
-using NbCore.Input;
-using NbCore.Utils;
-using NbCore.Platform.Graphics.OpenGL; //TODO: Abstract
-using System.ComponentModel;
-using System.Diagnostics.Contracts;
 using Newtonsoft.Json;
-using System.Resources;
 using System.Reflection;
 using System.IO;
-//using System.Drawing;
-using SixLabors.ImageSharp;
 using System.Linq;
-using NbCore.Plugins;
 
 namespace NbCore.Common
 {
@@ -32,7 +18,7 @@ namespace NbCore.Common
         public static NbVector3 rotAngles = new NbVector3(0.0f);
 
         //App Settings
-        public static Settings settings = new Settings();
+        public static EngineSettings settings;
 
         //Engine Reference
         public static Engine engineRef;
@@ -110,25 +96,9 @@ namespace NbCore.Common
 
     }
 
-    public interface ISettings
-    {
-        public static ISettings GenerateDefaults()
-        {
-            return null;
-        }
-
-        public void SaveToFile(string filename)
-        {
-            var jsonobject = JsonConvert.SerializeObject(this);
-            File.WriteAllText(filename, jsonobject);
-        }
-    }
-
-
     public class RenderSettings
     {
         public int FPS = 60;
-        public bool UseVSync = false;
         public float HDRExposure = 0.005f;
         
         //Set Full rendermode by default
@@ -142,8 +112,7 @@ namespace NbCore.Common
             }
         }
 
-        [JsonIgnore]
-        public Color clearColor = new(new SixLabors.ImageSharp.PixelFormats.Rgba32(33,33,33,255));
+        public bool UseVSync = true;
         public bool UseTextures = true;
         public bool UseLighting = true;
 
@@ -176,68 +145,49 @@ namespace NbCore.Common
     }
 
 
-    public class EngineSettings : ISettings
+    public class EngineSettings
     {
         public RenderSettings RenderSettings = new();
         public ViewSettings ViewSettings = new();
+        public CameraSettings CamSettings = new CameraSettings(90, 1.0f, 1.0f, 0.05f, 30000f);
+        public int TickRate = 60;
         public bool EnableShaderCompilationLog = true;
         public LogVerbosityLevel LogVerbosity = LogVerbosityLevel.INFO;
 
         public static EngineSettings GenerateDefaults()
         {
-            EngineSettings settings = new EngineSettings();
-            return settings;
+            return new EngineSettings();
         }
 
-    }   
-    
-    //Get rid of that class
-    public class Settings
-    {
-        //Public Settings
-        public RenderSettings renderSettings = new RenderSettings();
-        public ViewSettings viewSettings = new ViewSettings(31);
-        public CameraSettings camSettings = new CameraSettings(90, 1.0f, 1.0f, 0.05f, 30000f);
-
-        //Private Settings
-        public LogVerbosityLevel LogVerbosity;
-
-        //Methods
-        public static Settings generateDefaultSettings()
-        {
-            Settings settings = new Settings();
-
-            return settings;
-        }
-
-        public static Settings loadFromDisk()
+        public static EngineSettings loadFromDisk()
         {
             //Load jsonstring
-            Settings settings;
+            EngineSettings settings;
             if (File.Exists("settings.json"))
             {
                 string jsonstring = File.ReadAllText("settings.json");
-                settings =  JsonConvert.DeserializeObject<Settings>(jsonstring);
-            } else
+                settings = JsonConvert.DeserializeObject<EngineSettings>(jsonstring);
+            }
+            else
             {
                 //Generate Settings
                 //Generating new settings file
-                settings = generateDefaultSettings();
+                settings = GenerateDefaults();
                 saveToDisk(settings);
             }
-            
+
             return settings;
         }
 
-        public static void saveToDisk(Settings settings)
+        public static void saveToDisk(EngineSettings settings)
         {
             //Test Serialize object
             string jsonstring = JsonConvert.SerializeObject(settings);
             File.WriteAllText("settings.json", jsonstring);
         }
 
-    }
-
+    }   
+    
     //Delegates - Function Types for Callbacks
     public delegate void UpdateStatusCallback(string msg);
     //public delegate void OpenAnimCallback(string filepath, Model animScene);
@@ -249,7 +199,7 @@ namespace NbCore.Common
     public delegate void SendRequestCallback(ref ThreadRequest req);
     public delegate byte[] GetResourceCallback(string resourceName);
     public delegate byte[] GetResourceFromAssemblyCallback(Assembly assembly, string resourceName);
-    public delegate Image GetBitMapResourceCallback(string resourceName);
+    //public delegate BMPImage GetBitMapResourceCallback(string resourceName);
     public delegate string GetTextResourceCallback(string resourceName);
     public delegate object GetResourceWithTypeCallback(string resourceName, out string resourceType);
     
@@ -264,7 +214,7 @@ namespace NbCore.Common
         public static SendRequestCallback issueRequestToGLControl = null;
         public static GetResourceCallback getResource = null;
         public static GetResourceFromAssemblyCallback getResourceFromAssembly = null;
-        public static GetBitMapResourceCallback getBitMapResource = null;
+        //public static GetBitMapResourceCallback getBitMapResource = null;
         public static GetTextResourceCallback getTextResource = null;
         public static GetResourceWithTypeCallback getResourceWithType = null;
         
@@ -275,7 +225,7 @@ namespace NbCore.Common
             getResource = DefaultGetResource;
             getResourceFromAssembly = DefaultGetResourceFromAssembly;
             getTextResource = DefaultGetTextResource;
-            getBitMapResource = DefaultGetBitMapResource;
+            //getBitMapResource = DefaultGetBitMapResource;
         }
 
         public static void DefaultLog(object sender, string msg, LogVerbosityLevel lvl)
@@ -324,18 +274,17 @@ namespace NbCore.Common
             return DefaultGetResourceFromAssembly(assembly, resource_name);
         }
 
-        public static Image DefaultGetBitMapResource(string resource_name)
-        {
-            byte[] data = DefaultGetResource(resource_name);
+        //public static BMPImage DefaultGetBitMapResource(string resource_name)
+        //{
+        //    byte[] data = DefaultGetResource(resource_name);
+            
+        //    if (data != null)
+        //    {
+        //        return new BMPImage(data);
+        //    }
 
-            if (data != null)
-            {
-                Image im = Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(data);
-                return im;
-            }
-
-            return null;
-        }
+        //    return null;
+        //}
 
         public static string DefaultGetTextResource(string resource_name)
         {

@@ -1,9 +1,6 @@
 ﻿using System;
 using NbCore.Common;
 using NbCore.Math;
-using NbCore.Utils;
-using NbCore.Systems;
-using System.Runtime.InteropServices;
 
 namespace NbCore.Platform.Graphics.OpenGL
 {
@@ -48,8 +45,6 @@ namespace NbCore.Platform.Graphics.OpenGL
      */
 
 
-
-
     public class GLMeshBufferManager
     {
         
@@ -63,14 +58,11 @@ namespace NbCore.Platform.Graphics.OpenGL
                 MeshInstance[] newBuffer = new MeshInstance[mesh.InstanceDataBuffer.Length + 5];//Extend by 5 instances
                 Array.Copy(mesh.InstanceDataBuffer, newBuffer, mesh.InstanceDataBuffer.Length);
                 mesh.InstanceDataBuffer = newBuffer;
-            }
 
-            //Expand instancerefs array if required
-            if (render_instance_id + 1 > mesh.instanceRefs.Length)
-            {
-                MeshComponent[] new_list = new MeshComponent[mesh.instanceRefs.Length + 10];
-                Array.Copy(mesh.instanceRefs, new_list, mesh.instanceRefs.Length);
-                mesh.instanceRefs = new_list;
+                //Also expand the Instance Index Array
+                int[] newIndexBuffer = new int[mesh.InstanceIndexBuffer.Length + 5];
+                Array.Copy(mesh.InstanceIndexBuffer, newIndexBuffer, mesh.InstanceIndexBuffer.Length);
+                mesh.InstanceIndexBuffer = newIndexBuffer;
             }
 
             return render_instance_id;
@@ -82,13 +74,12 @@ namespace NbCore.Platform.Graphics.OpenGL
 
             if (mc.InstanceID >= 0)
             {
-                Callbacks.Assert(false, "Non negative renderInstanceID on a non visible mesh. This should not happen");
+                Callbacks.Assert(false, "Non negative instanceID on a non visible mesh. This should not happen");
                 return;
             }
 
             mc.InstanceID = GetNextMeshInstanceID(ref mesh);
-            mesh.instanceRefs[mc.InstanceID] = mc;
-
+            
             //Uplod worldMat to the meshVao
             NbMatrix4 actualWorldMat = td.WorldTransformMat;
             NbMatrix4 actualWorldMatInv = (actualWorldMat).Inverted();
@@ -105,23 +96,14 @@ namespace NbCore.Platform.Graphics.OpenGL
         {
             Callbacks.Assert(mc.InstanceID >= 0, "Negative instance ID. ILLEGAL instance removal");
 
-            if (mc.InstanceID == mesh.InstanceCount - 1)
+            if (mc.InstanceID != mesh.InstanceCount - 1)
             {
-                mesh.InstanceCount--;
-                mc.InstanceID = -1;
-                return;
+                mesh.InstanceIndexBuffer[mesh.InstanceCount - 1] = mesh.InstanceIndexBuffer[mc.InstanceID];
             }
-            
-            //Find last instance
-            MeshComponent lastmc = mesh.instanceRefs[mesh.InstanceCount - 1];
 
-            //Fetch last instance databuffer
-            mesh.InstanceDataBuffer[mc.InstanceID] = mesh.InstanceDataBuffer[mesh.InstanceCount - 1];
-            mesh.instanceRefs[mc.InstanceID] = lastmc;
-            lastmc.InstanceID = mc.InstanceID;
-            
+            mesh.InstanceIndexBuffer[mc.InstanceID] = -1;
             mesh.InstanceCount--;
-            mc.InstanceID = -1; //Negate the instance ID so that we can Identify a non visible mesh
+
         }
         
         //Overload with transform overrides

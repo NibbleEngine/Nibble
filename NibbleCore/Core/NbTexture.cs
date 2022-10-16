@@ -5,6 +5,7 @@ using NbCore.Math;
 using System.IO;
 using NbCore.Common;
 using Newtonsoft.Json;
+using NbCore.Image;
 
 namespace NbCore
 {
@@ -44,7 +45,9 @@ namespace NbCore
         BC7,
         DX10,
         RGBA8,
+        BGRA8,
         RGBA16F,
+        BGRA16F,
         DEPTH
     }
 
@@ -81,15 +84,13 @@ namespace NbCore
             switch (ext)
             {
                 case ".DDS":
-                    {
                         return new DDSImage(imageData);
-                    }
                 case ".JPG":
                 case ".JPEG":
                 case ".PNG":
-                    {
-                        return new PNGImage(imageData);
-                    }
+                    return NbImagingAPI.Load(imageData, NbTextureInternalFormat.BGRA8);
+                case ".BMP":
+                    return NbImagingAPI.Load(imageData, NbTextureInternalFormat.RGBA8);
                 default:
                     {
                         Console.WriteLine("Unsupported Texture Extension");

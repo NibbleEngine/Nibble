@@ -45,14 +45,16 @@ namespace NbCore
         public NbMeshMetaData MetaData; //Each mesh has its own object instance
         public NbMeshData Data; //Reference that might be shared with other NbMeshes
         public MeshInstance[] InstanceDataBuffer = new MeshInstance[2];
+        public int[] InstanceIndexBuffer = new int[2];
         public int InstanceCount = 0;
         public NbMeshGroup Group = null;
         public NbMaterial Material;
         public bool IsGeneric = false;
         
-        //This is needed only for removing render instances, so that InstanceIDs for relocated meshes in the buffer are updated
+        //This is needed only for removing render instances,
+        //so that InstanceIDs for relocated meshes in the buffer are updated
         //I think I should find a way to get rid of this at some point. Till then I'll keep it
-        public MeshComponent[] instanceRefs = new MeshComponent[10]; 
+        //public MeshComponent[] instanceRefs = new MeshComponent[10]; 
         
         public const int MAX_INSTANCES = 512;
 

@@ -1,16 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using OpenTK.Graphics.OpenGL4;
 using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-
 
 namespace NbCore.UI.ImGui
 {
@@ -41,11 +31,11 @@ namespace NbCore.UI.ImGui
         public readonly int MipmapLevels;
         public readonly SizedInternalFormat InternalFormat;
 
-        public ImGuiTexture(string name, Image<Rgba32> image, bool generateMipmaps, bool srgb)
+        public ImGuiTexture(string name, NbTextureData texture, bool generateMipmaps, bool srgb)
         {
             Name = name;
-            Width = image.Width;
-            Height = image.Height;
+            Width = texture.Width;
+            Height = texture.Height;
             InternalFormat = srgb ? Srgb8Alpha8 : SizedInternalFormat.Rgba8;
 
             if (generateMipmaps)
@@ -65,15 +55,7 @@ namespace NbCore.UI.ImGui
             GL.TextureStorage2D(GLTexture, MipmapLevels, InternalFormat, Width, Height);
             ImGuiUtil.CheckGLError("Storage2d");
 
-            unsafe
-            {
-                Memory<Rgba32> pixels;
-                image.DangerousTryGetSinglePixelMemory(out pixels);
-                fixed (void *ptr = pixels.Span)
-                {
-                    GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, (IntPtr) ptr);
-                }
-            }
+            GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, texture.Data);
             
             ImGuiUtil.CheckGLError("SubImage");
             if (generateMipmaps) GL.GenerateTextureMipmap(GLTexture);
@@ -89,8 +71,6 @@ namespace NbCore.UI.ImGui
 
             GL.TextureParameter(GLTexture, TextureParameterName.TextureMaxLevel, MipmapLevels - 1);
 
-            // This is a bit weird to do here
-            image.Dispose();
         }
 
         public ImGuiTexture(string name, int GLTex, int width, int height, int mipmaplevels, SizedInternalFormat internalFormat)

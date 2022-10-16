@@ -180,17 +180,20 @@ namespace NbCore.UI.ImGui
             Vector2 node_rect_size = ImGuiNET.ImGui.GetItemRectSize();
             float button_width = node_rect_size.Y;
             float button_height = button_width;
-            ImGuiNET.ImGui.SameLine();
-            ImGuiNET.ImGui.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width);
-            ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
-            if (ImGuiNET.ImGui.Button($"+##MatSamplers", new Vector2(button_width, button_height)))
+            
+            if (_ActiveMaterial.Shader != null)
             {
-                Console.WriteLine($"Creating New sampler");
-                NbSampler new_sampler = new();
-                _ActiveMaterial.Samplers.Add(new_sampler);
+                ImGuiNET.ImGui.SameLine();
+                ImGuiNET.ImGui.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width);
+                ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
+                if (ImGuiNET.ImGui.Button($"+##MatSamplers", new Vector2(button_width, button_height)))
+                {
+                    Console.WriteLine($"Creating New sampler");
+                    NbSampler new_sampler = new();
+                    _ActiveMaterial.Samplers.Add(new_sampler);
+                }
+                ImGuiNET.ImGui.PopFont();
             }
-            ImGuiNET.ImGui.PopFont();
-
 
             if (samplers_node_open)
             {
@@ -332,17 +335,23 @@ namespace NbCore.UI.ImGui
             node_rect_size = ImGuiNET.ImGui.GetItemRectSize();
             button_width = node_rect_size.Y;
             button_height = button_width;
-            ImGuiNET.ImGui.SameLine();
-            ImGuiNET.ImGui.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width);
-            ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
-            if (ImGuiNET.ImGui.Button($"+##MatUniforms", new Vector2(button_width, button_height)))
+            
+            
+            if (_ActiveMaterial.Shader != null)
             {
-                Console.WriteLine($"Creating New Uniform");
-                NbUniform uf = new();
-                _ActiveMaterial.Uniforms.Add(uf);
-            }
-            ImGuiNET.ImGui.PopFont();
+                ImGuiNET.ImGui.SameLine();
+                ImGuiNET.ImGui.SetCursorPosX(node_rect_pos.X + node_rect_size.X - button_width);
+                ImGuiNET.ImGui.PushFont(io.Fonts.Fonts[1]);
 
+                if (ImGuiNET.ImGui.Button($"+##MatUniforms", new Vector2(button_width, button_height)))
+                {
+                    Console.WriteLine($"Creating New Uniform");
+                    NbUniform uf = new();
+                    _ActiveMaterial.Uniforms.Add(uf);
+                }
+                ImGuiNET.ImGui.PopFont();
+            }
+            
             if (mat_uniform_tree_open)
             {
                 for (int i = 0; i < _ActiveMaterial.Uniforms.Count; i++)

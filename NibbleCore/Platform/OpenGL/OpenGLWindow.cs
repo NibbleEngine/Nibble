@@ -46,8 +46,9 @@ namespace NbCore.Platform.Windowing
         }
 
         //Constructor
-        public NbOpenGLWindow(Math.NbVector2i WindowSize, int opengl_major = 4, int opengl_minor = 5)
+        public NbOpenGLWindow(NbVector2i WindowSize, Engine e, int opengl_major = 4, int opengl_minor = 5)
         {
+            Engine = e; //Set Engine Reference
             _win = new GameWindow(GameWindowSettings.Default,
             new NativeWindowSettings() { Size = new Vector2i(WindowSize.X, WindowSize.Y), 
                 APIVersion = new System.Version(opengl_major, opengl_minor) });
@@ -82,12 +83,12 @@ namespace NbCore.Platform.Windowing
 
             _win.KeyDown += (KeyboardKeyEventArgs a) =>
             {
-                InvokeKeyDownEvent(new Windowing.NbKeyArgs(a));
+                OnKeyDown?.Invoke(new NbKeyArgs(a));
             };
 
             _win.KeyUp += (KeyboardKeyEventArgs a) =>
             {
-                InvokeKeyUpEvent(new Windowing.NbKeyArgs(a));
+                OnKeyUp?.Invoke(new NbKeyArgs(a));
             };
 
             _win.MouseMove += (MouseMoveEventArgs a) =>
@@ -116,7 +117,6 @@ namespace NbCore.Platform.Windowing
             };
         }
 
-        
         public void SetRenderFrameFrequency(int freq)
         {
             _win.RenderFrequency = freq;

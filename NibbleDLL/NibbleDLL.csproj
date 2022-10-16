@@ -8,6 +8,7 @@
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GenerateDependencyFile>false</GenerateDependencyFile>
 		<AssemblyName>Nibble</AssemblyName>
 		<Configurations>OpenGL_DEBUG;OpenGL_RELEASE</Configurations>
 		<!--Enable CopyLocalLockFileAssemblies to copy all dlls to the output-->
@@ -30,7 +31,6 @@
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.2.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
       <PackageReference Condition="$(DefineConstants.Contains('OPENGL'))" Include="OpenTK" Version="4.7.4" />
-      <PackageReference Include="SixLabors.ImageSharp" Version="2.1.3" />
       <PackageReference Include="System.CodeDom" Version="6.0.0" />
     </ItemGroup>
 
@@ -44,6 +44,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ShaderFiles Include="..\NibbleCore\Shaders\**\*.glsl" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Reference Include="ImGui.NET">
 	    <HintPath>..\lib\ImGui.NET.dll</HintPath>
 	  </Reference>
@@ -51,4 +55,31 @@
 
     <Import Project="..\NibbleCore\NibbleCore.projitems" Label="Shared" />
 
+
+	<!--Gather Libraries-->
+	<ItemGroup>
+		<AssemblyFiles Include="$(TargetDir)\OpenTK.*.dll" Condition="$(DefineConstants.Contains('OPENGL'))" />
+		<AssemblyFiles Include="..\lib\SixLabors.ImageSharp.dll"/>
+		<AssemblyFiles Include="$(TargetDir)\Newtonsoft.Json.dll" />
+	</ItemGroup>
+	
+	
+	<!--Copy files to Output-->
+	<Target Name="CopyFiles" AfterTargets="Build">
+		<Copy SourceFiles="@(ShaderFiles)" DestinationFolder="$(TargetDir)Shaders" />
+		<Copy SourceFiles="@(AssemblyFiles)" DestinationFolder="$(TargetDir)Lib" />
+	</Target>
+
+	
+	<!--DEV STUFF-->
+	<Target Name="CopyCustomContent" AfterTargets="Build">
+		<Message Text="Hooya $(TargetPath)" Importance="high" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleNMSPlugin\lib" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleAssimpPlugin\lib" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleEditor\lib" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NIbbleExamples\NibbleOpenGL\deps" />
+		<Copy SourceFiles="@(ShaderFiles)" DestinationFolder="..\..\NIbbleExamples\NibbleOpenGL\deps\Shaders" />
+	</Target>
+
 </Project>
+

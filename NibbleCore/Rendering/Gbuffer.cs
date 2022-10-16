@@ -6,7 +6,7 @@ using NbCore.Math;
 using OpenTK.Mathematics;
 using NbCore.Platform.Graphics;
 using OpenTK.Graphics.OpenGL4;
-
+using NbCore.Image;
 
 namespace NbCore
 {
@@ -266,9 +266,8 @@ namespace NbCore
             GL.ReadBuffer(from_channel);
             GL.ReadPixels(0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
 
-            SixLabors.ImageSharp.Image test = 
-                SixLabors.ImageSharp.Image.LoadPixelData<SixLabors.ImageSharp.PixelFormats.Rgba32>(pixels, width, height);
-            SixLabors.ImageSharp.ImageExtensions.SaveAsPng(test, "Temp//framebuffer_raw_" + name + ".png");
+            NbTextureData tex = NbImagingAPI.Load(pixels, width, height, NbTextureInternalFormat.RGBA8);
+            NbImagingAPI.ImageSave(tex, "Temp//framebuffer_raw_" + name + ".png");
         }
 
         //Disposable Stuff
