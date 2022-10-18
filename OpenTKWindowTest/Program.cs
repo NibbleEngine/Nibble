@@ -24,7 +24,7 @@ namespace OpenTKWindowTest
             int fps = 0;
             double fps_time = 0.0;
 
-            System.Timers.Timer fps_timer = new System.Timers.Timer();
+            Timer fps_timer = new Timer();
 
             fps_timer.Interval = 1000.0;
             fps_timer.Elapsed += (object sender, ElapsedEventArgs args) =>
@@ -48,8 +48,16 @@ namespace OpenTKWindowTest
             game.RenderFrame += (FrameEventArgs e) =>
             {
                 fps++;
-                skipTime((int)(frametime / time_for_addition));
+                OpenTK.Graphics.OpenGL4.GL.Clear(OpenTK.Graphics.OpenGL4.ClearBufferMask.DepthBufferBit | OpenTK.Graphics.OpenGL4.ClearBufferMask.ColorBufferBit);
+                OpenTK.Graphics.OpenGL4.GL.ClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+                game.SwapBuffers();
+                //skipTime((int)(frametime / time_for_addition));
                 //Thread.Sleep((int)Math.Max(0.0, frametime - end_frame_time + start_frame_time));
+            };
+
+            game.MouseMove += (MouseMoveEventArgs args) =>
+            {
+                //Callbacks.DefaultLog(game, $"{args.X} {args.Y}", LogVerbosityLevel.DEBUG);
             };
 
             game.Run();
@@ -62,9 +70,8 @@ namespace OpenTKWindowTest
                 a++;
         }
 
-        static void Main(string[] args)
+        static void CreateNbWindow()
         {
-            //CreateOpenTKWindow();
             Engine e = new Engine();
             NbOpenGLWindow win = new NbOpenGLWindow(new NbCore.Math.NbVector2i(1024), e);
 
@@ -78,8 +85,18 @@ namespace OpenTKWindowTest
                 Callbacks.DefaultLog(win, args.Key.ToString(), LogVerbosityLevel.DEBUG);
             };
 
-            win.Run();
+            win.OnMouseMove += (NbMouseMoveArgs args) =>
+            {
+                Callbacks.DefaultLog(win, $"{args.X} {args.Y}", LogVerbosityLevel.DEBUG);
+            };
 
+            win.Run();
+        }
+
+        static void Main(string[] args)
+        {
+            CreateOpenTKWindow();
+            //CreateNbWindow();
         }
 
         

@@ -5,7 +5,7 @@ using NbCore.Math;
 using System.IO;
 using NbCore.Common;
 using Newtonsoft.Json;
-using NbCore.Image;
+
 
 namespace NbCore
 {
@@ -88,9 +88,8 @@ namespace NbCore
                 case ".JPG":
                 case ".JPEG":
                 case ".PNG":
-                    return NbImagingAPI.Load(imageData, NbTextureInternalFormat.BGRA8);
                 case ".BMP":
-                    return NbImagingAPI.Load(imageData, NbTextureInternalFormat.RGBA8);
+                    return NbImagingAPI.Load(imageData);
                 default:
                     {
                         Console.WriteLine("Unsupported Texture Extension");

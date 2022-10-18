@@ -89,9 +89,13 @@ namespace NbCore.UI.ImGui
 			}
 
 			bool isopen = true;
+			ImGuiCore.SetNextWindowSizeConstraints(new(600, 300), new(1000, 1000));
 			if (ImGuiCore.BeginPopupModal(_uid, ref isopen, ImGuiNET.ImGuiWindowFlags.None))
 			{
-				if (filePicker.CurrentFolder == null)
+                if (ImGuiCore.IsKeyPressedMap(ImGuiNET.ImGuiKey.Escape))
+                    Close();
+
+                if (filePicker.CurrentFolder == null)
 				{
 					ImGuiCore.Text("My Computer");
 					if (ImGuiCore.BeginChildFrame(1, winsize))
@@ -121,9 +125,11 @@ namespace NbCore.UI.ImGui
 					return false;
 				}
 
-				ImGuiCore.Text("Current Folder: " + filePicker.CurrentFolder);
+				ImGuiCore.Text("Current Path: " + filePicker.CurrentFolder);
 
-				if (ImGuiCore.BeginChildFrame(1, winsize))
+				var current_size = ImGuiCore.GetWindowSize();
+				current_size -= new Num.Vector2(0, 100);
+				if (ImGuiCore.BeginChildFrame(1, current_size))
 				{
 					var di = new DirectoryInfo(filePicker.CurrentFolder);
 					if (di.Exists)
@@ -148,32 +154,19 @@ namespace NbCore.UI.ImGui
 
 					ImGuiCore.EndChildFrame();
 				}
-				
 
-				if (ImGuiCore.Button("Cancel"))
-				{
-					Close();
-				}
+				ImGuiCore.SetNextItemWidth(current_size.X - 60);
+				ImGuiCore.InputText("##" + _uid + "_finalPath", ref filePicker.SelectedFile, 300, ImGuiNET.ImGuiInputTextFlags.ReadOnly);
 
-				if (filePicker.OnlyAllowFolders)
-				{
-					ImGuiCore.SameLine();
-					if (ImGuiCore.Button("Open"))
-					{
+				ImGuiCore.SameLine();
+                if (ImGuiCore.Button("Open"))
+                {
+					if (filePicker.OnlyAllowFolders)
 						filePicker.SelectedFile = filePicker.CurrentFolder;
-						Close();
-					}
-				}
-				else if (filePicker.SelectedFile != null)
-				{
-					ImGuiCore.SameLine();
-					if (ImGuiCore.Button("Open"))
-					{
-						Close();
-						return true;
-					}
-				}
-
+					Close();
+                    return true;
+                }
+				
 				ImGuiCore.EndPopup();
 			}
 

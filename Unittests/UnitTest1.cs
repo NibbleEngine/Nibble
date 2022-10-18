@@ -1,11 +1,8 @@
 using NbCore;
-using NbCore.Common;
-using NbCore.Image;
-using NbCore.Platform.Windowing;
 using NUnit.Framework;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
-using System.IO;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+
 
 namespace Unittests
 {
@@ -17,11 +14,20 @@ namespace Unittests
         }
 
         [Test]
+        public void ImageSharpTest()
+        {
+            byte[] pixel_data = new byte[1024 * 1024 * 4];
+            Image<Rgba32> image = new Image<Rgba32>(1024, 1024);
+            image.CopyPixelDataTo(pixel_data);
+            Assert.Pass();
+        }
+
+        [Test]
         public void ImageLoadFromFileTest()
         {
             Engine e = new Engine(); //The engine attaches the assembly loader
-            NbTextureData texture = NbImagingAPI.Load("pinarello-logo.png");
-            NbImagingAPI.ImageSave(texture, "pinarello_conv.png");
+            NbTextureData texture = NbImagingAPI.Load("Default_albedo.jpg");
+            NbImagingAPI.ImageSave(texture, "text_tex.png");
             Assert.Pass();
         }
 

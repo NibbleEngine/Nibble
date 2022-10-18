@@ -100,7 +100,11 @@ namespace NbCore.Platform.Windowing
             { Keys.D8, NbKey.Numpad8 },
             { Keys.D9, NbKey.Numpad9 },
             { Keys.Minus, NbKey.Minus },
-            { Keys.Equal, NbKey.Equal }
+            { Keys.Equal, NbKey.Equal },
+            { Keys.Apostrophe, NbKey.Apostrophe },
+            { Keys.Period, NbKey.Period },
+            { Keys.LeftBracket, NbKey.LBracket },
+            { Keys.RightBracket, NbKey.RBracket }
         };
 
         public static readonly List<NbKey> SupportedKeys = new()

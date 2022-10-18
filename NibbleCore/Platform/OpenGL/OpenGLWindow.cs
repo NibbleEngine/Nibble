@@ -93,7 +93,7 @@ namespace NbCore.Platform.Windowing
 
             _win.MouseMove += (MouseMoveEventArgs a) =>
             {
-                InvokeMouseMoveEvent(new NbMouseMoveArgs(a));
+                OnMouseMove?.Invoke(new NbMouseMoveArgs(a));
             };
 
             _win.MouseWheel += (MouseWheelEventArgs a) =>

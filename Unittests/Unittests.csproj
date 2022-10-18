@@ -11,6 +11,7 @@
     <PackageReference Include="NUnit" Version="3.13.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.17.0" />
     <PackageReference Include="coverlet.collector" Version="3.0.2" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="2.1.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,11 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-	<NibbleDeps Include="Lib\SixLabors.ImageSharp.dll"/>
+	<NibbleDeps Include="Lib\SixLabors.ImageSharp.dll" />
   </ItemGroup>
 
   <Target Name="CopyCustomContentBuild" AfterTargets="AfterBuild">
-	<Copy SourceFiles="@(NibbleDeps)" DestinationFolder="$(TargetDir)Lib"/>
+	<Copy SourceFiles="@(NibbleDeps)" DestinationFolder="$(TargetDir)Lib" />
 	<Message Text="Dependencies copied successfully." Importance="high" />
   </Target>	
 

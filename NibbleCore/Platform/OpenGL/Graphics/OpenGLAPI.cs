@@ -9,7 +9,7 @@ using NbCore.Math;
 using NbCore.Common;
 using NbCore.Platform.Graphics.OpenGL;
 using OpenTK.Graphics.OpenGL4;
-using NbCore.Image;
+
 
 namespace NbCore.Platform.Graphics
 {
@@ -78,6 +78,7 @@ namespace NbCore.Platform.Graphics
         private int SSBO_size = 2 * 1024 * 1024;
         private readonly Dictionary<string, int> SSBOs = new();
 
+        private bool useMultiBuffers = false;
         private int multiBufferActiveId;
         private readonly List<int> multiBufferSSBOs = new(4);
         private readonly List<IntPtr> multiBufferSyncStatuses = new(4);
@@ -116,8 +117,15 @@ namespace NbCore.Platform.Graphics
             { NbTextureInternalFormat.RGTC2, InternalFormat.CompressedRgRgtc2 },
             { NbTextureInternalFormat.BC7, InternalFormat.CompressedSrgbAlphaBptcUnorm },
             { NbTextureInternalFormat.RGBA8, InternalFormat.Rgba8},
+            { NbTextureInternalFormat.BGRA8, InternalFormat.Rgba8},
             { NbTextureInternalFormat.RGBA16F, InternalFormat.Rgba16f},
             { NbTextureInternalFormat.DEPTH, InternalFormat.DepthComponent},
+        };
+
+        public static readonly Dictionary<NbTextureInternalFormat, PixelFormat> PixelFormatMap = new()
+        {
+            {NbTextureInternalFormat.RGBA8, PixelFormat.Rgba },
+            {NbTextureInternalFormat.BGRA8, PixelFormat.Bgra }
         };
 
         //UBO structs
@@ -282,8 +290,16 @@ namespace NbCore.Platform.Graphics
         {
             GL.DeleteBuffer(id);
         }
-            
+
         public void PrepareMeshBuffers()
+        {
+            if (useMultiBuffers)
+                PrepareMeshBuffersMultiBuffer();
+            else
+                PrepareMeshBuffersSingleBuffer();
+        }
+
+        public void PrepareMeshBuffersMultiBuffer()
         {
             multiBufferActiveId = (multiBufferActiveId + 1) % MULTI_BUFFER_COUNT;
 
@@ -305,7 +321,14 @@ namespace NbCore.Platform.Graphics
             Log($"Elapsed time for Sync Wait {timer.ElapsedMilliseconds}", LogVerbosityLevel.HIDEBUG);
 #endif
             GL.DeleteSync(multiBufferSyncStatuses[multiBufferActiveId]);
-            
+
+            PrepareMeshBuffersSingleBuffer();
+        }
+
+        
+
+        public void PrepareMeshBuffersSingleBuffer()
+        {
             //Upload atlas UBO data
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, SSBOs["_COMMON_PER_MESH"]);
 
@@ -315,7 +338,6 @@ namespace NbCore.Platform.Graphics
             //METHOD 2: Use MAP Buffer
             IntPtr ptr = GL.MapBufferRange(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
                  max_ubo_offset, BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapWriteBit);
-
 
             if (SSBO_size < GLMeshInstanceManager.GetAtlasSize())
             {
@@ -910,10 +932,8 @@ namespace NbCore.Platform.Graphics
             InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
             
             GL.BindTexture(gl_target, tex_id);
-
             GL.TexImage2D(gl_target, 0, (PixelInternalFormat)gl_pif, tex_data.Width, tex_data.Height, 0,
-                    PixelFormat.Bgra, PixelType.UnsignedByte, tex_data.Data);
-
+                    PixelFormatMap[tex_data.pif], PixelType.UnsignedByte, tex_data.Data);
             GL.GenerateTextureMipmap(tex_id);
 
             //Cleanup
@@ -1026,9 +1046,7 @@ namespace NbCore.Platform.Graphics
         {
             Callbacks.Assert(tex.texID >= 0, "Invalid texture ID");
             if (tex.Data is DDSImage) 
-            {
                 UploadTextureData(tex.texID, tex.Data as DDSImage);
-            }
             else
                 UploadTextureData(tex.texID, tex.Data);
         }
@@ -1151,6 +1169,12 @@ namespace NbCore.Platform.Graphics
             }
         }
         
+        public void PostRendering()
+        {
+            if (useMultiBuffers)
+                SyncGPUCommands();
+        }
+
         public void SyncGPUCommands()
         {
             //Setup FENCE AFTER ALL THE MAIN GEOMETRY DRAWCALLS ARE ISSUED

@@ -53,6 +53,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Windowing\NbTextInputArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Systems\ScriptingSystem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiLog.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiSaveFileDialog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiOpenFileDialog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\LibUtils.cs" />

@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Drawing;
 using System.IO;
-using OpenTK;
 using OpenTK.Graphics.OpenGL4;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using NbCore.Image;
+
 
 namespace NbCore.Text
 {
@@ -184,7 +180,7 @@ namespace NbCore.Text
         private unsafe int genGLTexture(byte[] img_data)
         {
             //img_data is expected to be a complete png image
-            NbTextureData tex_data = NbImagingAPI.Load(img_data, NbTextureInternalFormat.BGRA8);
+            NbTextureData tex_data = NbImagingAPI.Load(img_data);
             
             int texID = GL.GenTexture();
             Console.WriteLine(GL.GetError());

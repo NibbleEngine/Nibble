@@ -6,7 +6,6 @@ using NbCore.Math;
 using OpenTK.Mathematics;
 using NbCore.Platform.Graphics;
 using OpenTK.Graphics.OpenGL4;
-using NbCore.Image;
 
 namespace NbCore
 {

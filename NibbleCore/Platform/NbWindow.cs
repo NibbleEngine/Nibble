@@ -42,11 +42,6 @@ namespace NbCore.Platform.Windowing
             OnMouseButtonUp?.Invoke(args);
         }
 
-        public void InvokeMouseMoveEvent(NbMouseMoveArgs args)
-        {
-            OnMouseMove?.Invoke(args);
-        }
-
         public void InvokeMouseWheelEvent(NbMouseWheelArgs args)
         {
             OnMouseWheel?.Invoke(args);

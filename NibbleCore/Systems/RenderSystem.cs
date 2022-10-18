@@ -860,8 +860,8 @@ namespace NbCore.Systems
             //Render Geometry
             renderGeometry();
 
-            Renderer.SyncGPUCommands();
-
+            Renderer.PostRendering();
+            
             //POST-PROCESSING
             post_process();
 
