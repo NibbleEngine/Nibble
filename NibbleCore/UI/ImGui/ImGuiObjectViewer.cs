@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ImGuiNET;
 using NbCore;
+using NbCore.Math;
 using NbCore.Systems;
 
 using ImGuiCore = ImGuiNET.ImGui;
@@ -247,7 +248,7 @@ namespace NbCore.UI.ImGui
                             ImGuiCore.Text("Uniform " + i);
                             ImGuiCore.TableSetColumnIndex(1);
                             ImGuiCore.PushItemWidth(-1.0f);
-                            Math.NbVector4 uf = mc.InstanceUniforms[i].Values;
+                            NbVector4 uf = mc.InstanceUniforms[i].Values;
                             var val = new System.Numerics.Vector4();
                             val.X = uf.X;
                             val.Y = uf.Y;
@@ -256,7 +257,8 @@ namespace NbCore.UI.ImGui
                             
                             if (ImGuiCore.InputFloat4($"##uf{i}", ref val))
                             {
-                                mc.InstanceUniforms[i].Values = new(val);
+                                NbVector4 vec = new NbVector4(val);
+                                mc.InstanceUniforms[i].Bind(ref vec);
                                 mc.IsUpdated = true;
                             }
                             

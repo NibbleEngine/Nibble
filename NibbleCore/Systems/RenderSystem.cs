@@ -152,14 +152,14 @@ namespace NbCore.Systems
             return gBuffer;
         }
 
-        public void getMousePosInfo(int x, int y, ref NbVector4[] arr)
-        {
-            //Fetch Depth
-            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, gBuffer.fbo);
-            GL.ReadPixels(x, y, 1, 1, 
-                PixelFormat.DepthComponent, PixelType.Float, arr);
-            //Fetch color from UI Fbo
-        }
+        //public void getMousePosInfo(int x, int y, ref NbVector4[] arr)
+        //{
+        //    //Fetch Depth
+        //    GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, gBuffer.fbo);
+        //    GL.ReadPixels(x, y, 1, 1, 
+        //        PixelFormat.DepthComponent, PixelType.Float, arr);
+        //    //Fetch color from UI Fbo
+        //}
 
         public void progressTime(double dt)
         {

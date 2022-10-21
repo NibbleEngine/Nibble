@@ -6,9 +6,18 @@ using OpenTK.Graphics.OpenGL4;
 
 namespace NbCore
 {
+    public enum NbCollisionType
+    {
+        MESH = 0x0,
+        SPHERE,
+        CYLINDER,
+        BOX,
+        CAPSULE
+    }
+
     public class CollisionComponent : Component
     {
-        public COLLISIONTYPES CollisionType;
+        public NbCollisionType CollisionType;
 
         public CollisionComponent()
         {

@@ -1,4 +1,7 @@
+using System;
+using System.Diagnostics;
 using NbCore;
+using NbCore.Math;
 using NUnit.Framework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -28,6 +31,27 @@ namespace Unittests
             Engine e = new Engine(); //The engine attaches the assembly loader
             NbTextureData texture = NbImagingAPI.Load("Default_albedo.jpg");
             NbImagingAPI.ImageSave(texture, "text_tex.png");
+            Assert.Pass();
+        }
+
+        [Test]
+        public void PropertySetting()
+        {
+            NbUniform uniform = new();
+            NbVector4 vec = new(2.0f);
+
+            //uniform._LocalValues.X = 1.0f;
+            //uniform._LocalValues.Y = 1.0f;
+            
+            Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");
+            uniform.Bind(ref vec);
+            Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");
+            vec.X = 15.0f;
+            Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");
+            uniform.SetX(5.0f);
+            Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");
+            uniform.UnBind();
+            Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");
             Assert.Pass();
         }
 

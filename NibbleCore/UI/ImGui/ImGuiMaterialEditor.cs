@@ -118,11 +118,11 @@ namespace NbCore.UI.ImGui
                     //Flags
                     //Create string list of flags
                     List<string> flags = new();
-                    List<MaterialFlagEnum> mat_flags = _ActiveMaterial.GetFlags();
+                    List<NbMaterialFlagEnum> mat_flags = _ActiveMaterial.GetFlags();
                     for (int i = 0; i < mat_flags.Count; i++)
                         flags.Add(mat_flags[i].ToString());
 
-                    string[] allflags = Enum.GetNames(typeof(MaterialFlagEnum));
+                    string[] allflags = Enum.GetNames(typeof(NbMaterialFlagEnum));
                     
                     //ImGuiNET.ImGui.SetNextItemWidth(-1);
                     ImGuiNET.ImGui.Combo("##FlagSelector", ref current_material_flag, allflags, allflags.Length);
@@ -131,7 +131,7 @@ namespace NbCore.UI.ImGui
                     //TODO Add combobox here with all the available flags that can be selected and added to the material
                     if (ImGuiNET.ImGui.Button("Add"))
                     {
-                        MaterialFlagEnum new_flag = (MaterialFlagEnum) current_material_flag;
+                        NbMaterialFlagEnum new_flag = (NbMaterialFlagEnum) current_material_flag;
                         _ActiveMaterial.AddFlag(new_flag);
                         //Compile a new shader only if a shader exists
                         if (_ActiveMaterial.Shader != null)
@@ -149,7 +149,7 @@ namespace NbCore.UI.ImGui
                             {
                                 if (ImGuiNET.ImGui.MenuItem("Remove ##flag"))
                                 {
-                                    _ActiveMaterial.RemoveFlag((MaterialFlagEnum)Enum.Parse(typeof(MaterialFlagEnum), flag));
+                                    _ActiveMaterial.RemoveFlag((NbMaterialFlagEnum)Enum.Parse(typeof(NbMaterialFlagEnum), flag));
 
                                     //Compile a new shader only if a shader exists
                                     if (_ActiveMaterial.Shader != null)
@@ -459,9 +459,8 @@ namespace NbCore.UI.ImGui
                                         break;
                                     }
                             }
-
-                            current_uf.Values = vec;
-
+                            
+                            current_uf.Bind(ref vec);
 
                             //Sampler Shader Binding
                             List<string> compatibleShaderBindings = new();

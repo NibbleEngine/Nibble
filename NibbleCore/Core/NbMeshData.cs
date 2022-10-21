@@ -13,7 +13,7 @@ namespace NbCore
         public uint VertexBufferStride;
         public byte[] VertexBuffer;
         public byte[] IndexBuffer;
-        public bufInfo[] buffers;
+        public NbMeshBufferInfo[] buffers;
         public NbPrimitiveDataType IndicesLength;
         
         public void Dispose()
@@ -97,10 +97,10 @@ namespace NbCore
             Newtonsoft.Json.Linq.JToken bufs = token.Value<Newtonsoft.Json.Linq.JToken>("buffers");
 
             //Import buffers
-            List<bufInfo> tbufs = new();
+            List<NbMeshBufferInfo> tbufs = new();
             foreach (Newtonsoft.Json.Linq.JToken tkn in bufs.Children())
             {
-                bufInfo info = (bufInfo) IO.NbDeserializer.Deserialize(tkn);
+                NbMeshBufferInfo info = (NbMeshBufferInfo) IO.NbDeserializer.Deserialize(tkn);
                 tbufs.Add(info);
             }
             data.buffers = tbufs.ToArray();

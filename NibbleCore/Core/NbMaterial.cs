@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using NbCore.Platform.Graphics.OpenGL; //TODO: Abstract
 using NbCore.Common;
 using Newtonsoft.Json;
+using NbCore.Math;
 
 namespace NbCore
 {
     //Stolen from NMS sorry HG ^.^
-    public enum MaterialFlagEnum
+    public enum NbMaterialFlagEnum
     {
         _NB_DIFFUSE_MAP,
         _NB_NORMAL_MAP,
@@ -91,39 +92,47 @@ namespace NbCore
     {
         public string Name = "";
         public string Class = "";
+        public NbVector4 DiffuseColor = new();
+        public NbVector4 AmbientColor = new();
+        public NbVector4 SpecularColor = new();
+        public bool IsPBR = false;
+        public float MetallicFactor = 0.0f;
+        public float Roughness = 0.0f;
+        public float Emissive = 0.0f;
+        
         public bool IsGeneric = false;
         public TextureManager texMgr;
         public NbShader Shader;
-        private List<MaterialFlagEnum> Flags = new();
+        private List<NbMaterialFlagEnum> Flags = new();
         public List<NbUniform> Uniforms = new();
         public List<NbSampler> Samplers = new();
         
         public float[] material_flags = new float[64];
 
-        public static List<MaterialFlagEnum> supported_flags = new() {
-            MaterialFlagEnum._NB_DIFFUSE_MAP,
-            MaterialFlagEnum._NB_NORMAL_MAP,
-            MaterialFlagEnum._NB_TWO_CHANNEL_NORMAL_MAP,
-            MaterialFlagEnum._NB_METALLIC_ROUGHNESS_MAP,
-            MaterialFlagEnum._NB_AO_METALLIC_ROUGHNESS_MAP,
-            MaterialFlagEnum._NB_AO_MAP,
-            MaterialFlagEnum._NB_EMISSIVE_MAP,
-            MaterialFlagEnum._NB_UNLIT,
-            MaterialFlagEnum._NB_VERTEX_COLOUR,
+        public static List<NbMaterialFlagEnum> supported_flags = new() {
+            NbMaterialFlagEnum._NB_DIFFUSE_MAP,
+            NbMaterialFlagEnum._NB_NORMAL_MAP,
+            NbMaterialFlagEnum._NB_TWO_CHANNEL_NORMAL_MAP,
+            NbMaterialFlagEnum._NB_METALLIC_ROUGHNESS_MAP,
+            NbMaterialFlagEnum._NB_AO_METALLIC_ROUGHNESS_MAP,
+            NbMaterialFlagEnum._NB_AO_MAP,
+            NbMaterialFlagEnum._NB_EMISSIVE_MAP,
+            NbMaterialFlagEnum._NB_UNLIT,
+            NbMaterialFlagEnum._NB_VERTEX_COLOUR,
 
 
-            MaterialFlagEnum._F09_TRANSPARENT,
-            MaterialFlagEnum._F22_TRANSPARENT_SCALAR,
-            MaterialFlagEnum._F11_ALPHACUTOUT,
-            MaterialFlagEnum._F14_UVSCROLL,
-            MaterialFlagEnum._F16_DIFFUSE2MAP,
-            MaterialFlagEnum._F17_MULTIPLYDIFFUSE2MAP,
-            MaterialFlagEnum._F34_GLOW,
-            MaterialFlagEnum._F35_GLOW_MASK,
-            MaterialFlagEnum._F43_NORMAL_TILING,
-            MaterialFlagEnum._F51_DECAL_DIFFUSE,
-            MaterialFlagEnum._F52_DECAL_NORMAL,
-            MaterialFlagEnum._F55_MULTITEXTURE
+            NbMaterialFlagEnum._F09_TRANSPARENT,
+            NbMaterialFlagEnum._F22_TRANSPARENT_SCALAR,
+            NbMaterialFlagEnum._F11_ALPHACUTOUT,
+            NbMaterialFlagEnum._F14_UVSCROLL,
+            NbMaterialFlagEnum._F16_DIFFUSE2MAP,
+            NbMaterialFlagEnum._F17_MULTIPLYDIFFUSE2MAP,
+            NbMaterialFlagEnum._F34_GLOW,
+            NbMaterialFlagEnum._F35_GLOW_MASK,
+            NbMaterialFlagEnum._F43_NORMAL_TILING,
+            NbMaterialFlagEnum._F51_DECAL_DIFFUSE,
+            NbMaterialFlagEnum._F52_DECAL_NORMAL,
+            NbMaterialFlagEnum._F55_MULTITEXTURE
         };
 
         public List<NbUniform> ActiveUniforms = new();
@@ -194,8 +203,7 @@ namespace NbCore
                         ShaderBinding = uf_name,
                         ShaderLocation = uf_format.loc,
                         Type = uf_format.type
-                    },
-                    Values = new()
+                    }
                 };
                 ActiveUniforms.Add(uf);
                 Uniforms.Add(uf);
@@ -228,17 +236,17 @@ namespace NbCore
         }
 
         //Wrapper to support uberflags
-        public bool HasFlag(MaterialFlagEnum flag)
+        public bool HasFlag(NbMaterialFlagEnum flag)
         {
             return material_flags[(int) flag] > 0.0f;
         }
 
-        public List<MaterialFlagEnum> GetFlags()
+        public List<NbMaterialFlagEnum> GetFlags()
         {
             return Flags;
         }
 
-        public void RemoveFlag(MaterialFlagEnum flag)
+        public void RemoveFlag(NbMaterialFlagEnum flag)
         {
             if (!HasFlag((flag)))
                 return;
@@ -249,7 +257,7 @@ namespace NbCore
 
         }
 
-        public bool AddFlag(MaterialFlagEnum flag)
+        public bool AddFlag(NbMaterialFlagEnum flag)
         {
             if (HasFlag((flag)))
                 return false;
@@ -347,7 +355,7 @@ namespace NbCore
             //Write Flags
             writer.WritePropertyName("Flags");
             writer.WriteStartArray();
-            foreach (MaterialFlagEnum flag in Flags)
+            foreach (NbMaterialFlagEnum flag in Flags)
                 writer.WriteValue(flag.ToString());
             writer.WriteEndArray();
 
@@ -380,7 +388,7 @@ namespace NbCore
             //Deserialize flags
             Newtonsoft.Json.Linq.JToken flag_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Flags");
             foreach (Newtonsoft.Json.Linq.JToken tkn in flag_tkns.Children())
-                mat.AddFlag((MaterialFlagEnum) Enum.Parse(typeof(MaterialFlagEnum), tkn.ToString()));
+                mat.AddFlag((NbMaterialFlagEnum) Enum.Parse(typeof(NbMaterialFlagEnum), tkn.ToString()));
 
             //Deserialize samplers
             Newtonsoft.Json.Linq.JToken sampler_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Samplers");

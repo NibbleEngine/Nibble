@@ -1083,7 +1083,7 @@ namespace NbCore.Platform.Graphics
             //Assign VertexAttribPointers
             for (int i = 0; i < mesh.Data.buffers.Length; i++)
             {
-                bufInfo buf = mesh.Data.buffers[i];
+                NbMeshBufferInfo buf = mesh.Data.buffers[i];
                 VertexAttribPointerType buftype = VertexAttribPointerType.Float; //default
                 switch (buf.type)
                 {

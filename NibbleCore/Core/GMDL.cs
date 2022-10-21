@@ -32,16 +32,9 @@ namespace NbCore
         Int,
     }
     
-    public enum COLLISIONTYPES
-    {
-        MESH = 0x0,
-        SPHERE,
-        CYLINDER,
-        BOX,
-        CAPSULE    
-    }
+    
 
-    public enum RENDERPASS
+    public enum NbRenderPass
     {
         DEFERRED = 0x0,
         FORWARD,
@@ -53,7 +46,7 @@ namespace NbCore
         COUNT
     }
 
-    public class geomMeshMetaData
+    public struct geomMeshMetaData
     {
         public string name;
         public ulong hash;
@@ -90,8 +83,8 @@ namespace NbCore
         public byte[] tbuffer;
         public List<int[]> bIndices = new();
         public List<float[]> bWeights = new();
-        public List<bufInfo> bufInfo = new();
-        public List<bufInfo> smallBufInfo = new();
+        public List<NbMeshBufferInfo> bufInfo = new();
+        public List<NbMeshBufferInfo> smallBufInfo = new();
         public short[] boneRemap;
         public List<NbVector3[]> bboxes = new();
         public List<NbVector3> bhullverts = new();
@@ -142,14 +135,14 @@ namespace NbCore
 
             //Set Buffer Offsets
             temp_geom.mesh_descr = "v";
-            bufInfo buf = new bufInfo()
+            NbMeshBufferInfo buf = new()
             {
                 count = 3,
                 normalize = false,
                 offset = 0,
                 sem_text = "vPosition",
                 semantic = 0,
-                stride = temp_geom.vx_size,
+                stride = (int) temp_geom.vx_size,
                 type = NbPrimitiveDataType.Float
             };
             temp_geom.bufInfo.Add(buf);
@@ -293,27 +286,7 @@ namespace NbCore
 
     }
 
-    public struct bufInfo
-    {
-        [NbSerializable] public int semantic;
-        [NbSerializable] public NbPrimitiveDataType type;
-        [NbSerializable] public int count;
-        [NbSerializable] public uint stride;
-        [NbSerializable] public int offset;
-        [NbSerializable] public string sem_text;
-        [NbSerializable] public bool normalize;
-
-        public bufInfo(int sem, NbPrimitiveDataType typ, int c, uint s, int off, string t, bool n)
-        {
-            semantic = sem;
-            type = typ;
-            count = c;
-            stride = s;
-            sem_text = t;
-            normalize = n;
-            offset = off;
-        }
-    }
+    
 
     public class PaletteOpt
     {
@@ -334,84 +307,7 @@ namespace NbCore
     }
 
     
-    //Animation Classes
-    public class AnimNodeFrameData
-    {
-        public List<NbQuaternion> rotations = new();
-        public List<NbVector3> translations = new();
-        public List<NbVector3> scales = new();
-
-        public void LoadRotations(FileStream fs,int count)
-        {
-            BinaryReader br = new(fs);
-            for (int i = 0; i < count; i++)
-            {
-                NbQuaternion q = new()
-                {
-                    X = br.ReadSingle(),
-                    Y = br.ReadSingle(),
-                    Z = br.ReadSingle(),
-                    W = br.ReadSingle()
-                };
-                
-                rotations.Add(q);
-            }
-        }
-
-        public void LoadTranslations(FileStream fs, int count)
-        {
-            BinaryReader br = new(fs);
-            for (int i = 0; i < count; i++)
-            {
-                NbVector3 q = new()
-                {
-                    X = br.ReadSingle(),
-                    Y = br.ReadSingle(),
-                    Z = br.ReadSingle(),
-                };
-                br.ReadSingle();
-                translations.Add(q);
-            }
-        }
-
-        public void LoadScales(FileStream fs, int count)
-        {
-            BinaryReader br = new(fs);
-            for (int i = 0; i < count; i++)
-            {
-                NbVector3 q = new()
-                {
-                    X = br.ReadSingle(),
-                    Y = br.ReadSingle(),
-                    Z = br.ReadSingle(),
-                };
-                br.ReadSingle();
-                this.scales.Add(q);
-            }
-        }
-
-    }
     
-
-    public class AnimPoseData
-    {
-        public AnimationData animData;
-        public int FrameStart;
-        public int FrameEnd;
-
-        public AnimPoseData()
-        {
-            
-        }
-
-        public AnimPoseData(AnimPoseData apd)
-        {
-            animData = apd.animData;
-            FrameStart = apd.FrameStart;
-            FrameEnd = apd.FrameEnd;
-        }
-
-    }
 
     public class JointBindingData
     {

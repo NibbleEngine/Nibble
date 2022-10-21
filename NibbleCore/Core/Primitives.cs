@@ -61,7 +61,7 @@ namespace NbCore.Primitives
             //Set Buffer Offsets
             geom.mesh_descr = "vn";
             
-            bufInfo buf = new bufInfo()
+            NbMeshBufferInfo buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -73,7 +73,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -452,14 +452,14 @@ namespace NbCore.Primitives
             geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
 
             //Set Buffer Offsets
-            geom.bufInfo = new List<bufInfo>();
+            geom.bufInfo = new List<NbMeshBufferInfo>();
 
             geom.mesh_descr = "vn";
             //geom.bufInfo[0] = new bufInfo(0, NbVertexAttribPointerType.Float, 3, 0, 0, "vPosition", false);
             //geom.bufInfo[2] = new bufInfo(2, NbVertexAttribPointerType.Float, 3, 0, 0, "nPosition", false);
             //geom.bufInfo[4] = new bufInfo(4, NbVertexAttribPointerType.Float, 3, 0, geom.vertCount * 12, "bPosition", false);
 
-            bufInfo buf = new bufInfo()
+            NbMeshBufferInfo buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -471,7 +471,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -483,7 +483,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -641,7 +641,7 @@ namespace NbCore.Primitives
             //Set Buffer Offsets
             geom.mesh_descr = "vn";
             
-            bufInfo buf = new bufInfo()
+            NbMeshBufferInfo buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -653,7 +653,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -665,7 +665,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -749,7 +749,7 @@ namespace NbCore.Primitives
             //Set Buffer Offsets
             geom.mesh_descr = "vn";
             
-            bufInfo buf = new bufInfo()
+            NbMeshBufferInfo buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -761,7 +761,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -773,7 +773,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -888,7 +888,7 @@ namespace NbCore.Primitives
             //Set Buffer Offsets
             geom.mesh_descr = "vn";
             
-            bufInfo buf = new bufInfo()
+            NbMeshBufferInfo buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -900,7 +900,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -912,7 +912,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -1120,38 +1120,38 @@ namespace NbCore.Primitives
             //Set Buffer Offsets
             geom.mesh_descr = "vun";
 
-            bufInfo buf = new bufInfo()
+            NbMeshBufferInfo buf = new()
             {
                 count = 3,
                 normalize = false,
                 offset = 0,
                 sem_text = "vPosition",
                 semantic = 0,
-                stride = geom.vx_size,
+                stride = (int) geom.vx_size,
                 type = NbPrimitiveDataType.Float
             };
             geom.bufInfo.Add(buf);
 
-            buf = new bufInfo()
+            buf = new NbMeshBufferInfo()
             {
                 count = 2,
                 normalize = false,
                 offset = 12, //Skipping position data
                 sem_text = "uvPosition0",
                 semantic = 1,
-                stride = geom.vx_size,
+                stride = (int)geom.vx_size,
                 type = NbPrimitiveDataType.Float
             };
             geom.bufInfo.Add(buf);
 
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 3,
                 normalize = false,
                 offset = 20, //Skipping position + uv data
                 sem_text = "nPosition",
                 semantic = 2,
-                stride = geom.vx_size, 
+                stride = (int)geom.vx_size, 
                 type = NbPrimitiveDataType.Float
             };
             geom.bufInfo.Add(buf);
@@ -1251,7 +1251,7 @@ namespace NbCore.Primitives
             //Set Buffer Offsets
             geom.mesh_descr = "vn";
             
-            bufInfo buf = new bufInfo()
+            NbMeshBufferInfo buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -1263,7 +1263,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new NbMeshBufferInfo()
             {
                 count = 3,
                 normalize = false,
@@ -1275,7 +1275,7 @@ namespace NbCore.Primitives
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new NbMeshBufferInfo()
             {
                 count = 3,
                 normalize = false,

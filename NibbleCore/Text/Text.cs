@@ -190,7 +190,7 @@ namespace NbCore.Text
             //Set Buffer Offsets
             geom.mesh_descr = "vu";
             
-            bufInfo buf = new bufInfo()
+            NbMeshBufferInfo buf = new()
             {
                 count = 3,
                 normalize = false,
@@ -202,7 +202,7 @@ namespace NbCore.Text
             };
             geom.bufInfo.Add(buf);
             
-            buf = new bufInfo()
+            buf = new()
             {
                 count = 2,
                 normalize = false,

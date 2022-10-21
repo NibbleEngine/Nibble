@@ -11,6 +11,7 @@ using NbCore.Plugins;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Newtonsoft.Json.Schema;
 
 namespace NbCore
 {
@@ -892,7 +893,7 @@ namespace NbCore
             RegisterEntity(shader);
 
             //Text Shaders
-            shader = CreateShader(GetShaderConfigByName("Text"), new List<string> { MaterialFlagEnum._NB_DIFFUSE_MAP.ToString() });
+            shader = CreateShader(GetShaderConfigByName("Text"), new List<string> { NbMaterialFlagEnum._NB_DIFFUSE_MAP.ToString() });
             shader.IsGeneric = true;
             CompileShader(shader);
             RegisterEntity(shader);
@@ -935,8 +936,8 @@ namespace NbCore
                 Name = "crossMat",
                 IsGeneric = true
             };
-            mat.AddFlag(MaterialFlagEnum._NB_UNLIT);
-            mat.AddFlag(MaterialFlagEnum._NB_VERTEX_COLOUR);
+            mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
+            mat.AddFlag(NbMaterialFlagEnum._NB_VERTEX_COLOUR);
             NbUniform uf = new()
             {
                 Name = "gMaterialColourVec4",
@@ -944,15 +945,15 @@ namespace NbCore
                 {
                     Type = NbUniformType.Vector4,
                     ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                },
-                Values = new(1.0f, 1.0f, 1.0f, 1.0f)
+                }
             };
+            NbVector4 vec = new(1.0f, 1.0f, 1.0f, 1.0f);
+            uf.Bind(ref vec);
             mat.Uniforms.Add(uf);
 
             shader = CreateShader(config_deferred, GetMaterialShaderDirectives(mat));
             Callbacks.Assert(CompileShader(shader), "Error during shader compilation");
             mat.AttachShader(shader);
-
 #if DEBUG
             //Report UBOs
             GetSystem<RenderingSystem>().Renderer.ShaderReport(shader);
@@ -965,7 +966,7 @@ namespace NbCore
                 Name = "jointMat",
                 IsGeneric = true
             };
-            mat.AddFlag(MaterialFlagEnum._NB_UNLIT);
+            mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
             uf = new()
             {
@@ -974,9 +975,10 @@ namespace NbCore
                 {
                     Type = NbUniformType.Vector4,
                     ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                },
-                Values = new(1.0f, 0.0f, 0.0f, 1.0f)
+                }
             };
+            vec = new(1.0f, 0.0f, 0.0f, 1.0f);
+            uf.Bind(ref vec);
 
             mat.Uniforms.Add(uf);
 
@@ -997,7 +999,7 @@ namespace NbCore
                 Name = "lightMat",
                 IsGeneric = true
             };
-            mat.AddFlag(MaterialFlagEnum._NB_UNLIT);
+            mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
             uf = new()
             {
@@ -1006,9 +1008,10 @@ namespace NbCore
                 {
                     Type = NbUniformType.Vector4,
                     ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                },
-                Values = new(1.0f, 1.0f, 0.0f, 1.0f)
+                }
             };
+            vec = new(1.0f, 1.0f, 0.0f, 1.0f);
+            uf.Bind(ref vec);
 
             mat.Uniforms.Add(uf);
 
@@ -1029,7 +1032,7 @@ namespace NbCore
                 Name = "defaultMat",
                 IsGeneric = true
             };
-            mat.AddFlag(MaterialFlagEnum._NB_UNLIT);
+            mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
             uf = new()
             {
@@ -1038,9 +1041,10 @@ namespace NbCore
                 {
                     Type = NbUniformType.Vector4,
                     ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                },
-                Values = new(0.7f, 0.7f, 0.7f, 1.0f)
+                }
             };
+            vec = new(0.7f, 0.7f, 0.7f, 1.0f);
+            uf.Bind(ref vec);
 
             mat.Uniforms.Add(uf);
 
@@ -1069,9 +1073,10 @@ namespace NbCore
                 {
                     Type = NbUniformType.Vector4,
                     ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                },
-                Values = new(0.7f, 0.7f, 0.7f, 1.0f)
+                }
             };
+            vec = new(0.7f, 0.7f, 0.7f, 1.0f);
+            uf.Bind(ref vec);
 
             mat.Uniforms.Add(uf);
 
@@ -1093,7 +1098,7 @@ namespace NbCore
                 Name = "collisionMat",
                 IsGeneric = true
             };
-            mat.AddFlag(MaterialFlagEnum._NB_UNLIT);
+            mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
             uf = new()
             {
@@ -1102,9 +1107,10 @@ namespace NbCore
                 {
                     Type = NbUniformType.Vector4,
                     ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                },
-                Values = new(0.8f, 0.8f, 0.2f, 1.0f)
+                }
             };
+            vec = new(0.8f, 0.8f, 0.2f, 1.0f);
+            uf.Bind(ref vec);
 
             mat.Uniforms.Add(uf);
             shader_hash = CalculateShaderHash(config_deferred, GetMaterialShaderDirectives(mat));
@@ -1368,13 +1374,15 @@ namespace NbCore
             mat.Name = "default_scn";
             
             NbUniform uf = new();
+            NbVector4 vec = new(1.0f, 0.0f, 0.0f, 1.0f);
             uf.Name = "gMaterialColourVec4";
-            uf.Values = new(1.0f,0.0f,0.0f,1.0f);
+            uf.Bind(ref vec);
             mat.Uniforms.Add(uf);
 
             uf = new();
             uf.Name = "gMaterialParamsVec4";
-            uf.Values = new(0.15f, 0.0f, 0.2f, 0.0f);
+            vec = new(0.15f, 0.0f, 0.2f, 0.0f);
+            uf.Bind(ref vec);
             //x: roughness
             //z: metallic
             mat.Uniforms.Add(uf);
@@ -1625,7 +1633,7 @@ namespace NbCore
         public List<string> GetMaterialShaderDirectives(NbMaterial mat)
         {
             List<string> includes = new();
-            List<MaterialFlagEnum> mat_flags = mat.GetFlags();
+            List<NbMaterialFlagEnum> mat_flags = mat.GetFlags();
             for (int i = 0; i < mat_flags.Count; i++)
             {
                 if (NbMaterial.supported_flags.Contains(mat_flags[i]))

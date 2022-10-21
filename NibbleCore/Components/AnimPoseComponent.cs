@@ -6,13 +6,14 @@ using NbCore.Utils;
 
 namespace NbCore
 {
+
     public class AnimPoseComponent : Component
     {
         public Entity ref_object = null;
         //AnimationPoseData
-        public List<AnimPoseData> _poseData = new();
+        public List<NbAnimPoseData> _poseData = new();
         
-        public List<AnimPoseData> poseData
+        public List<NbAnimPoseData> poseData
         {
             get
             {
