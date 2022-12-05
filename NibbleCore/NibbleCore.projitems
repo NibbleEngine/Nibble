@@ -58,7 +58,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiLog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiSaveFileDialog.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiOpenFileDialog.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\LibUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\StringUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Version.cs" />
@@ -75,12 +74,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiFilePicker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiPanel.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiTextureEditor.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiMaterialEditor.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiObjectViewer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiSceneGraphViewer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShader.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiShaderSourceEditor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiTexture.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)UI\ImGui\ImGuiUtil.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Managers\EntityManager.cs" />

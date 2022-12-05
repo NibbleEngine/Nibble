@@ -4,6 +4,9 @@ using NbCore.Platform.Graphics.OpenGL; //TODO: Abstract
 using NbCore.Common;
 using Newtonsoft.Json;
 using NbCore.Math;
+using OpenTK.Graphics.OpenGL;
+using System.Reflection;
+using System.Linq;
 
 namespace NbCore
 {
@@ -92,13 +95,13 @@ namespace NbCore
     {
         public string Name = "";
         public string Class = "";
-        public NbVector4 DiffuseColor = new();
-        public NbVector4 AmbientColor = new();
-        public NbVector4 SpecularColor = new();
+        public NbUniform DiffuseColor = new(NbUniformType.Vector4, "DiffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
+        public NbUniform AmbientColor = new(NbUniformType.Vector4, "AmbientColor", 1.0f, 1.0f, 1.0f, 1.0f);
+        public NbUniform SpecularColor = new(NbUniformType.Vector4, "SpecularColor", 1.0f, 1.0f, 1.0f, 1.0f);
         public bool IsPBR = false;
-        public float MetallicFactor = 0.0f;
-        public float Roughness = 0.0f;
-        public float Emissive = 0.0f;
+        public NbUniform MetallicFactor = new(NbUniformType.Float, "MetallicFactor", 0.0f);
+        public NbUniform RoughnessFactor = new(NbUniformType.Float, "RoughnessFactor", 0.0f);
+        public NbUniform EmissiveFactor = new(NbUniformType.Float, "EmissiveFactor", 0.0f);
         
         public bool IsGeneric = false;
         public TextureManager texMgr;
@@ -138,6 +141,8 @@ namespace NbCore
         public List<NbUniform> ActiveUniforms = new();
         public List<NbSampler> ActiveSamplers = new();
 
+        public Dictionary<string, NbUniform> UniformBindings = new();
+
         //Disposable Stuff
         private bool disposed = false;
         private Microsoft.Win32.SafeHandles.SafeFileHandle handle = new(IntPtr.Zero, true);
@@ -176,47 +181,13 @@ namespace NbCore
             //No need to dispose the sampler
         }
 
-        private void AddUniforms()
-        {
-            Uniforms.Clear();
-            ActiveUniforms.Clear();
-            foreach (string uf_name in Shader.uniformLocations.Keys)
-            {
-                NbUniformFormat uf_format = Shader.uniformLocations[uf_name];
-
-                switch (uf_format.type)
-                {
-                    case NbUniformType.Int:
-                    case NbUniformType.Sampler2D:
-                    case NbUniformType.Sampler2DArray:
-                    case NbUniformType.Sampler3D:
-                    case NbUniformType.Matrix3:
-                    case NbUniformType.Matrix4:
-                        continue;
-                }
-                    
-                NbUniform uf = new()
-                {
-                    Name = uf_name,
-                    State = new()
-                    {
-                        ShaderBinding = uf_name,
-                        ShaderLocation = uf_format.loc,
-                        Type = uf_format.type
-                    }
-                };
-                ActiveUniforms.Add(uf);
-                Uniforms.Add(uf);
-            }
-        }
-
         public void UpdateUniform(NbUniform uf) 
         { 
-            if (Shader.uniformLocations.ContainsKey(uf.State.ShaderBinding))
+            if (Shader.uniformLocations.ContainsKey(uf.ShaderBinding))
             {
-                NbUniformFormat fmt = Shader.uniformLocations[uf.State.ShaderBinding];
-                uf.State.ShaderBinding = fmt.name;
-                uf.State.ShaderLocation = fmt.loc;
+                NbUniformFormat fmt = Shader.uniformLocations[uf.ShaderBinding];
+                uf.ShaderBinding = fmt.name;
+                uf.ShaderLocation = fmt.loc;
                 if (!ActiveUniforms.Contains(uf))
                     ActiveUniforms.Add(uf);
             }

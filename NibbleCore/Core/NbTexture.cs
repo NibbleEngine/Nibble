@@ -1,11 +1,16 @@
 ﻿
-using OpenTK.Graphics.OpenGL4; //TODO : REMOVE 
+
 using System;
 using NbCore.Math;
 using System.IO;
 using NbCore.Common;
 using Newtonsoft.Json;
+using NbCore.Platform.Graphics;
 
+#if OPENGL
+using OpenTK.Graphics;
+    using OpenTK.Graphics.OpenGL; 
+#endif
 
 namespace NbCore
 {
@@ -17,8 +22,7 @@ namespace NbCore
         Texture2DArray,
         TextureCubeMap
     }
-
-
+    
     public enum NbTextureWrapMode
     {
         ClampToEdge,
@@ -54,7 +58,11 @@ namespace NbCore
     [NbSerializable]
     public class NbTexture : Entity
     {
+#if OPENGL
+        public TextureHandle texID;
+#else
         public int texID = -1;
+#endif
         private bool disposed = false;
         public string Path = "";
         public NbTextureData Data;
@@ -128,8 +136,7 @@ namespace NbCore
             if (disposing)
             {
                 //Free other resources here
-                if (texID != -1) GL.DeleteTexture(texID);
-
+                if (texID.Handle != -1) GL.DeleteTexture(texID); //TODO: Move Texture Deletion to the API
                 base.Dispose(disposing);
             }
 

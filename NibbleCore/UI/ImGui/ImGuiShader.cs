@@ -7,7 +7,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using OpenTK.Graphics.OpenGL4;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics;
+using System.Transactions;
+using OpenTK.Compute.OpenCL;
 
 namespace NbCore.UI.ImGui
 {
@@ -16,13 +19,13 @@ namespace NbCore.UI.ImGui
         public int Location;
         public string Name;
         public int Size;
-        public ActiveUniformType Type;
+        public UniformType Type;
     }
 
     class ImGuiShader
     {
         public readonly string Name;
-        public int Program { get; private set; }
+        public ProgramHandle Program { get; private set; }
         private readonly Dictionary<string, int> UniformToLocation = new Dictionary<string, int>();
         private bool Initialized = false;
 
@@ -53,19 +56,25 @@ namespace NbCore.UI.ImGui
 
         public UniformFieldInfo[] GetUniforms()
         {
-            GL.GetProgram(Program, GetProgramParameterName.ActiveUniforms, out int UnifromCount);
+            int UniformCount = 0;
+            GL.GetProgrami(Program, ProgramPropertyARB.ActiveUniforms, ref UniformCount);
 
-            UniformFieldInfo[] Uniforms = new UniformFieldInfo[UnifromCount];
+            UniformFieldInfo[] Uniforms = new UniformFieldInfo[UniformCount];
 
-            for (int i = 0; i < UnifromCount; i++)
+            for (int i = 0; i < UniformCount; i++)
             {
-                string Name = GL.GetActiveUniform(Program, i, out int Size, out ActiveUniformType Type);
+                int name_length = 0;
+                int size = 0;
+                UniformType type = UniformType.Int;
+                string name = "";
+
+                GL.GetActiveUniform(Program, (uint)i, 100, ref name_length, ref size, ref type, out name);
 
                 UniformFieldInfo FieldInfo;
-                FieldInfo.Location = GetUniformLocation(Name);
-                FieldInfo.Name = Name;
-                FieldInfo.Size = Size;
-                FieldInfo.Type = Type;
+                FieldInfo.Location = GetUniformLocation(name);
+                FieldInfo.Name = name;
+                FieldInfo.Size = size;
+                FieldInfo.Type = type;
 
                 Uniforms[i] = FieldInfo;
             }
@@ -90,11 +99,11 @@ namespace NbCore.UI.ImGui
             return location;
         }
 
-        private int CreateProgram(string name, params (ShaderType Type, string source)[] shaderPaths)
+        private ProgramHandle CreateProgram(string name, params (ShaderType Type, string source)[] shaderPaths)
         {
-            ImGuiUtil.CreateProgram(name, out int Program);
+            ImGuiUtil.CreateProgram(name, out ProgramHandle Program);
 
-            int[] Shaders = new int[shaderPaths.Length];
+            ShaderHandle[] Shaders = new ShaderHandle[shaderPaths.Length];
             for (int i = 0; i < shaderPaths.Length; i++)
             {
                 Shaders[i] = CompileShader(name, shaderPaths[i].Type, shaderPaths[i].source);
@@ -105,10 +114,11 @@ namespace NbCore.UI.ImGui
 
             GL.LinkProgram(Program);
 
-            GL.GetProgram(Program, GetProgramParameterName.LinkStatus, out int Success);
+            int Success = -1;
+            GL.GetProgrami(Program, ProgramPropertyARB.LinkStatus, ref Success);
             if (Success == 0)
             {
-                string Info = GL.GetProgramInfoLog(Program);
+                GL.GetProgramInfoLog(Program, out string Info);
                 Debug.WriteLine($"GL.LinkProgram had info log [{name}]:\n{Info}");
             }
 
@@ -123,16 +133,17 @@ namespace NbCore.UI.ImGui
             return Program;
         }
 
-        private int CompileShader(string name, ShaderType type, string source)
+        private ShaderHandle CompileShader(string name, ShaderType type, string source)
         {
-            ImGuiUtil.CreateShader(type, name, out int Shader);
+            ImGuiUtil.CreateShader(type, name, out ShaderHandle Shader);
             GL.ShaderSource(Shader, source);
             GL.CompileShader(Shader);
 
-            GL.GetShader(Shader, ShaderParameter.CompileStatus, out int success);
+            int success = -1;
+            GL.GetShaderi(Shader, ShaderParameterName.CompileStatus, ref success);
             if (success == 0)
             {
-                string Info = GL.GetShaderInfoLog(Shader);
+                GL.GetShaderInfoLog(Shader, out string Info);
                 Debug.WriteLine($"GL.CompileShader for shader '{Name}' [{type}] had info log:\n{Info}");
             }
 

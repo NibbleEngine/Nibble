@@ -1,14 +1,16 @@
 ﻿using System;
-using OpenTK.Graphics.OpenGL4;
-using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
+using OpenTK.Graphics;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.Common;
+using PixelFormat = OpenTK.Graphics.OpenGL.PixelFormat;
 
 namespace NbCore.UI.ImGui
 {
     public enum TextureCoordinate
     {
-        S = TextureParameterName.TextureWrapS,
-        T = TextureParameterName.TextureWrapT,
-        R = TextureParameterName.TextureWrapR
+        S = (int) TextureParameterName.TextureWrapS,
+        T = (int) TextureParameterName.TextureWrapT,
+        R = (int) TextureParameterName.TextureWrapR
     }
 
     class ImGuiTexture : IDisposable
@@ -22,11 +24,11 @@ namespace NbCore.UI.ImGui
 
         static ImGuiTexture()
         {
-            MaxAniso = GL.GetFloat(MAX_TEXTURE_MAX_ANISOTROPY);
+            GL.GetFloat(MAX_TEXTURE_MAX_ANISOTROPY, ref MaxAniso);
         }
 
         public readonly string Name;
-        public readonly int GLTexture;
+        public readonly TextureHandle GLTexture;
         public readonly int Width, Height;
         public readonly int MipmapLevels;
         public readonly SizedInternalFormat InternalFormat;
@@ -51,29 +53,35 @@ namespace NbCore.UI.ImGui
 
             ImGuiUtil.CheckGLError("Clear");
 
-            ImGuiUtil.CreateTexture(TextureTarget.Texture2D, Name, out GLTexture);
+            ImGuiUtil.CreateTexture(TextureTarget.Texture2d, Name, out GLTexture);
             GL.TextureStorage2D(GLTexture, MipmapLevels, InternalFormat, Width, Height);
             ImGuiUtil.CheckGLError("Storage2d");
 
-            GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, texture.Data);
-            
+            unsafe
+            {
+                fixed(byte* ptr = texture.Data) 
+                {
+                    GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, ptr);
+                }
+            }
+
             ImGuiUtil.CheckGLError("SubImage");
             if (generateMipmaps) GL.GenerateTextureMipmap(GLTexture);
 
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
             ImGuiUtil.CheckGLError("WrapS");
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
             ImGuiUtil.CheckGLError("WrapT");
 
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureMinFilter, (int)(generateMipmaps ? TextureMinFilter.Linear : TextureMinFilter.LinearMipmapLinear));
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureMinFilter, (int)(generateMipmaps ? TextureMinFilter.Linear : TextureMinFilter.LinearMipmapLinear));
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
             ImGuiUtil.CheckGLError("Filtering");
 
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureMaxLevel, MipmapLevels - 1);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureMaxLevel, MipmapLevels - 1);
 
         }
 
-        public ImGuiTexture(string name, int GLTex, int width, int height, int mipmaplevels, SizedInternalFormat internalFormat)
+        public ImGuiTexture(string name, TextureHandle GLTex, int width, int height, int mipmaplevels, SizedInternalFormat internalFormat)
         {
             Name = name;
             GLTexture = GLTex;
@@ -91,7 +99,7 @@ namespace NbCore.UI.ImGui
             InternalFormat = srgb ? Srgb8Alpha8 : SizedInternalFormat.Rgba8;
             MipmapLevels = generateMipmaps == false ? 1 : (int)System.Math.Floor(System.Math.Log(System.Math.Max(Width, Height), 2));
 
-            ImGuiUtil.CreateTexture(TextureTarget.Texture2D, Name, out GLTexture);
+            ImGuiUtil.CreateTexture(TextureTarget.Texture2d, Name, out GLTexture);
             GL.TextureStorage2D(GLTexture, MipmapLevels, InternalFormat, Width, Height);
 
             GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, data);
@@ -101,35 +109,35 @@ namespace NbCore.UI.ImGui
             SetWrap(TextureCoordinate.S, TextureWrapMode.Repeat);
             SetWrap(TextureCoordinate.T, TextureWrapMode.Repeat);
 
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureMaxLevel, MipmapLevels - 1);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureMaxLevel, MipmapLevels - 1);
         }
 
         public void SetMinFilter(TextureMinFilter filter)
         {
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureMinFilter, (int)filter);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureMinFilter, (int)filter);
         }
 
         public void SetMagFilter(TextureMagFilter filter)
         {
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureMagFilter, (int)filter);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureMagFilter, (int)filter);
         }
 
         public void SetAnisotropy(float level)
         {
             const TextureParameterName TEXTURE_MAX_ANISOTROPY = (TextureParameterName)0x84FE;
-            GL.TextureParameter(GLTexture, TEXTURE_MAX_ANISOTROPY, ImGuiUtil.Clamp(level, 1, MaxAniso));
+            GL.TextureParameteri(GLTexture, TEXTURE_MAX_ANISOTROPY, (int) ImGuiUtil.Clamp(level, 1, MaxAniso));
         }
 
         public void SetLod(int @base, int min, int max)
         {
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureLodBias, @base);
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureMinLod, min);
-            GL.TextureParameter(GLTexture, TextureParameterName.TextureMaxLod, max);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureLodBias, @base);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureMinLod, min);
+            GL.TextureParameteri(GLTexture, TextureParameterName.TextureMaxLod, max);
         }
 
         public void SetWrap(TextureCoordinate coord, TextureWrapMode mode)
         {
-            GL.TextureParameter(GLTexture, (TextureParameterName)coord, (int)mode);
+            GL.TextureParameteri(GLTexture, (TextureParameterName)coord, (int)mode);
         }
 
         public void Dispose()

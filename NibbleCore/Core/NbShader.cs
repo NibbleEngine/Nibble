@@ -2,6 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 
+#if OPENGL
+    using OpenTK.Graphics;
+#endif
+
+
 namespace NbCore
 {
     public delegate void ShaderUpdatedEventHandler(NbShader shader);
@@ -9,7 +14,11 @@ namespace NbCore
     public class NbShader : Entity
     {
         //Program ID
-        public int ProgramID = -1;
+#if OPENGL
+        public ProgramHandle ProgramID;
+#else
+        public ProgramID = -1;
+#endif
         public ulong Hash = 0;
         public int RefCounter = 0;
         public bool IsGeneric = false; //Used to flag internal shaders
@@ -21,7 +30,7 @@ namespace NbCore
         //Keep active uniforms
         public Dictionary<string, NbUniformFormat> uniformLocations = new();
         public NbShaderState CurrentState = NbShaderState.Create(); //Empty state
-        public Dictionary<NbShaderSourceType, int> SourceObjects = new();
+        public Dictionary<NbShaderSourceType, ShaderHandle> SourceObjects = new();
         public new NbShaderType Type;
 
         //Shader Compilation log

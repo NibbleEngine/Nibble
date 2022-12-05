@@ -18,6 +18,14 @@ namespace NbCore.Math
             set => _Value.Y = value;
         }
 
+        public float Length
+        {
+            get
+            {
+                return _Value.Length;
+            }
+        }
+
         public NbVector2(float v)
         {
             _Value = new Vector2(v);
@@ -26,6 +34,20 @@ namespace NbCore.Math
         public NbVector2(float a, float b)
         {
             _Value = new Vector2(a,b);
+        }
+
+        //Methods
+        public void Normalize()
+        {
+            _Value.Normalize();
+        }
+
+        public NbVector2 Normalized()
+        {
+            return new NbVector2()
+            {
+                _Value = Vector2.Normalize(_Value)
+            };
         }
 
         public static NbVector2 operator *(NbVector2 a, float b)
@@ -43,5 +65,7 @@ namespace NbCore.Math
                 _Value = a._Value + b._Value
             };
         }
+
+        
     }
 }

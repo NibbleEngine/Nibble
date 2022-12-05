@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using SixLabors.ImageSharp;
-using OpenTK.Graphics.ES11;
+using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace NbCore

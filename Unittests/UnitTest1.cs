@@ -37,18 +37,17 @@ namespace Unittests
         [Test]
         public void PropertySetting()
         {
-            NbUniform uniform = new();
+            NbUniform uniform = new("Test" , new(1.0f));
             NbVector4 vec = new(2.0f);
 
-            //uniform._LocalValues.X = 1.0f;
-            //uniform._LocalValues.Y = 1.0f;
-            
+            uniform.SetX(5.0f);
+
             Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");
             uniform.Bind(ref vec);
             Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");
             vec.X = 15.0f;
             Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");
-            uniform.SetX(5.0f);
+            uniform.SetXY(35.0f, 21.0f);
             Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");
             uniform.UnBind();
             Debug.WriteLine($"Uniform Values {uniform.Values.X} {uniform.Values.Y} {uniform.Values.Z} {uniform.Values.W}");

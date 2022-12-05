@@ -10,7 +10,8 @@ using NbCore.Common;
 using NbCore.Platform.Graphics;
 using NbCore.Managers;
 using NbCore.Math;
-using OpenTK.Graphics.OpenGL4;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics;
 
 namespace NbCore.Systems
 {
@@ -138,7 +139,7 @@ namespace NbCore.Systems
 
 
             //Rebind the default framebuffer
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, FramebufferHandle.Zero);
             Log("FBOs Initialized", LogVerbosityLevel.INFO);
         }
 
@@ -326,7 +327,7 @@ namespace NbCore.Systems
 
         public void DeleteMeshGroup(NbMeshGroup mg)
         {
-            Renderer.DestroyGroupBuffer(mg.GroupTBO1);
+            Renderer.DestroyBuffer(mg.GroupTBO1);
         }
 
         public void DeleteMeshGroups()
@@ -387,12 +388,12 @@ namespace NbCore.Systems
 
         public void UpdateMeshGroupData(NbMeshGroup mg)
         {
-            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, mg.GroupTBO1);
+            GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, mg.GroupTBO1);
             
             //Upload skinning data
             unsafe
             {
-                GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, mg.GroupTBO1Data.Length * sizeof(NbMatrix4), mg.GroupTBO1Data);
+                GL.BufferSubData(BufferTargetARB.ShaderStorageBuffer, IntPtr.Zero, mg.GroupTBO1Data);
             }
         }
 
@@ -522,7 +523,7 @@ namespace NbCore.Systems
         private void renderDefaultMeshes()
         {
             GL.Disable(EnableCap.CullFace);
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+            GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
 
             //Collisions
             if (RenderState.settings.ViewSettings.ViewCollisions)
@@ -583,7 +584,7 @@ namespace NbCore.Systems
                 }
             }
 
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
 
             //Locators
             if (RenderState.settings.ViewSettings.ViewLocators)
@@ -612,7 +613,7 @@ namespace NbCore.Systems
         private void renderTestQuad()
         {
             //Set polygon mode
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
             //Set Test Program
 
 
@@ -627,7 +628,7 @@ namespace NbCore.Systems
         private void renderStaticMeshes()
         {
             //Set polygon mode
-            GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
+            GL.PolygonMode(TriangleFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
             
             foreach(NbMeshGroup mg in MeshGroups)
             {
@@ -647,7 +648,7 @@ namespace NbCore.Systems
             }
             
             //Set polygon mode
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
         }
         
         private void renderGeometry()
@@ -659,7 +660,7 @@ namespace NbCore.Systems
             GL.Enable(EnableCap.CullFace);
             
             //DEFERRED STAGE
-            GL.ClearColor(new OpenTK.Mathematics.Color4(0.0f, 0, 0, 1.0f));
+            GL.ClearColor(0.0f, 0, 0, 1.0f);
             Renderer.BindDrawFrameBuffer(gBuffer, new int[] {0, 1, 2, 3});
             Renderer.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
 
@@ -685,7 +686,7 @@ namespace NbCore.Systems
         {
             GL.DepthMask(false);
             GL.Enable(EnableCap.CullFace);
-            GL.CullFace(CullFaceMode.Back);
+            GL.CullFace(TriangleFace.Back);
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One);
 
@@ -714,7 +715,7 @@ namespace NbCore.Systems
             //}
 
             GL.Disable(EnableCap.Blend);
-            GL.CullFace(CullFaceMode.Back);
+            GL.CullFace(TriangleFace.Back);
             GL.Enable(EnableCap.CullFace);
             GL.DepthMask(true);
         }
@@ -732,19 +733,19 @@ namespace NbCore.Systems
 
             //Enable writing to both channels after clearing
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
-            GL.DrawBuffers(2, new DrawBuffersEnum[] { DrawBuffersEnum.ColorAttachment1,
-                                          DrawBuffersEnum.ColorAttachment2});
+            GL.DrawBuffers(new DrawBufferMode[] { DrawBufferMode.ColorAttachment1,
+                                                  DrawBufferMode.ColorAttachment2});
             
             //At first render the static meshes
             GL.Enable(EnableCap.Blend);
             GL.DepthMask(false);
             GL.Enable(EnableCap.DepthTest); //Enable depth test
             //Set BlendFuncs for the 2 drawbuffers
-            GL.BlendFunc(0, BlendingFactorSrc.One, BlendingFactorDest.One);
-            GL.BlendFunc(1, BlendingFactorSrc.Zero, BlendingFactorDest.OneMinusSrcAlpha);
+            GL.BlendFunci(0, BlendingFactor.One, BlendingFactor.One);
+            GL.BlendFunci(1, BlendingFactor.Zero, BlendingFactor.OneMinusSrcAlpha);
 
             //Set polygon mode
-            GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
+            GL.PolygonMode(TriangleFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
 
             //REWRITE
             //foreach (GLSLShaderConfig shader in ShaderMgr.GLForwardTransparentShaders)
@@ -954,7 +955,7 @@ namespace NbCore.Systems
         }
         */
 
-        private void pass_tex(int to_fbo, DrawBufferMode to_channel, NbTexture InTex)
+        private void pass_tex(FramebufferHandle to_fbo, DrawBufferMode to_channel, NbTexture InTex)
         {
             //passthrough a texture to the specified to_channel of the to_fbo
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, to_fbo);
@@ -1209,8 +1210,8 @@ namespace NbCore.Systems
             GL.Disable(EnableCap.CullFace);
             
 
-            GL.BlendEquation(BlendEquationMode.FuncAdd);
-            GL.BlendFunc(0, BlendingFactorSrc.One, BlendingFactorDest.One);
+            GL.BlendEquation(BlendEquationModeEXT.FuncAdd);
+            GL.BlendFunci(0, BlendingFactor.One, BlendingFactor.One);
 
             //Disable DepthTest and Depth Write
             GL.DepthMask(false);
@@ -1222,19 +1223,19 @@ namespace NbCore.Systems
 
             //Upload samplers
             string[] sampler_names = new string[] { "albedoTex", "depthTex", "normalTex", "parameterTex01", "parameterTex02" };
-            int[] texture_ids = new int[] { gBuffer.GetTexture(NbFBOAttachment.Attachment0).texID,
+            TextureHandle[] texture_ids = new TextureHandle[] { gBuffer.GetTexture(NbFBOAttachment.Attachment0).texID,
                                             gBuffer.GetTexture(NbFBOAttachment.Depth).texID,
                                             gBuffer.GetTexture(NbFBOAttachment.Attachment1).texID,
                                             gBuffer.GetTexture(NbFBOAttachment.Attachment2).texID,
                                             gBuffer.GetTexture(NbFBOAttachment.Attachment3).texID };
-            TextureTarget[] sampler_targets = new TextureTarget[] { TextureTarget.Texture2D, TextureTarget.Texture2D,
-                                                            TextureTarget.Texture2D, TextureTarget.Texture2D, TextureTarget.Texture2D };
+            TextureTarget[] sampler_targets = new TextureTarget[] { TextureTarget.Texture2d, TextureTarget.Texture2d,
+                                                            TextureTarget.Texture2d, TextureTarget.Texture2d, TextureTarget.Texture2d };
             for (int i = 0; i < sampler_names.Length; i++)
             {
                 if (shader_conf.uniformLocations.ContainsKey(sampler_names[i]))
                 {
-                    GL.Uniform1(shader_conf.uniformLocations[sampler_names[i]].loc, i);
-                    GL.ActiveTexture(TextureUnit.Texture0 + i);
+                    GL.Uniform1i(shader_conf.uniformLocations[sampler_names[i]].loc, i);
+                    GL.ActiveTexture(TextureUnit.Texture0 + (uint) i);
                     GL.BindTexture(sampler_targets[i], texture_ids[i]);
                 }
             }
@@ -1282,8 +1283,6 @@ namespace NbCore.Systems
 
         public override void OnRenderUpdate(double dt)
         {
-            Camera.UpdateCameraDirectionalVectors(RenderState.activeCam);
-
             //Re-upload meshgroup buffers
             foreach(NbMeshGroup mg in MeshGroups)
                 UpdateMeshGroupData(mg);

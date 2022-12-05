@@ -8,8 +8,9 @@ using NbCore.Systems;
 using NbCore.Math;
 using NbCore.Common;
 using NbCore.Platform.Graphics.OpenGL;
-using OpenTK.Graphics.OpenGL4;
-
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics;
+using System.Linq;
 
 namespace NbCore.Platform.Graphics
 {
@@ -71,24 +72,24 @@ namespace NbCore.Platform.Graphics
     public class GraphicsAPI
     {
         private const string RendererName = "OPENGL_RENDERER";
-        private int activeProgramID = -1;
+        private ProgramHandle activeProgramID = ProgramHandle.Zero;
         public Dictionary<ulong, GLInstancedMesh> MeshMap = new();
         public Dictionary<ulong, GLVao> VaoMap = new();
-        private readonly Dictionary<string, int> UBOs = new();
+        private readonly Dictionary<string, BufferHandle> UBOs = new();
         private int SSBO_size = 2 * 1024 * 1024;
-        private readonly Dictionary<string, int> SSBOs = new();
+        private readonly Dictionary<string, BufferHandle> SSBOs = new();
 
         private bool useMultiBuffers = false;
         private int multiBufferActiveId;
-        private readonly List<int> multiBufferSSBOs = new(4);
-        private readonly List<IntPtr> multiBufferSyncStatuses = new(4);
+        private readonly List<BufferHandle> multiBufferSSBOs = new(4);
+        private readonly List<GLSync> multiBufferSyncStatuses = new(4);
 
         public static readonly Dictionary<NbTextureTarget, TextureTarget> TextureTargetMap = new()
         {
-            { NbTextureTarget.Texture1D , TextureTarget.Texture1D},
-            { NbTextureTarget.Texture2D , TextureTarget.Texture2D},
-            { NbTextureTarget.Texture3D, TextureTarget.Texture3D },
-            { NbTextureTarget.Texture2DArray , TextureTarget.Texture2DArray},
+            { NbTextureTarget.Texture1D , TextureTarget.Texture1d},
+            { NbTextureTarget.Texture2D , TextureTarget.Texture2d},
+            { NbTextureTarget.Texture3D, TextureTarget.Texture3d },
+            { NbTextureTarget.Texture2DArray , TextureTarget.Texture2dArray},
             { NbTextureTarget.TextureCubeMap, TextureTarget.TextureCubeMap}
         };
 
@@ -135,7 +136,7 @@ namespace NbCore.Platform.Graphics
         private const int MAX_NUMBER_OF_MESHES = 2000;
         private const int MULTI_BUFFER_COUNT = 3;
 
-        private DebugProc GLDebug;
+        private GLDebugProc GLDebug;
 
         private static void Log(string msg, LogVerbosityLevel lvl)
         {
@@ -143,7 +144,7 @@ namespace NbCore.Platform.Graphics
         }
 
 
-        private void GLDebugMessage(DebugSource source, DebugType type, int id, DebugSeverity severity, int length, IntPtr message, IntPtr userParam)
+        private void GLDebugMessage(DebugSource source, DebugType type, uint id, DebugSeverity severity, int length, IntPtr message, IntPtr userParam)
         {
             bool report = false;
             switch (severity)
@@ -169,19 +170,21 @@ namespace NbCore.Platform.Graphics
             GL.Enable(EnableCap.DebugOutput);
             GL.Enable(EnableCap.DebugOutputSynchronous);
 
-            GLDebug = new DebugProc(GLDebugMessage);
+            GLDebug = new GLDebugProc(GLDebugMessage);
 
             GL.DebugMessageCallback(GLDebug, IntPtr.Zero);
-            GL.DebugMessageControl(DebugSourceControl.DontCare, DebugTypeControl.DontCare,
-                DebugSeverityControl.DontCare, 0, new int[] { 0 }, true);
-
-            GL.DebugMessageInsert(DebugSourceExternal.DebugSourceApplication, DebugType.DebugTypeMarker, 0, DebugSeverity.DebugSeverityNotification, -1, "Debug output enabled");
+            
+            GL.DebugMessageControl(DebugSource.DontCare, DebugType.DontCare,
+            DebugSeverity.DontCare, new uint[] { 0 }, true);
+            
+            GL.DebugMessageInsert(DebugSource.DebugSourceApplication, DebugType.DebugTypeMarker, 0, DebugSeverity.DebugSeverityNotification, -1, "Debug output enabled");
 #endif
 
 #if (DEBUG)
             //Query GL Extensions
             Log("OPENGL AVAILABLE EXTENSIONS:", LogVerbosityLevel.INFO);
-            string[] ext = GL.GetString(StringNameIndexed.Extensions, 0).Split(' ');
+            var test = GL.GetString(StringName.Extensions);
+            string[] ext = GL.GetString(StringName.Extensions).Split(' ');
             foreach (string s in ext)
             {
                 if (s.Contains("explicit"))
@@ -193,9 +196,11 @@ namespace NbCore.Platform.Graphics
             }
 
             //Query maximum buffer sizes
-            Log($"MaxUniformBlock Size {GL.GetInteger(GetPName.MaxUniformBlockSize)}", LogVerbosityLevel.INFO);
+            int maxUniformBlockSize = 0;
+            GL.GetInteger(GetPName.MaxUniformBlockSize, ref maxUniformBlockSize);
+            Log($"MaxUniformBlock Size {maxUniformBlockSize}", LogVerbosityLevel.INFO);
 #endif
-
+            
             //Default Enables
             EnableBlend();
             
@@ -210,7 +215,7 @@ namespace NbCore.Platform.Graphics
 
         }
 
-        public void SetProgram(int program_id)
+        public void SetProgram(ProgramHandle program_id)
         {
             if (activeProgramID != program_id)
                 GL.UseProgram(program_id); //Set Program if not already active
@@ -229,23 +234,25 @@ namespace NbCore.Platform.Graphics
             //Generate 3 Buffers for the Triple buffering UBO
             for (int i = 0; i < MULTI_BUFFER_COUNT; i++)
             {
-                int ssbo_id = GL.GenBuffer();
-                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo_id);
-                GL.BufferStorage(BufferTarget.ShaderStorageBuffer, size,
-                    IntPtr.Zero, BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapWriteBit);
-                //GL.BufferData(BufferTarget.UniformBuffer, atlas_ubo_buffer_size, IntPtr.Zero, BufferUsageHint.StreamDraw); //FOR OLD METHOD
-                multiBufferSSBOs.Add(ssbo_id);
+                BufferHandle ssbo = GL.GenBuffer();
+                GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, ssbo);
+                if (useMultiBuffers)
+                    GL.BufferStorage(BufferStorageTarget.ShaderStorageBuffer, size,
+                        IntPtr.Zero, BufferStorageMask.MapPersistentBit | BufferStorageMask.MapWriteBit);
+                else
+                    GL.BufferData(BufferTargetARB.ShaderStorageBuffer, size, IntPtr.Zero, BufferUsageARB.StreamDraw); //FOR OLD METHOD
+                multiBufferSSBOs.Add(ssbo);
                 multiBufferSyncStatuses.Add(GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, 0));
             }
 
-            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+            GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, BufferHandle.Zero);
 
             GL.Flush();
         }
 
         private void deleteSSBOs()
         {
-            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+            GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, BufferHandle.Zero);
             //Generate 3 Buffers for the Triple buffering UBO
             for (int i = 0; i < MULTI_BUFFER_COUNT; i++)
                 GL.DeleteBuffer(multiBufferSSBOs[i]);
@@ -259,36 +266,36 @@ namespace NbCore.Platform.Graphics
 
         private void setupFrameUBO()
         {
-            int ubo_id = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.UniformBuffer, ubo_id);
-            GL.BufferData(BufferTarget.UniformBuffer, CommonPerFrameUniforms.SizeInBytes, IntPtr.Zero, BufferUsageHint.StreamRead);
-            GL.BindBuffer(BufferTarget.UniformBuffer, 0);
+            BufferHandle ubo = GL.GenBuffer();
+            GL.BindBuffer(BufferTargetARB.UniformBuffer, ubo);
+            GL.BufferData(BufferTargetARB.UniformBuffer, CommonPerFrameUniforms.SizeInBytes, IntPtr.Zero, BufferUsageARB.StreamRead);
+            GL.BindBuffer(BufferTargetARB.UniformBuffer, BufferHandle.Zero);
 
             //Store buffer to UBO dictionary
-            UBOs["_COMMON_PER_FRAME"] = ubo_id;
+            UBOs["_COMMON_PER_FRAME"] = ubo;
 
             //Attach the generated buffers to the binding points
-            GL.BindBufferBase(BufferRangeTarget.UniformBuffer, 0, UBOs["_COMMON_PER_FRAME"]);
+            GL.BindBufferBase(BufferTargetARB.UniformBuffer, 0, UBOs["_COMMON_PER_FRAME"]);
         }
 
-        public int CreateGroupBuffer()
+        public BufferHandle CreateGroupBuffer()
         {
             int size = 512 * 16 * 4; //FIXED SIZE FOR NOW
-            int ssbo_id = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo_id);
-            GL.BufferStorage(BufferTarget.ShaderStorageBuffer, size,
-                IntPtr.Zero, BufferStorageFlags.DynamicStorageBit);
-            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+            BufferHandle ssbo = GL.GenBuffer();
+            GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, ssbo);
+            GL.BufferStorage(BufferStorageTarget.ShaderStorageBuffer, size,
+                IntPtr.Zero, BufferStorageMask.DynamicStorageBit);
+            GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, BufferHandle.Zero);
 
             //Attach the generated buffers to the binding points
-            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, ssbo_id);
+            GL.BindBufferBase(BufferTargetARB.ShaderStorageBuffer, 2, ssbo);
 
-            return ssbo_id;
+            return ssbo;
         }
 
-        public void DestroyGroupBuffer(int id)
+        public void DestroyBuffer(BufferHandle handle)
         {
-            GL.DeleteBuffer(id);
+            GL.DeleteBuffer(handle);
         }
 
         public void PrepareMeshBuffers()
@@ -305,12 +312,12 @@ namespace NbCore.Platform.Graphics
 
             SSBOs["_COMMON_PER_MESH"] = multiBufferSSBOs[multiBufferActiveId];
 
-            WaitSyncStatus result = WaitSyncStatus.WaitFailed;
+            SyncStatus result = SyncStatus.WaitFailed;
 #if DEBUG
             System.Diagnostics.Stopwatch timer = new();
             timer.Start();
 #endif
-            while (result == WaitSyncStatus.TimeoutExpired || result == WaitSyncStatus.WaitFailed)
+            while (result == SyncStatus.TimeoutExpired || result == SyncStatus.WaitFailed)
             {
                 //Callbacks.Logger.Log(result.ToString());
                 //Console.WriteLine("Gamithike o dias");
@@ -330,49 +337,43 @@ namespace NbCore.Platform.Graphics
         public void PrepareMeshBuffersSingleBuffer()
         {
             //Upload atlas UBO data
-            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, SSBOs["_COMMON_PER_MESH"]);
+            GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, SSBOs["_COMMON_PER_MESH"]);
 
             //Prepare UBO data
             int max_ubo_offset = GLMeshInstanceManager.GetAtlasSize();
 
-            //METHOD 2: Use MAP Buffer
-            IntPtr ptr = GL.MapBufferRange(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                 max_ubo_offset, BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapWriteBit);
-
             if (SSBO_size < GLMeshInstanceManager.GetAtlasSize())
             {
-                int new_size = GLMeshInstanceManager.GetAtlasSize();
-
                 //Unmap and unbind buffer
-                GL.UnmapBuffer(BufferTarget.ShaderStorageBuffer);
-                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+                GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, BufferHandle.Zero);
 
-                resizeSSBOs(new_size);
+                resizeSSBOs(max_ubo_offset);
 
-                //Remap and rebind buffer at the current index
-                GL.BindBuffer(BufferTarget.ShaderStorageBuffer, SSBOs["_COMMON_PER_MESH"]);
-                ptr = GL.MapBufferRange(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
-                new_size, BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapWriteBit);
-
+                //Rebind buffer
+                GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, SSBOs["_COMMON_PER_MESH"]);
             }
+
+            //Upload Data
+            
 
             unsafe
             {
                 GCHandle handle = GCHandle.Alloc(GLMeshInstanceManager.atlas_cpmu, GCHandleType.Pinned);
-                IntPtr handlePtr = handle.AddrOfPinnedObject();
-                System.Buffer.MemoryCopy(handlePtr.ToPointer(), ptr.ToPointer(), max_ubo_offset, max_ubo_offset);
+                //IntPtr handlePtr = handle.AddrOfPinnedObject();
+                //System.Buffer.MemoryCopy(handlePtr.ToPointer(), ptr.ToPointer(), max_ubo_offset, max_ubo_offset);
+                GL.BufferSubData(BufferTargetARB.ShaderStorageBuffer, IntPtr.Zero, 
+                    Marshal.SizeOf<MeshInstance>() * GLMeshInstanceManager.atlas_cpmu.Length, handle.AddrOfPinnedObject());
             }
 
-            GL.UnmapBuffer(BufferTarget.ShaderStorageBuffer);
-            GL.BindBuffer(BufferTarget.ShaderStorageBuffer, 0);
+            GL.BindBuffer(BufferTargetARB.ShaderStorageBuffer, BufferHandle.Zero);
 
         }
 
         public void UploadFrameData()
         {
-            GL.BindBuffer(BufferTarget.UniformBuffer, UBOs["_COMMON_PER_FRAME"]);
-            GL.BufferSubData(BufferTarget.UniformBuffer, IntPtr.Zero, CommonPerFrameUniforms.SizeInBytes, ref cpfu);
-            GL.BindBuffer(BufferTarget.UniformBuffer, 0);
+            GL.BindBuffer(BufferTargetARB.UniformBuffer, UBOs["_COMMON_PER_FRAME"]);
+            GL.BufferSubData(BufferTargetARB.UniformBuffer, IntPtr.Zero, CommonPerFrameUniforms.SizeInBytes, cpfu);
+            GL.BindBuffer(BufferTargetARB.UniformBuffer, BufferHandle.Zero);
         }
 
         public void SetRenderSettings(RenderSettings settings)
@@ -490,14 +491,14 @@ namespace NbCore.Platform.Graphics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void UnbindMeshBuffers()
         {
-            GL.BindBuffer(BufferTarget.UniformBuffer, 0); //Unbind UBOs
+            GL.BindBuffer(BufferTargetARB.UniformBuffer, BufferHandle.Zero); //Unbind UBOs
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BindGroupBuffer(NbMeshGroup mg)
         {
             //GL.BindBuffer(BufferTarget.ShaderStorageBuffer, mg.GroupTBO1);
-            GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 2, mg.GroupTBO1);
+            GL.BindBufferBase(BufferTargetARB.ShaderStorageBuffer, 2, mg.GroupTBO1);
         }
 
         #region RENDERING
@@ -507,7 +508,7 @@ namespace NbCore.Platform.Graphics
             GLInstancedMesh glmesh = MeshMap[quadMesh.ID];
 
             GL.UseProgram(shader.ProgramID);
-            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.BindVertexArray(glmesh.vao.vao);
 
             //Filter State
             shader.FilterState(ref state);
@@ -524,8 +525,8 @@ namespace NbCore.Platform.Graphics
                         {
                             //Upload sampler
                             NbSampler nbSampler = (NbSampler) sstate.Value;
-                            GL.Uniform1(shader.uniformLocations[key].loc, nbSampler.SamplerID);
-                            GL.ActiveTexture(TextureUnit.Texture0 + sampler_id);
+                            GL.Uniform1i(shader.uniformLocations[key].loc, nbSampler.SamplerID);
+                            GL.ActiveTexture((TextureUnit) ((int) TextureUnit.Texture0 + sampler_id));
                             GL.BindTexture(TextureTargetMap[nbSampler.Texture.Data.target], nbSampler.Texture.texID);
                             sampler_id++;
                             break;
@@ -533,25 +534,25 @@ namespace NbCore.Platform.Graphics
                     case "Float":
                         {
                             float val = (float) sstate.Value;
-                            GL.Uniform1(shader.uniformLocations[key].loc, val);
+                            GL.Uniform1f(shader.uniformLocations[key].loc, val);
                             break;
                         }
                     case "Vec2":
                         {
                             NbVector2 vec = (NbVector2) sstate.Value;
-                            GL.Uniform2(shader.uniformLocations[key].loc, vec.X, vec.Y);
+                            GL.Uniform2f(shader.uniformLocations[key].loc, vec.X, vec.Y);
                             break;
                         }
                     case "Vec3":
                         {
                             NbVector3 vec = (NbVector3) sstate.Value;
-                            GL.Uniform3(shader.uniformLocations[key].loc, vec.X, vec.Y, vec.Z);
+                            GL.Uniform3f(shader.uniformLocations[key].loc, vec.X, vec.Y, vec.Z);
                             break;
                         }
                     case "Vec4":
                         {
                             NbVector4 vec = (NbVector4) sstate.Value;
-                            GL.Uniform4(shader.uniformLocations[key].loc, vec.X, vec.Y, vec.Z, vec.W);
+                            GL.Uniform4f(shader.uniformLocations[key].loc, vec.X, vec.Y, vec.Z, vec.W);
                             break;
                         }
 
@@ -561,9 +562,9 @@ namespace NbCore.Platform.Graphics
 
             //Render quad
             GL.Disable(EnableCap.DepthTest);
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+            GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Fill);
             GL.DrawElements(PrimitiveType.Triangles, glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, (IntPtr)0);
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
             GL.Enable(EnableCap.DepthTest);
 
         }
@@ -576,14 +577,14 @@ namespace NbCore.Platform.Graphics
             uint offset = (uint)(mesh.InstanceIndexBuffer[0] * Marshal.SizeOf<MeshInstance>());
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
-            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+            GL.BindBufferRange(BufferTargetARB.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(offset), size);
 
-            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.BindVertexArray(glmesh.vao.vao);
             GL.DrawElementsInstanced(PrimitiveType.Triangles,
                 mesh.MetaData.BatchCount, glmesh.IndicesLength, IntPtr.Zero,
                 mesh.InstanceCount);
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
         }
 
         public void RenderMesh(NbMesh mesh, NbMaterial mat)
@@ -595,16 +596,16 @@ namespace NbCore.Platform.Graphics
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
-            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+            GL.BindBufferRange(BufferTargetARB.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(offset), size);
 
             SetShaderAndUniforms(mat); //Set Shader and material uniforms
 
-            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.BindVertexArray(glmesh.vao.vao);
             GL.DrawElementsInstanced(PrimitiveType.Triangles,
                 glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, IntPtr.Zero,
                 glmesh.Mesh.InstanceCount);
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
         }
 
         public void RenderLocator(NbMesh mesh, NbMaterial mat)
@@ -616,16 +617,16 @@ namespace NbCore.Platform.Graphics
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
-            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+            GL.BindBufferRange(BufferTargetARB.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(offset), size);
 
             SetShaderAndUniforms(mat);
 
-            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.BindVertexArray(glmesh.vao.vao);
             GL.DrawElementsInstanced(PrimitiveType.Lines, 6,
                 glmesh.IndicesLength, IntPtr.Zero,
                 mesh.InstanceCount); //Use Instancing
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
         }
 
         public void RenderJoint(NbMesh mesh, NbMaterial mat)
@@ -637,16 +638,16 @@ namespace NbCore.Platform.Graphics
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
-            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+            GL.BindBufferRange(BufferTargetARB.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(offset), size);
 
             SetShaderAndUniforms(mat);
 
-            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.BindVertexArray(glmesh.vao.vao);
             GL.PointSize(5.0f);
             GL.DrawArrays(PrimitiveType.Lines, 0, mesh.MetaData.BatchCount);
             GL.DrawArrays(PrimitiveType.Points, 0, 1); //Draw only yourself
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
         }
 
         public void RenderCollision(NbMesh mesh, NbMaterial mat)
@@ -658,14 +659,14 @@ namespace NbCore.Platform.Graphics
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
-            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+            GL.BindBufferRange(BufferTargetARB.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(offset), size);
 
             SetShaderAndUniforms(mat);
 
             //Step 2: Render Elements
             GL.PointSize(8.0f);
-            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.BindVertexArray(glmesh.vao.vao);
 
             //TODO: make sure that primitive collisions have the vertrstartphysics set to 0
 
@@ -674,7 +675,7 @@ namespace NbCore.Platform.Graphics
             GL.DrawElementsInstancedBaseVertex(PrimitiveType.Triangles, glmesh.Mesh.MetaData.BatchCount,
                 DrawElementsType.UnsignedShort, IntPtr.Zero, glmesh.Mesh.InstanceCount, -glmesh.Mesh.MetaData.VertrStartGraphics);
 
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
         }
 
         public void RenderLight(NbMesh mesh, NbMaterial mat)
@@ -686,16 +687,16 @@ namespace NbCore.Platform.Graphics
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
-            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+            GL.BindBufferRange(BufferTargetARB.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
                 (IntPtr)(offset), size);
 
             SetShaderAndUniforms(mat);
 
-            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.BindVertexArray(glmesh.vao.vao);
             GL.PointSize(5.0f);
             GL.DrawArraysInstanced(PrimitiveType.Lines, 0, 2, mesh.InstanceCount);
             GL.DrawArraysInstanced(PrimitiveType.Points, 0, 2, mesh.InstanceCount); //Draw both points
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
         }
 
         public void RenderLightVolume(NbMesh mesh, NbMaterial mat)
@@ -754,24 +755,22 @@ namespace NbCore.Platform.Graphics
                                             1,0,5};
             //Generate OpenGL buffers
             int arraysize = sizeof(float) * verts1.Length;
-            GL.GenBuffers(1, out int vb_bbox);
-            GL.GenBuffers(1, out int eb_bbox);
+            BufferHandle vb_bbox = GL.GenBuffer();
+            BufferHandle eb_bbox = GL.GenBuffer();
 
             //Upload vertex buffer
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vb_bbox);
+            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vb_bbox);
             //Allocate to NULL
-            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(2 * arraysize), (IntPtr)null, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTargetARB.ArrayBuffer, (IntPtr)(2 * arraysize), IntPtr.Zero, BufferUsageARB.StaticDraw);
             //Add verts data
-            GL.BufferSubData(BufferTarget.ArrayBuffer, (IntPtr)0, (IntPtr)arraysize, verts1);
+            GL.BufferSubData(BufferTargetARB.ArrayBuffer, IntPtr.Zero, verts1);
 
             ////Upload index buffer
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, eb_bbox);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(sizeof(Int32) * indices.Length), indices, BufferUsageHint.StaticDraw);
-
+            GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, eb_bbox);
+            GL.BufferData(BufferTargetARB.ElementArrayBuffer, indices, BufferUsageARB.StaticDraw);
 
             //Render
-
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vb_bbox);
+            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vb_bbox);
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
             GL.EnableVertexAttribArray(0);
 
@@ -781,9 +780,9 @@ namespace NbCore.Platform.Graphics
 
             //Render Elements
             GL.PointSize(5.0f);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, eb_bbox);
+            GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, eb_bbox);
 
-            GL.DrawRangeElements(PrimitiveType.Triangles, 0, verts1.Length,
+            GL.DrawRangeElements(PrimitiveType.Triangles, 0, (uint) verts1.Length,
                 indices.Length, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
             GL.DisableVertexAttribArray(0);
@@ -798,7 +797,7 @@ namespace NbCore.Platform.Graphics
             if (mesh.bHullVao == null) return;
             //I ASSUME THAT EVERYTHING I NEED IS ALREADY UPLODED FROM A PREVIOUS PASS
             GL.PointSize(8.0f);
-            GL.BindVertexArray(mesh.bHullVao.vao_id);
+            GL.BindVertexArray(mesh.bHullVao.vao);
 
             GL.DrawElementsBaseVertex(PrimitiveType.Points, mesh.Mesh.MetaData.BatchCount,
                 mesh.IndicesLength,
@@ -806,7 +805,7 @@ namespace NbCore.Platform.Graphics
             GL.DrawElementsBaseVertex(PrimitiveType.Triangles, mesh.Mesh.MetaData.BatchCount,
                 mesh.IndicesLength,
                 IntPtr.Zero, -mesh.Mesh.MetaData.VertrStartPhysics);
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
         }
 
 
@@ -815,7 +814,7 @@ namespace NbCore.Platform.Graphics
 
         #region TextureMethods
 
-        public static NbTexture CreateTexture(PixelInternalFormat fmt, int w, int h, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
+        public static NbTexture CreateTexture(InternalFormat fmt, int w, int h, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
         {
             NbTexture tex = new();
             tex.texID = GL.GenTexture();
@@ -830,12 +829,12 @@ namespace NbCore.Platform.Graphics
             GL.TexImage2D(TextureTargetMap[tex.Data.target], 0, fmt, w, h, 0, pix_fmt, pix_type, IntPtr.Zero);
 
             if (generate_mipmaps)
-                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+                GL.GenerateMipmap(TextureTarget.Texture2d);
 
             return tex;
         }
 
-        public static NbTexture CreateTexture(PixelInternalFormat fmt, int w, int h, int d, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
+        public static NbTexture CreateTexture(InternalFormat fmt, int w, int h, int d, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
         {
             NbTexture tex = new();
             tex.texID = GL.GenTexture();
@@ -844,7 +843,7 @@ namespace NbCore.Platform.Graphics
             GL.TexImage3D(TextureTargetMap[tex.Data.target], 0, fmt, w, h, d, 0, pix_fmt, pix_type, IntPtr.Zero);
 
             if (generate_mipmaps)
-                GL.GenerateMipmap(GenerateMipmapTarget.Texture2DArray);
+                GL.GenerateMipmap(TextureTarget.Texture2dArray);
 
             return tex;
         }
@@ -853,22 +852,24 @@ namespace NbCore.Platform.Graphics
         {
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
             GL.BindTexture(gl_target, tex.texID);
-            GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, TextureWrapMap[wrapMode]);
-            GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, TextureWrapMap[wrapMode]);
+            GL.TexParameteri(gl_target, TextureParameterName.TextureWrapS, TextureWrapMap[wrapMode]);
+            GL.TexParameteri(gl_target, TextureParameterName.TextureWrapT, TextureWrapMap[wrapMode]);
             
             if (magFilter == NbTextureFilter.NearestMipmapLinear || magFilter == NbTextureFilter.LinearMipmapNearest)
                 Log($"Non compatible mag filter {magFilter}. No Mag filter used", LogVerbosityLevel.WARNING);
             else
-                GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, TextureFilterMap[magFilter]);
+                GL.TexParameteri(gl_target, TextureParameterName.TextureMagFilter, TextureFilterMap[magFilter]);
             
-            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, TextureFilterMap[minFilter]);
-            
+            GL.TexParameteri(gl_target, TextureParameterName.TextureMinFilter, TextureFilterMap[minFilter]);
+
             //Use anisotropic filtering
-            af_amount = System.Math.Max(af_amount, GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy));
-            GL.TexParameter(gl_target, (TextureParameterName)0x84FE, af_amount);
+
+            float temp_af_amount = 0.0f;
+            GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy, ref temp_af_amount);
+            af_amount = System.Math.Max(temp_af_amount, af_amount);
+            
+            GL.TexParameterf(gl_target, (TextureParameterName)0x84FE, af_amount);
         }
-
-
 
         public static void DumpTexture(NbTexture tex, string name)
         {
@@ -892,14 +893,19 @@ namespace NbCore.Platform.Graphics
             GL.BindTexture(gl_target, tex.texID);
             //TODO: Remove all parameter settings from here, and make it possible to set them using other API calls
             //When manually loading mipmaps, levels should be loaded first
-            GL.TexParameter(gl_target, TextureParameterName.TextureBaseLevel, 0);
-            
+            GL.TexParameteri(gl_target, TextureParameterName.TextureBaseLevel, 0);
+
+
             //Use anisotropic filtering
-            float af_amount = GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy);
+            float af_amount = 0.0f;
+            GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy, ref af_amount);
             af_amount = (float)System.Math.Max(af_amount, 4.0f);
+
             //GL.TexParameter(TextureTarget.Texture2D,  (TextureParameterName) 0x84FE, af_amount);
-            GL.GetTexParameter(gl_target, GetTextureParameter.TextureMaxLevel, out int max_level);
-            GL.GetTexParameter(gl_target, GetTextureParameter.TextureBaseLevel, out int base_level);
+            int max_level = 0;
+            int base_level = 0;
+            GL.GetTexParameteri(gl_target, GetTextureParameter.TextureMaxLevelSgis, ref max_level);
+            GL.GetTexParameteri(gl_target, GetTextureParameter.TextureBaseLevelSgis, ref base_level);
 
             int maxsize = System.Math.Max(tex.Data.Height, tex.Data.Width);
             int p = (int)System.Math.Floor(System.Math.Log(maxsize, 2)) + base_level;
@@ -926,22 +932,22 @@ namespace NbCore.Platform.Graphics
             //avgColor = getAvgColor(pixels);
         }
 
-        private static void UploadTextureData(int tex_id, NbTextureData tex_data)
+        private static void UploadTextureData(TextureHandle tex_id, NbTextureData tex_data)
         {
             TextureTarget gl_target = TextureTargetMap[tex_data.target];
             InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
             
             GL.BindTexture(gl_target, tex_id);
-            GL.TexImage2D(gl_target, 0, (PixelInternalFormat)gl_pif, tex_data.Width, tex_data.Height, 0,
+            GL.TexImage2D(gl_target, 0, gl_pif, tex_data.Width, tex_data.Height, 0,
                     PixelFormatMap[tex_data.pif], PixelType.UnsignedByte, tex_data.Data);
             GL.GenerateTextureMipmap(tex_id);
 
             //Cleanup
-            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0); //Unbind texture PBO
+            GL.BindBuffer(BufferTargetARB.PixelUnpackBuffer, new BufferHandle(0)); //Unbind texture PBO
         }
 
 
-        private static void UploadTextureData(int tex_id, DDSImage tex_data)
+        private static void UploadTextureData(TextureHandle tex_id, DDSImage tex_data)
         {
             //Temp Variables
             int w = tex_data.Width;
@@ -969,7 +975,7 @@ namespace NbCore.Platform.Graphics
                         
                     //Figure out channel ordering
                     PixelFormat pf = PixelFormat.Rgba;
-                    PixelInternalFormat pif = PixelInternalFormat.Rgba8;
+                    InternalFormat pif = InternalFormat.Rgba8;
                     if (tex_data.header.ddspf.dwRBitMask == 0x000000FF &&
                         tex_data.header.ddspf.dwGBitMask == 0x0000FF00 &&
                         tex_data.header.ddspf.dwBBitMask == 0x00FF0000 &&
@@ -987,10 +993,10 @@ namespace NbCore.Platform.Graphics
                     
                     switch (gl_target)
                     {
-                        case TextureTarget.Texture2D:
+                        case TextureTarget.Texture2d:
                             GL.TexImage2D(gl_target, i, pif, w, h, 0, pf, PixelType.UnsignedByte, temp_data);
                             break;
-                        case TextureTarget.Texture2DArray:
+                        case TextureTarget.Texture2dArray:
                             GL.TexImage3D(gl_target, i, pif, w, h, d, 0, pf, PixelType.UnsignedByte, temp_data);
                             break;
                     }
@@ -1004,14 +1010,14 @@ namespace NbCore.Platform.Graphics
                     System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size);
                     switch (gl_target)
                     {
-                        case TextureTarget.Texture3D:
+                        case TextureTarget.Texture3d:
                             //GL.CompressedTexImage3D(gl_target, i, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext, w, h, d, 0, temp_size, temp_data);
                             break;
-                        case TextureTarget.Texture2DArray:
-                            GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, d * face_count, 0, temp_size, temp_data);
+                        case TextureTarget.Texture2dArray:
+                            GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, d * face_count, 0, temp_data);
                             break;
                         default:
-                            GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_size, temp_data);
+                            GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_data);
                             break;
                     }
                 }
@@ -1044,7 +1050,7 @@ namespace NbCore.Platform.Graphics
 
         public static void UploadTexture(NbTexture tex)
         {
-            Callbacks.Assert(tex.texID >= 0, "Invalid texture ID");
+            Callbacks.Assert(tex.texID.Handle >= 0, "Invalid texture ID");
             if (tex.Data is DDSImage) 
                 UploadTextureData(tex.texID, tex.Data as DDSImage);
             else
@@ -1058,24 +1064,22 @@ namespace NbCore.Platform.Graphics
         {
             //Generate VAO
             GLVao vao = new();
-            vao.vao_id = GL.GenVertexArray();
-            GL.BindVertexArray(vao.vao_id);
+            vao.vao = GL.GenVertexArray();
+            GL.BindVertexArray(vao.vao);
 
             //Generate VBOs
-            int[] vbo_buffers = new int[2];
-            GL.GenBuffers(2, vbo_buffers);
-
+            BufferHandle[] vbo_buffers = new BufferHandle[2];
+            GL.GenBuffers(vbo_buffers);
+            
             vao.vertex_buffer_object = vbo_buffers[0];
             vao.element_buffer_object = vbo_buffers[1];
 
             //Bind vertex buffer
-            int size;
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vao.vertex_buffer_object);
+            int size = 0;
+            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vao.vertex_buffer_object);
             //Upload Vertex Buffer
-            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)mesh.Data.VertexBuffer.Length,
-                mesh.Data.VertexBuffer, BufferUsageHint.StaticDraw);
-            GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize,
-                out size);
+            GL.BufferData(BufferTargetARB.ArrayBuffer, mesh.Data.VertexBuffer, BufferUsageARB.StaticDraw);
+            GL.GetBufferParameteri(BufferTargetARB.ArrayBuffer, BufferPNameARB.BufferSize, ref size);
 
             Callbacks.Assert(size == mesh.Data.VertexBufferStride * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics + 1),
                 "Mesh metadata does not match the vertex buffer size from the geometry file");
@@ -1106,48 +1110,46 @@ namespace NbCore.Platform.Graphics
                         throw new NotImplementedException();
                 }
 
-                GL.VertexAttribPointer(buf.semantic, buf.count, buftype, buf.normalize, (int) buf.stride, buf.offset);
-                GL.EnableVertexArrayAttrib(vao.vao_id, buf.semantic);
+                GL.VertexAttribPointer(buf.semantic, buf.count, buftype, buf.normalize, buf.stride, buf.offset);
+                GL.EnableVertexArrayAttrib(vao.vao, buf.semantic);
             }
 
             //Upload index buffer
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, vao.element_buffer_object);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)mesh.Data.IndexBuffer.Length,
-                mesh.Data.IndexBuffer, BufferUsageHint.StaticDraw);
-            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize,
-                out size);
+            GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, vao.element_buffer_object);
+            GL.BufferData(BufferTargetARB.ElementArrayBuffer, mesh.Data.IndexBuffer, BufferUsageARB.StaticDraw);
+            
+            GL.GetBufferParameteri(BufferTargetARB.ElementArrayBuffer, BufferPNameARB.BufferSize, ref size);
             Callbacks.Assert(size == mesh.Data.IndexBuffer.Length,
                 "Mesh metadata does not match the index buffer size from the geometry file");
 
             //Unbind
-            GL.BindVertexArray(0);
+            GL.BindVertexArray(VertexArrayHandle.Zero);
             //for (int i = 0; i < mesh.Data.buffers.Length; i++)
             //    GL.DisableVertexAttribArray(mesh.Data.buffers[i].semantic);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            GL.BindBuffer(BufferTargetARB.ArrayBuffer, BufferHandle.Zero);
+            GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, BufferHandle.Zero);
             
             return vao;
         }
 
-        
         private void UploadUniform(NbUniform uf)
         {
-            switch (uf.State.Type)
+            switch (uf.Type)
             {
                 case (NbUniformType.Float):
-                    GL.Uniform1(uf.State.ShaderLocation, uf.Values._Value.X);
+                    GL.Uniform1f(uf.ShaderLocation, uf.Values.X);
                     break;
                 case (NbUniformType.Vector2):
-                    GL.Uniform2(uf.State.ShaderLocation, uf.Values._Value.Xy);
+                    GL.Uniform2f(uf.ShaderLocation, uf.Values._Value.Xy);
                     break;
                 case (NbUniformType.Vector3):
-                    GL.Uniform3(uf.State.ShaderLocation, uf.Values._Value.Xyz);
+                    GL.Uniform3f(uf.ShaderLocation, uf.Values._Value.Xyz);
                     break;
                 case (NbUniformType.Vector4):
-                    GL.Uniform4(uf.State.ShaderLocation, uf.Values._Value);
+                    GL.Uniform4f(uf.ShaderLocation, uf.Values._Value);
                     break;
                 default:
-                    Console.WriteLine($"Unsupported Uniform {uf.State.Type}");
+                    Console.WriteLine($"Unsupported Uniform {uf.Type}");
                     break;
             }
         }
@@ -1163,8 +1165,8 @@ namespace NbCore.Platform.Graphics
             //BIND TEXTURES
             foreach (NbSampler s in Material.ActiveSamplers)
             {
-                GL.Uniform1(Material.Shader.uniformLocations[s.ShaderBinding].loc, s.SamplerID);
-                GL.ActiveTexture(TextureUnit.Texture0 + s.SamplerID);
+                GL.Uniform1i(Material.Shader.uniformLocations[s.ShaderBinding].loc, s.SamplerID);
+                GL.ActiveTexture(TextureUnit.Texture0 + (uint) s.SamplerID);
                 GL.BindTexture(TextureTargetMap[s.Texture.Data.target], s.Texture.texID);
             }
         }
@@ -1178,20 +1180,17 @@ namespace NbCore.Platform.Graphics
         public void SyncGPUCommands()
         {
             //Setup FENCE AFTER ALL THE MAIN GEOMETRY DRAWCALLS ARE ISSUED
-            multiBufferSyncStatuses[multiBufferActiveId] = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
+            multiBufferSyncStatuses[multiBufferActiveId] = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, SyncBehaviorFlags.None);
         }
 
         public void ClearDrawBuffer(NbBufferMask mask)
         {
-            ClearBufferMask glmask = ClearBufferMask.None;
-
-            if (mask.HasFlag(NbBufferMask.Color))
-                glmask |= ClearBufferMask.ColorBufferBit;
-            
-            if (mask.HasFlag(NbBufferMask.Color))
-                glmask |= ClearBufferMask.DepthBufferBit;
-
-            GL.Clear(glmask);
+            if (mask.HasFlag(NbBufferMask.Color) && mask.HasFlag(NbBufferMask.Depth))
+                GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            else if (mask.HasFlag(NbBufferMask.Color))
+                GL.Clear(ClearBufferMask.ColorBufferBit);
+            else if (mask.HasFlag(NbBufferMask.Depth))
+                GL.Clear(ClearBufferMask.DepthBufferBit);
         }
 
         public void BindDrawFrameBuffer(FBO fbo, int[] drawBuffers)
@@ -1199,22 +1198,22 @@ namespace NbCore.Platform.Graphics
             BindDrawFrameBuffer(fbo.fbo, fbo.Size.X, fbo.Size.Y, drawBuffers);
         }
 
-        public void BindDrawFrameBuffer(int fbo_id, int size_x, int size_y, int[] drawBuffers)
+        public void BindDrawFrameBuffer(FramebufferHandle fbo, int size_x, int size_y, int[] drawBuffers)
         {
             //Bind Gbuffer fbo
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, fbo_id);
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, fbo);
             GL.Viewport(0, 0, size_x, size_y);
 
-            DrawBuffersEnum[] bufferEnums = new DrawBuffersEnum[drawBuffers.Length];
+            DrawBufferMode[] bufferEnums = new DrawBufferMode[drawBuffers.Length];
 
             for (int i = 0; i < drawBuffers.Length; i++)
-                bufferEnums[i] = DrawBuffersEnum.ColorAttachment0 + drawBuffers[i];
+                bufferEnums[i] = (DrawBufferMode) ((int) DrawBufferMode.ColorAttachment0 + drawBuffers[i]);
 
-            GL.DrawBuffers(bufferEnums.Length, bufferEnums);
+            GL.DrawBuffers(bufferEnums);
         }
 
         
-        public void BindFrameBuffer(int fbo_id)
+        public void BindFrameBuffer(FramebufferHandle fbo_id)
         {
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo_id);
         }
@@ -1247,20 +1246,20 @@ namespace NbCore.Platform.Graphics
         
 
         //This method attaches UBOs to shader binding points
-        public static void AttachUBOToShaderBindingPoint(NbShader shader, string var_name, int binding_point)
+        public static void AttachUBOToShaderBindingPoint(NbShader shader, string var_name, uint binding_point)
         {
-            int shdr_program_id = shader.ProgramID;
-            int ubo_index = GL.GetUniformBlockIndex(shdr_program_id, var_name);
-            if (ubo_index != -1)
-                GL.UniformBlockBinding(shdr_program_id, ubo_index, binding_point);
+            //int shdr_program_id = shader.ProgramID;
+            uint ubo_index = GL.GetUniformBlockIndex(shader.ProgramID, var_name);
+            if (ubo_index != 0)
+                GL.UniformBlockBinding(shader.ProgramID, ubo_index, binding_point);
         }
 
-        public static void AttachSSBOToShaderBindingPoint(NbShader shader, string var_name, int binding_point)
+        public static void AttachSSBOToShaderBindingPoint(NbShader shader, string var_name, uint binding_point)
         {
             //Binding Position 0 - Matrices UBO
-            int shdr_program_id = shader.ProgramID;
-            int ssbo_index = GL.GetProgramResourceIndex(shdr_program_id, ProgramInterface.ShaderStorageBlock, var_name);
-            if (ssbo_index != -1)
+            //int shdr_program_id = shader.ProgramID;
+            uint ssbo_index = GL.GetProgramResourceIndex(shader.ProgramID, ProgramInterface.ShaderStorageBlock, var_name);
+            if (ssbo_index != 0)
                 GL.ShaderStorageBlockBinding(shader.ProgramID, ssbo_index, binding_point);
         }
 
@@ -1279,7 +1278,7 @@ namespace NbCore.Platform.Graphics
         }
 
         public static bool CompileShaderSource(NbShader shader, 
-            NbShaderSourceType type, ref int object_id, ref string temp_log, string append_text = "")
+            NbShaderSourceType type, ref ShaderHandle object_id, ref string temp_log, string append_text = "")
         {
             GLSLShaderSource _source = shader.GetShaderConfig().Sources[type];
 
@@ -1289,8 +1288,7 @@ namespace NbCore.Platform.Graphics
             if (!_source.Resolved)
                 _source.Resolve();
 
-
-            int shader_object_id;
+            ShaderHandle shader_object_id;
             string ActualShaderSource;
             shader_object_id = GL.CreateShader(ShaderTypeMap[type]);
             
@@ -1298,19 +1296,21 @@ namespace NbCore.Platform.Graphics
             GL.ShaderSource(shader_object_id, GLSLShaderConfig.version + "\n" + append_text + "\n" + _source.ResolvedText);
 
             //Get resolved shader text
-            GL.GetShaderSource(shader_object_id, 32768, out int actual_shader_length, out ActualShaderSource);
-
+            int actual_shader_length = 0;
+            GL.GetShaderSource(shader_object_id, 32768, ref actual_shader_length, out ActualShaderSource);
+            
             GL.CompileShader(shader_object_id);
             GL.GetShaderInfoLog(shader_object_id, out string info);
 
-            GL.GetShader(shader_object_id, ShaderParameter.CompileStatus, out int status_code);
-
+            int status_code = -1;
+            GL.GetShaderi(shader_object_id, ShaderParameterName.CompileStatus, ref status_code);
+            
             temp_log += NumberLines(ActualShaderSource) + "\n";
             temp_log += info + "\n";
 
             if (status_code != 1)
             {
-                object_id = -1;
+                object_id.Handle = -1;
                 return false;
             }
             
@@ -1337,11 +1337,11 @@ namespace NbCore.Platform.Graphics
                 directivestring += "#define " + dir + '\n'; //Configuration Directives (through the mode)
 
             //Try to compile all attachments
-            Dictionary<NbShaderSourceType, int> temp_objects = new();
+            Dictionary<NbShaderSourceType, ShaderHandle> temp_objects = new();
             string temp_log = "";
             foreach (var pair in conf.Sources)
             {
-                int object_id = -1;
+                ShaderHandle object_id = ShaderHandle.Zero;
                 bool status = CompileShaderSource(shader, pair.Key, ref object_id, ref temp_log, directivestring);
                 if (!status)
                 {
@@ -1361,13 +1361,13 @@ namespace NbCore.Platform.Graphics
             {
                 //TODO: Try to first compile the shader and return if there are problems
                 if (shader.SourceObjects.ContainsKey(pair.Key))
-                    if (shader.SourceObjects[pair.Key] != -1)
+                    if (shader.SourceObjects[pair.Key].Handle != 0)
                         GL.DeleteShader(shader.SourceObjects[pair.Key]);
 
                 shader.SourceObjects[pair.Key] = temp_objects[pair.Key];
             }
 
-            if (shader.ProgramID != -1)
+            if (shader.ProgramID.Handle != -1)
                 GL.DeleteProgram(shader.ProgramID);
 
             //Create new program
@@ -1383,7 +1383,8 @@ namespace NbCore.Platform.Graphics
             GL.GetProgramInfoLog(shader.ProgramID, out string info);
             shader.CompilationLog += info + "\n";
 
-            GL.GetProgram(shader.ProgramID, GetProgramParameterName.LinkStatus, out int status_code);
+            int status_code = -1;
+            GL.GetProgrami(shader.ProgramID, ProgramPropertyARB.LinkStatus, ref status_code);
             if (status_code != 1)
             {
                 Log(shader.CompilationLog, LogVerbosityLevel.ERROR);
@@ -1422,16 +1423,20 @@ namespace NbCore.Platform.Graphics
 
         private static void loadActiveUniforms(NbShader shader)
         {
-            GL.GetProgram(shader.ProgramID, GetProgramParameterName.ActiveUniforms, out int active_uniforms_count);
-
+            int active_uniforms_count = 0;
+            GL.GetProgrami(shader.ProgramID, ProgramPropertyARB.ActiveUniforms, ref active_uniforms_count);
+            
             shader.uniformLocations.Clear(); //Reset locataions
             shader.CompilationLog += "Active Uniforms: " + active_uniforms_count.ToString() + "\n";
             for (int i = 0; i < active_uniforms_count; i++)
             {
                 int bufSize = 64;
                 int loc;
+                int size = 0;
+                int length = 0;
+                UniformType type = UniformType.Int;
 
-                GL.GetActiveUniform(shader.ProgramID, i, bufSize, out int size, out int length, out ActiveUniformType type, out string name);
+                string name = GL.GetActiveUniform(shader.ProgramID, (uint) i, bufSize, ref size, ref length, ref type);
                 string basename = name.Split("[0]")[0];
                 for (int j = 0; j < length; j++)
                 {
@@ -1444,37 +1449,37 @@ namespace NbCore.Platform.Graphics
                     
                     switch (type)
                     {
-                        case ActiveUniformType.Float:
+                        case UniformType.Float:
                             fmt.type = NbUniformType.Float;
                             break;
-                        case ActiveUniformType.Bool:
+                        case UniformType.Bool:
                             fmt.type = NbUniformType.Bool;
                             break;
-                        case ActiveUniformType.Int:
+                        case UniformType.Int:
                             fmt.type = NbUniformType.Int;
                             break;
-                        case ActiveUniformType.FloatMat3:
+                        case UniformType.FloatMat3:
                             fmt.type = NbUniformType.Matrix3;
                             break;
-                        case ActiveUniformType.FloatMat4:
+                        case UniformType.FloatMat4:
                             fmt.type = NbUniformType.Matrix4;
                             break;
-                        case ActiveUniformType.FloatVec2:
+                        case UniformType.FloatVec2:
                             fmt.type = NbUniformType.Vector2;
                             break;
-                        case ActiveUniformType.FloatVec3:
+                        case UniformType.FloatVec3:
                             fmt.type = NbUniformType.Vector3;
                             break;
-                        case ActiveUniformType.FloatVec4:
+                        case UniformType.FloatVec4:
                             fmt.type = NbUniformType.Vector4;
                             break;
-                        case ActiveUniformType.Sampler2D:
+                        case UniformType.Sampler2d:
                             fmt.type = NbUniformType.Sampler2D;
                             break;
-                        case ActiveUniformType.Sampler3D:
+                        case UniformType.Sampler3d:
                             fmt.type = NbUniformType.Sampler3D;
                             break;
-                        case ActiveUniformType.Sampler2DArray:
+                        case UniformType.Sampler2dArray:
                             fmt.type = NbUniformType.Sampler2DArray;
                             break;
                         default:
@@ -1497,41 +1502,49 @@ namespace NbCore.Platform.Graphics
         {
             //Print Debug Information for the UBO
             // Get named blocks info
-            int test_program = shader.ProgramID;
-            GL.GetProgram(test_program, GetProgramParameterName.ActiveUniformBlocks, out int count);
+            int block_count = 0;
+            GL.GetProgrami(shader.ProgramID, ProgramPropertyARB.ActiveUniformBlocks, ref block_count);
 
-            for (int i = 0; i < count; ++i)
+            for (int i = 0; i < block_count; ++i)
             {
                 // Get blocks name
-                GL.GetActiveUniformBlockName(test_program, i, 256, out int length, out string block_name);
-                GL.GetActiveUniformBlock(test_program, i, ActiveUniformBlockParameter.UniformBlockDataSize, out int block_size);
+                int length = 0;
+                string block_name = "";
+                int block_size = 0;
+                int block_bind_index = 0;
+                int block_active_uniforms = 0;
+                
+                block_name = GL.GetActiveUniformBlockName(shader.ProgramID, (uint) i, 256, ref length);
+                GL.GetActiveUniformBlocki(shader.ProgramID, (uint)i, UniformBlockPName.UniformBlockDataSize, ref block_size);
                 Console.WriteLine("Block {0} Data Size {1}", block_name, block_size);
-
-                GL.GetActiveUniformBlock(test_program, i, ActiveUniformBlockParameter.UniformBlockBinding, out int block_bind_index);
+                
+                GL.GetActiveUniformBlocki(shader.ProgramID, (uint) i, UniformBlockPName.UniformBlockBinding, ref block_bind_index);
                 Console.WriteLine("    Block Binding Point {0}", block_bind_index);
 
-                GL.GetInteger(GetIndexedPName.UniformBufferBinding, block_bind_index, out int info);
+
+                int info = -1;
+                GL.GetInteger(GetPName.UniformBufferBinding, (uint) block_bind_index, ref info);
                 Console.WriteLine("    Block Bound to Binding Point: {0} {{", info);
 
-                GL.GetActiveUniformBlock(test_program, i, ActiveUniformBlockParameter.UniformBlockActiveUniforms, out int block_active_uniforms);
+                GL.GetActiveUniformBlocki(shader.ProgramID, (uint)i, UniformBlockPName.UniformBlockActiveUniforms, ref block_active_uniforms);
                 int[] uniform_indices = new int[block_active_uniforms];
-                GL.GetActiveUniformBlock(test_program, i, ActiveUniformBlockParameter.UniformBlockActiveUniformIndices, uniform_indices);
-
+                GL.GetActiveUniformBlocki(shader.ProgramID, (uint)i, UniformBlockPName.UniformBlockActiveUniformIndices, uniform_indices);
 
                 int[] uniform_types = new int[block_active_uniforms];
                 int[] uniform_offsets = new int[block_active_uniforms];
                 int[] uniform_sizes = new int[block_active_uniforms];
 
                 //Fetch Parameters for all active Uniforms
-                GL.GetActiveUniforms(test_program, block_active_uniforms, uniform_indices, ActiveUniformParameter.UniformType, uniform_types);
-                GL.GetActiveUniforms(test_program, block_active_uniforms, uniform_indices, ActiveUniformParameter.UniformOffset, uniform_offsets);
-                GL.GetActiveUniforms(test_program, block_active_uniforms, uniform_indices, ActiveUniformParameter.UniformSize, uniform_sizes);
+                GL.GetActiveUniformsi(shader.ProgramID, (uint[]) (object) uniform_indices, UniformPName.UniformType, uniform_types);
+                GL.GetActiveUniformsi(shader.ProgramID, (uint[]) (object) uniform_indices, UniformPName.UniformOffset, uniform_offsets);
+                GL.GetActiveUniformsi(shader.ProgramID, (uint[]) (object) uniform_indices, UniformPName.UniformSize, uniform_sizes);
 
                 for (int k = 0; k < block_active_uniforms; ++k)
                 {
-                    GL.GetActiveUniformName(test_program, uniform_indices[k], 256, out int actual_name_length, out string name);
+                    int actual_name_length = 0;
+                    string name = GL.GetActiveUniformName(shader.ProgramID, (uint) uniform_indices[k], 256, ref actual_name_length);
+                    
                     Console.WriteLine("\t{0}", name);
-
                     Console.WriteLine("\t\t    type: {0}", uniform_types[k]);
                     Console.WriteLine("\t\t    offset: {0}", uniform_offsets[k]);
                     Console.WriteLine("\t\t    size: {0}", uniform_sizes[k]);

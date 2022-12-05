@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using NbCore.Platform.Graphics.OpenGL;
-using OpenTK.Graphics.OpenGL4;
+using OpenTK.Graphics.OpenGL;
 using NbCore.Utils;
 
 

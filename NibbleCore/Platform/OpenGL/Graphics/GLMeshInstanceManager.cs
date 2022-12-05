@@ -5,7 +5,7 @@ using ImGuiNET;
 using Microsoft.VisualBasic.FileIO;
 using NbCore.Common;
 using NbCore.Math;
-using OpenTK.Graphics.ES11;
+using OpenTK.Graphics.OpenGL;
 
 namespace NbCore.Platform.Graphics.OpenGL
 {

@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using OpenTK.Graphics.OpenGL4;
 using Newtonsoft.Json.Linq;
-
+#if OPENGL
+    using OpenTK.Graphics.OpenGL;
+    using OpenTK.Graphics;
+#endif
 
 namespace NbCore.Text
 {
@@ -21,13 +23,17 @@ namespace NbCore.Text
     }
     public class Font : IDisposable
     {
+#if OPENGL
+        public TextureHandle texID;
+#else
+        public int texID;
+#endif
         public string Name;
         public int Size;
         public int baseHeight; //Baseline font height in pixels
         public int lineHeight; //LineHeight in pixels
         public int texWidth; //Texture width in pixels
         public int texHeight; //Texture height in pixels
-        public int texID;
         public NbMaterial material;
         public Dictionary<string, Symbol> symbols = new Dictionary<string, Symbol>();
         private bool disposedValue;
@@ -177,31 +183,31 @@ namespace NbCore.Text
             material = new NbMaterial();
         }
 
-        private unsafe int genGLTexture(byte[] img_data)
+        private unsafe TextureHandle genGLTexture(byte[] img_data)
         {
             //img_data is expected to be a complete png image
             NbTextureData tex_data = NbImagingAPI.Load(img_data);
             
-            int texID = GL.GenTexture();
+            TextureHandle handle = GL.GenTexture();
             Console.WriteLine(GL.GetError());
-            GL.BindTexture(TextureTarget.Texture2DArray, texID);
+            GL.BindTexture(TextureTarget.Texture2dArray, handle);
 
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureBaseLevel, 0);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMaxLevel, 0);
+            GL.TexParameteri(TextureTarget.Texture2dArray, TextureParameterName.TextureBaseLevel, 0);
+            GL.TexParameteri(TextureTarget.Texture2dArray, TextureParameterName.TextureMaxLevel, 0);
 
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, tex_data.Width, tex_data.Height,
+            GL.TexImage2D(TextureTarget.Texture2d, 0, InternalFormat.Rgba8, tex_data.Width, tex_data.Height,
                 0, PixelFormat.Rgba, PixelType.UnsignedByte, tex_data.Data);
 
             Console.WriteLine(GL.GetError());
             //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
+            GL.TexParameteri(TextureTarget.Texture2dArray, TextureParameterName.TextureWrapS, (int) TextureWrapMode.Repeat);
+            GL.TexParameteri(TextureTarget.Texture2dArray, TextureParameterName.TextureWrapT, (int) TextureWrapMode.Repeat);
+            GL.TexParameteri(TextureTarget.Texture2dArray, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Linear);
+            GL.TexParameteri(TextureTarget.Texture2dArray, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.LinearMipmapLinear);
 
-            GL.BindTexture(TextureTarget.Texture2DArray, 0);
+            GL.BindTexture(TextureTarget.Texture2dArray, TextureHandle.Zero);
 
-            return texID;
+            return handle;
         }
 
 

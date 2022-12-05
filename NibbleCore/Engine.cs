@@ -930,6 +930,7 @@ namespace NbCore
             GLSLShaderConfig config_deferred = GetShaderConfigByName("UberShader_Deferred");
             GLSLShaderConfig config_deferred_lit = GetShaderConfigByName("UberShader_Deferred_Lit");
             NbShader shader;
+            NbVector4 vec = new(1.0f, 1.0f, 1.0f, 1.0f);
 
             mat = new()
             {
@@ -938,19 +939,10 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
             mat.AddFlag(NbMaterialFlagEnum._NB_VERTEX_COLOUR);
-            NbUniform uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            NbVector4 vec = new(1.0f, 1.0f, 1.0f, 1.0f);
-            uf.Bind(ref vec);
+            NbUniform uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 1.0f, 1.0f, 1.0f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
             mat.Uniforms.Add(uf);
-
+            
             shader = CreateShader(config_deferred, GetMaterialShaderDirectives(mat));
             Callbacks.Assert(CompileShader(shader), "Error during shader compilation");
             mat.AttachShader(shader);
@@ -968,18 +960,9 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(1.0f, 0.0f, 0.0f, 1.0f);
-            uf.Bind(ref vec);
-
+            uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 1.0f, 0.0f, 0.0f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
+            
             mat.Uniforms.Add(uf);
 
             ulong shader_hash = CalculateShaderHash(config_deferred, GetMaterialShaderDirectives(mat));
@@ -1001,18 +984,9 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(1.0f, 1.0f, 0.0f, 1.0f);
-            uf.Bind(ref vec);
-
+            uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 1.0f, 1.0f, 0.0f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
+            
             mat.Uniforms.Add(uf);
 
             shader_hash = CalculateShaderHash(config_deferred, GetMaterialShaderDirectives(mat));
@@ -1034,18 +1008,9 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(0.7f, 0.7f, 0.7f, 1.0f);
-            uf.Bind(ref vec);
-
+            uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 0.7f, 0.7f, 0.7f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
+            
             mat.Uniforms.Add(uf);
 
             shader_hash = CalculateShaderHash(config_deferred, GetMaterialShaderDirectives(mat));
@@ -1066,19 +1031,9 @@ namespace NbCore
                 Name = "redMat"
             };
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(0.7f, 0.7f, 0.7f, 1.0f);
-            uf.Bind(ref vec);
-
-            mat.Uniforms.Add(uf);
+            NbUniform uf1 = new(NbUniformType.Vector4, "gMaterialColourVec4", 0.7f, 0.7f, 0.7f, 1.0f);
+            uf1.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
+            mat.Uniforms.Add(uf1);
 
             shader_hash = CalculateShaderHash(config_deferred, GetMaterialShaderDirectives(mat));
             shader = GetShaderByHash(shader_hash);
@@ -1100,18 +1055,9 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(0.8f, 0.8f, 0.2f, 1.0f);
-            uf.Bind(ref vec);
-
+            uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 0.8f, 0.8f, 0.2f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
+            
             mat.Uniforms.Add(uf);
             shader_hash = CalculateShaderHash(config_deferred, GetMaterialShaderDirectives(mat));
             shader = GetShaderByHash(shader_hash);
@@ -1366,29 +1312,24 @@ namespace NbCore
                 
             };
 
-            NbShader shader = null;
             GLSLShaderConfig conf;
 
             //Sphere Material
             NbMaterial mat = new();
             mat.Name = "default_scn";
-            
-            NbUniform uf = new();
-            NbVector4 vec = new(1.0f, 0.0f, 0.0f, 1.0f);
-            uf.Name = "gMaterialColourVec4";
-            uf.Bind(ref vec);
+            NbVector4 vec;
+
+            NbUniform uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 1.0f, 0.0f, 0.0f, 1.0f);
             mat.Uniforms.Add(uf);
 
-            uf = new();
-            uf.Name = "gMaterialParamsVec4";
-            vec = new(0.15f, 0.0f, 0.2f, 0.0f);
-            uf.Bind(ref vec);
+            uf = new(NbUniformType.Vector4, "gMaterialParamsVec4", 0.15f, 0.0f, 0.2f, 0.0f);
+            
             //x: roughness
             //z: metallic
             mat.Uniforms.Add(uf);
             conf = GetShaderConfigByName("UberShader");
 
-            shader = CreateShader(conf);
+            NbShader shader = CreateShader(conf);
             EngineRef.CompileShader(shader);
             mat.AttachShader(shader);
             

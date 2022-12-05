@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using OpenTK;
 using NbCore.Math;
-using OpenTK.Graphics.OpenGL4;
-using NbCore.Utils;
 
 namespace NbCore.Primitives
 {

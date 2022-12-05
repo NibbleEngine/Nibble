@@ -42,6 +42,17 @@ namespace NbCore
             return Nodes.Find(x => x.Name == name);
         }
 
+        public SceneGraphNode GetJointNodeByJointID(int jointID)
+        {
+            foreach (SceneGraphNode node in JointNodes)
+            {
+                JointComponent jc = (JointComponent) node.GetComponent<JointComponent>();
+                if (jc.JointIndex == jointID)
+                    return node;
+            }
+            return null;
+        }
+
         public void RemoveNode(SceneGraphNode n)
         {
             if (!HasNode(n))

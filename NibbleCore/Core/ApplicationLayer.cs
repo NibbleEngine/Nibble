@@ -1,4 +1,5 @@
 ﻿using NbCore.Common;
+using NbCore.Platform.Windowing;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,19 +15,19 @@ namespace NbCore
             Layers.Add(layer);
         }
 
-        public void OnRenderFrame(Queue<object> data, double dt)
+        public void OnRenderFrame(NbWindow win, double dt)
         {
             for (int i = 0; i < Layers.Count; i++)
             {
-                Layers[i].OnRenderFrameUpdate(ref data, dt);
+                Layers[i].OnRenderFrameUpdate(win, dt);
             }
         }
 
-        public void OnFrameUpdate(Queue<object> data, double dt)
+        public void OnFrameUpdate(NbWindow win, double dt)
         {
             for (int i = 0; i < Layers.Count; i++)
             {
-                Layers[i].OnFrameUpdate(ref data, dt);
+                Layers[i].OnFrameUpdate(win, dt);
             }
         }
 
@@ -56,12 +57,12 @@ namespace NbCore
             EngineRef = engine;
         }
         
-        public virtual void OnRenderFrameUpdate(ref Queue<object> data, double dt)
+        public virtual void OnRenderFrameUpdate(NbWindow win, double dt)
         {
 
         }
 
-        public virtual void OnFrameUpdate(ref Queue<object> data, double dt)
+        public virtual void OnFrameUpdate(NbWindow win, double dt)
         {
 
         }

@@ -4,8 +4,8 @@ using NbCore.Primitives;
 using NbCore;
 using NbCore.Math;
 using NbCore.Platform.Graphics;
-using OpenTK.Graphics.OpenGL4; //TODO Get rid of that
-
+using OpenTK.Graphics.OpenGL; //TODO Get rid of that
+using OpenTK.Graphics;
 
 namespace NbCore.Text
 {
@@ -54,9 +54,9 @@ namespace NbCore.Text
                 updateGeomVertexBuffer();
 
                 //Replace data
-                GL.BindBuffer(BufferTarget.ArrayBuffer, meshVao.vao.vertex_buffer_object);
-                GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, geom.vbuffer.Length, geom.vbuffer);
-                GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+                GL.BindBuffer(BufferTargetARB.ArrayBuffer, meshVao.vao.vertex_buffer_object);
+                GL.BufferSubData(BufferTargetARB.ArrayBuffer, IntPtr.Zero, geom.vbuffer);
+                GL.BindBuffer(BufferTargetARB.ArrayBuffer, BufferHandle.Zero);
             }
         }
 

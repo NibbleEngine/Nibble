@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using NbCore.Math;
-using OpenTK.Graphics.OpenGL4;
+using OpenTK.Graphics;
+using OpenTK.Graphics.OpenGL;
 
 namespace NbCore
 {
@@ -109,7 +110,7 @@ namespace NbCore
             root.clear();
         }
 
-        public void render(int pass) {
+        public void render(ProgramHandle pass) {
             
             root.render(pass);
             
@@ -232,7 +233,7 @@ namespace NbCore
             }
         }
 
-        public void render(int pass)
+        public void render(ProgramHandle pass)
         {
             GL.UseProgram(pass);
 
@@ -266,34 +267,33 @@ namespace NbCore
                                             1,0,5};
             //Generate OpenGL buffers
             int arraysize = sizeof(float) * verts1.Length;
-            int vb_bbox, eb_bbox;
-            GL.GenBuffers(1, out vb_bbox);
-            GL.GenBuffers(1, out eb_bbox);
-
+            BufferHandle vb_bbox, eb_bbox;
+            vb_bbox = GL.GenBuffer();
+            eb_bbox = GL.GenBuffer();
+            
             //Upload vertex buffer
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vb_bbox);
+            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vb_bbox);
             //Allocate to NULL
-            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(2 * arraysize), (IntPtr)null, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTargetARB.ArrayBuffer, (IntPtr)(2 * arraysize), (IntPtr)null, BufferUsageARB.StaticDraw);
             //Add verts data
-            GL.BufferSubData(BufferTarget.ArrayBuffer, (IntPtr)0, (IntPtr)arraysize, verts1);
+            GL.BufferSubData(BufferTargetARB.ArrayBuffer, (IntPtr)0, verts1);
 
             ////Upload index buffer
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, eb_bbox);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(sizeof(Int32) * indices.Length), indices, BufferUsageHint.StaticDraw);
-
+            GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, eb_bbox);
+            GL.BufferData(BufferTargetARB.ElementArrayBuffer, indices, BufferUsageARB.StaticDraw);
 
             //Render
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vb_bbox);
+            GL.BindBuffer(BufferTargetARB.ArrayBuffer, vb_bbox);
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
             GL.EnableVertexAttribArray(0);
 
             //Render Elements
             GL.PointSize(5.0f);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, eb_bbox);
+            GL.BindBuffer(BufferTargetARB.ElementArrayBuffer, eb_bbox);
 
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+            GL.PolygonMode(TriangleFace.FrontAndBack, PolygonMode.Line);
 
-            GL.DrawRangeElements(PrimitiveType.Triangles, 0, verts1.Length,
+            GL.DrawRangeElements(PrimitiveType.Triangles, 0, (uint) verts1.Length,
                 indices.Length, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
             GL.DisableVertexAttribArray(0);

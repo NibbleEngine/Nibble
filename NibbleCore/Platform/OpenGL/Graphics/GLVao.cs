@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenTK.Graphics;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -7,7 +8,7 @@ namespace NbCore.Platform.Graphics
     public class GLVao : IDisposable
     {
         //VAO ID
-        public int vao_id;
+        public int vao;
         //VBO IDs
         public int vertex_buffer_object;
         public int element_buffer_object;
@@ -17,9 +18,9 @@ namespace NbCore.Platform.Graphics
 
         public GLVao()
         {
-            vao_id = -1;
-            vertex_buffer_object = -1;
-            element_buffer_object = -1;
+            vao = 0;
+            vertex_buffer_object = 0;
+            element_buffer_object = 0;
         }
 
         public void Dispose()

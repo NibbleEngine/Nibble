@@ -24,6 +24,7 @@ namespace NbCore.Math
             _Value.Y = y;
             _Value.Z = z;
         }
+        
         //Methods
         public void Normalize()
         {

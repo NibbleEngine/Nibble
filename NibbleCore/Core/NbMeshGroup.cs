@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using NbCore.Math;
+#if OPENGL
+    using OpenTK.Graphics;
+#endif
 
 namespace NbCore
 {
@@ -12,7 +15,11 @@ namespace NbCore
         public List<NbMesh> Meshes = new();
         public int ActiveLOD;
         public List<float> LODDistances;
+#if OPENGL
+        public BufferHandle GroupTBO1;
+#else
         public int GroupTBO1;
+#endif
         //Following arrays store matrices
         public NbMatrix4[] NextFrameJointData; 
         public NbMatrix4[] PrevFrameJointData;

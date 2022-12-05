@@ -87,9 +87,11 @@ namespace NbCore
         public void Update(double interval)
         {
             Time += interval;
-            Time = System.Math.Min(Time, TransformationSystem.updateInterval);
+            //Clamp to the max update interval if needed
+            Time = System.Math.Min(Time, TransformationSystem.updateInterval); 
 
             InterpolationCoeff = Time / TransformationSystem.updateInterval;
+            //Console.WriteLine($"Interpolation Coeff {InterpolationCoeff}");
             CalculateState();
         }
 

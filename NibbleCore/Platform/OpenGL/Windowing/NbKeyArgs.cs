@@ -8,7 +8,7 @@ namespace NbCore.Platform.Windowing
 {
     public struct NbKeyArgs
     {
-        public static readonly Dictionary<Keys, NbKey> OpenTKKeyMap = new()
+        public static readonly Dictionary<Keys, NbKey> OpenTKToNbKeyMap = new()
         {
             { Keys.A, NbKey.A },
             { Keys.B, NbKey.B },
@@ -107,6 +107,108 @@ namespace NbCore.Platform.Windowing
             { Keys.RightBracket, NbKey.RBracket }
         };
 
+        public static readonly Dictionary<NbKey, Keys> NbKeyToOpenTKMap = new()
+        {
+            { NbKey.A, Keys.A },
+            { NbKey.B, Keys.B },
+            { NbKey.C, Keys.C },
+            { NbKey.D, Keys.D },
+            { NbKey.E, Keys.E },
+            { NbKey.F, Keys.F },
+            { NbKey.G, Keys.G },
+            { NbKey.H, Keys.H },
+            { NbKey.I, Keys.I },
+            { NbKey.J, Keys.J },
+            { NbKey.K, Keys.K },
+            { NbKey.L, Keys.L },
+            { NbKey.M, Keys.M },
+            { NbKey.N, Keys.N },
+            { NbKey.O, Keys.O },
+            { NbKey.P, Keys.P },
+            { NbKey.Q, Keys.Q },
+            { NbKey.R, Keys.R },
+            { NbKey.S, Keys.S },
+            { NbKey.T, Keys.T },
+            { NbKey.U, Keys.U },
+            { NbKey.V, Keys.V },
+            { NbKey.W, Keys.W },
+            { NbKey.X, Keys.X },
+            { NbKey.Y, Keys.Y },
+            { NbKey.Z, Keys.Z },
+            { NbKey.LeftArrow, Keys.Left },
+            { NbKey.RightArrow, Keys.Right },
+            { NbKey.UpArrow, Keys.Up },
+            { NbKey.DownArrow, Keys.Down },
+            { NbKey.LeftAlt, Keys.LeftAlt },
+            { NbKey.RightAlt, Keys.RightAlt },
+            { NbKey.LeftCtrl, Keys.LeftControl },
+            { NbKey.RightCtrl, Keys.RightControl },
+            { NbKey.LeftSuper, Keys.LeftSuper },
+            { NbKey.RightSuper, Keys.RightSuper },
+            { NbKey.LeftShift, Keys.LeftShift },
+            { NbKey.RightShift, Keys.RightShift },
+            { NbKey.Backspace, Keys.Backspace },
+            { NbKey.Space, Keys.Space },
+            { NbKey.Home, Keys.Home },
+            { NbKey.End, Keys.End },
+            { NbKey.Insert, Keys.Insert },
+            { NbKey.Delete, Keys.Delete },
+            { NbKey.PageUp, Keys.PageUp },
+            { NbKey.PageDown, Keys.PageDown },
+            { NbKey.Enter, Keys.Enter },
+            { NbKey.Escape, Keys.Escape },
+            { NbKey.KeyPadEnter, Keys.KeyPadEnter },
+            { NbKey.KeyPad0, Keys.KeyPad0 },
+            { NbKey.KeyPad1, Keys.KeyPad1 },
+            { NbKey.KeyPad2, Keys.KeyPad2 },
+            { NbKey.KeyPad3, Keys.KeyPad3 },
+            { NbKey.KeyPad4, Keys.KeyPad4 },
+            { NbKey.KeyPad5, Keys.KeyPad5 },
+            { NbKey.KeyPad6, Keys.KeyPad6 },
+            { NbKey.KeyPad7, Keys.KeyPad7 },
+            { NbKey.KeyPad8, Keys.KeyPad8 },
+            { NbKey.KeyPad9, Keys.KeyPad9 },
+            { NbKey.KeyPadAsterisk, Keys.KeyPadMultiply },
+            { NbKey.KeyPadSlash, Keys.KeyPadDivide },
+            { NbKey.KeyPadPlus, Keys.KeyPadAdd },
+            { NbKey.KeyPadMinus, Keys.KeyPadSubtract },
+            { NbKey.KeyPadColon, Keys.KeyPadDecimal },
+            { NbKey.NumLock, Keys.NumLock },
+            { NbKey.ScrlLock, Keys.ScrollLock },
+            { NbKey.CapsLock, Keys.CapsLock },
+            { NbKey.PrintScreen, Keys.PrintScreen },
+            { NbKey.Tab, Keys.Tab },
+            { NbKey.F1, Keys.F1 },
+            { NbKey.F2, Keys.F2 },
+            { NbKey.F3, Keys.F3 },
+            { NbKey.F4, Keys.F4 },
+            { NbKey.F5, Keys.F5 },
+            { NbKey.F6, Keys.F6 },
+            { NbKey.F7, Keys.F7 },
+            { NbKey.F8, Keys.F8 },
+            { NbKey.F9, Keys.F9 },
+            { NbKey.F10, Keys.F10 },
+            { NbKey.F11, Keys.F11 },
+            { NbKey.F12, Keys.F12 },
+            { NbKey.Numpad0, Keys.D0 },
+            { NbKey.Numpad1, Keys.D1 },
+            { NbKey.Numpad2, Keys.D2 },
+            { NbKey.Numpad3, Keys.D3 },
+            { NbKey.Numpad4, Keys.D4 },
+            { NbKey.Numpad5, Keys.D5 },
+            { NbKey.Numpad6, Keys.D6 },
+            { NbKey.Numpad7, Keys.D7 },
+            { NbKey.Numpad8, Keys.D8 },
+            { NbKey.Numpad9, Keys.D9 },
+            { NbKey.Minus, Keys.Minus },
+            { NbKey.Equal, Keys.Equal },
+            { NbKey.Apostrophe, Keys.Apostrophe },
+            { NbKey.Period, Keys.Period },
+            { NbKey.Comma, Keys.Comma },
+            { NbKey.LBracket, Keys.LeftBracket },
+            { NbKey.RBracket, Keys.RightBracket }
+        };
+
         public static readonly List<NbKey> SupportedKeys = new()
         {
             NbKey.A,
@@ -169,7 +271,7 @@ namespace NbCore.Platform.Windowing
         {
             get
             {
-                return OpenTKKeyMap[_keyboardKeyEventArgs.Key];
+                return OpenTKToNbKeyMap[_keyboardKeyEventArgs.Key];
             }
         }
 

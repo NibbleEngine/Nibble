@@ -1,6 +1,6 @@
 ﻿using System;
 using NbCore.Math;
-using OpenTK.Graphics.OpenGL4;
+using OpenTK.Graphics.OpenGL;
 using Newtonsoft.Json;
 using System.Reflection;
 using System.IO;
