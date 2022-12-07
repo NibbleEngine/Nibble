@@ -16,9 +16,8 @@ namespace NbCore
     }
 
 
-    public class GLBufferManager
+    public class NbBufferManager
     {
-        
         //Overload with transform overrides
         public static void ClearInstances(NbMesh mesh)
         {

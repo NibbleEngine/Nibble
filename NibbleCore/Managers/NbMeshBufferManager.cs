@@ -2,7 +2,7 @@
 using NbCore.Common;
 using NbCore.Math;
 
-namespace NbCore.Platform.Graphics.OpenGL
+namespace NbCore
 {
     /**
      * Instance Buffer Documentation
@@ -45,9 +45,8 @@ namespace NbCore.Platform.Graphics.OpenGL
      */
 
 
-    public class GLMeshBufferManager
+    public class NbMeshBufferManager
     {
-        
         public static int GetNextMeshInstanceID(ref NbMesh mesh)
         {
             int render_instance_id = mesh.InstanceCount;

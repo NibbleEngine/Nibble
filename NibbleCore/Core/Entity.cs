@@ -83,10 +83,10 @@ namespace NbCore
             return _componentMap.ContainsKey(t);
         }
 
-        public Component GetComponent<T>()
+        public T GetComponent<T>() where T: Component
         {
             if (HasComponent<T>())
-                return _componentMap[typeof(T)];
+                return (T) _componentMap[typeof(T)];
             return null;
         }
 

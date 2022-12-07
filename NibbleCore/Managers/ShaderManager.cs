@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using NbCore.Platform.Graphics.OpenGL; //TODO: Abstract
-using OpenTK.Graphics.OpenGL;
+﻿using System.Collections.Generic;
 
 namespace NbCore.Managers
 {
-    public class ShaderManager: EntityManager<NbShader>
+    public class ShaderManager: NbEntityManager<NbShader>
     {
         public readonly Queue<NbShader> ShaderCompilationQueue = new();
         

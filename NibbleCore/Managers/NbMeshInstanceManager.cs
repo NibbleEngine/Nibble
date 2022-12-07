@@ -1,22 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using ImGuiNET;
-using Microsoft.VisualBasic.FileIO;
-using NbCore.Common;
-using NbCore.Math;
-using OpenTK.Graphics.ES11;
 
-namespace NbCore.Platform.Graphics.OpenGL
+namespace NbCore
 {
-    public enum GLMeshInstaneStatus
-    {
-        ADD,
-        REMOVE,
-        UPDATE
-    }
-
-    public static class GLMeshInstanceManager
+    public static class NbMeshInstanceManager
     {
         public static MeshInstance[] atlas_cpmu = new MeshInstance[1024];
         private static Dictionary<int, NbMesh> atlas_position_mesh_map = new();
@@ -25,7 +13,6 @@ namespace NbCore.Platform.Graphics.OpenGL
 
         public static void AddMeshInstance(ref NbMesh mesh, int instanceID)
         {
-
             //Find Insertion Index
             int insertionIndex = instance_counter;
             if (free_slots.Count > 0)

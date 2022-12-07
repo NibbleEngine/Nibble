@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NbCore.Platform.Graphics;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -56,7 +57,7 @@ namespace NbCore.Systems
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
                 MeshComponent mc = n.GetComponent<MeshComponent>() as MeshComponent;
-                bool instance_updated = false;
+                bool mesh_instance_updated = false;
                 
                 if (td.IsUpdated)
                 {
@@ -68,37 +69,79 @@ namespace NbCore.Systems
                         //instances that will be removed and instance that will be added
                         //which will be passed per frame update to the rendering system
                         //which has direct access to the renderer
-                        EngineRef.GetSystem<RenderingSystem>().Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
+                        GraphicsAPI.RemoveRenderInstance(ref mc.Mesh, mc);
                     }
                     else if (!td.IsOccluded && td.WasOccluded)
                     {
                         Log($"Adding Instance {n.Name}", LogVerbosityLevel.DEBUG);
-                        EngineRef.GetSystem<RenderingSystem>().Renderer.AddRenderInstance(ref mc, td);
+                        GraphicsAPI.AddRenderInstance(ref mc, td);
                     }
                     else if (!td.IsOccluded)
                     {
-                        instance_updated = true;
-                        EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceWorldMat(mc.Mesh, mc.InstanceID, td.WorldTransformMat);
-                        EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceWorldMatInv(mc.Mesh, mc.InstanceID, td.InverseTransformMat);
+                        mesh_instance_updated = true;
+                        GraphicsAPI.SetInstanceWorldMat(mc.Mesh, mc.InstanceID, td.WorldTransformMat);
+                        GraphicsAPI.SetInstanceWorldMatInv(mc.Mesh, mc.InstanceID, td.InverseTransformMat);
                     }
-
-                    td.IsUpdated = false; //Reset updated status to prevent further updates on the same frame update
                 }
 
                 //Update Instance Data
                 if (mc.IsUpdated && !td.IsOccluded)
                 {
                     //Upload Uniforms
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 0, mc.InstanceUniforms[0].Values);
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 1, mc.InstanceUniforms[1].Values);
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 2, mc.InstanceUniforms[2].Values);
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 3, mc.InstanceUniforms[3].Values);
-                    instance_updated = true;
-                    mc.IsUpdated = false;
+                    GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 0, mc.InstanceUniforms[0].Values);
+                    GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 1, mc.InstanceUniforms[1].Values);
+                    GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 2, mc.InstanceUniforms[2].Values);
+                    GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 3, mc.InstanceUniforms[3].Values);
+                    mesh_instance_updated = true;
                 }
 
+                //Update 
+                if (mesh_instance_updated)
+                    GraphicsAPI.UpdateInstance(mc.Mesh, mc.InstanceID);
+                    
+            }
+        }
+
+        private void UpdateImposterNodes(SceneGraph graph)
+        {
+            //Add instances to all non occluded Nodes
+            foreach (SceneGraphNode n in graph.ImposterNodes)
+            {
+                TransformData td = TransformationSystem.GetEntityTransformData(n);
+                ImposterComponent ic = n.GetComponent<ImposterComponent>() as ImposterComponent;
+                bool instance_updated = false;
+
+                if (td.IsUpdated)
+                {
+                    if (td.IsOccluded && !td.WasOccluded)
+                    {
+                        //Remove Instance
+                        Log($"Removing Instance {n.Name}", LogVerbosityLevel.DEBUG);
+                        GraphicsAPI.RemoveRenderInstance(ref ic.Mesh, ic); //Remove Imposter Instance
+                    }
+                    else if (!td.IsOccluded && td.WasOccluded)
+                    {
+                        Log($"Adding Instance {n.Name}", LogVerbosityLevel.DEBUG);
+                        GraphicsAPI.AddRenderInstance(ref ic, td);
+                    }
+                    else if (!td.IsOccluded)
+                    {
+                        instance_updated = true;
+                        GraphicsAPI.SetInstanceWorldMat(ic.Mesh, ic.InstanceID, td.WorldTransformMat);
+                        GraphicsAPI.SetInstanceWorldMatInv(ic.Mesh, ic.InstanceID, td.InverseTransformMat);
+                    }
+                }
+
+                //Update Imposter Data
+                if (ic.Data.IsUpdated)
+                {
+                    GraphicsAPI.SetImposterInstanceData(ic);
+                }
+                
+
+                //Update 
                 if (instance_updated)
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.UpdateInstance(mc.Mesh, mc.InstanceID);
+                    GraphicsAPI.UpdateInstance(ic?.Mesh, ic.InstanceID);
             }
         }
 
@@ -109,7 +152,8 @@ namespace NbCore.Systems
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
                 LightComponent lc = n.GetComponent<LightComponent>() as LightComponent;
-                bool instance_updated = false;
+                bool light_instance_updated = false;
+
 
                 if (!lc.Data.IsRenderable && lc.InstanceID != -1)
                 {
@@ -119,36 +163,67 @@ namespace NbCore.Systems
                     //instances that will be removed and instance that will be added
                     //which will be passed per frame update to the rendering system
                     //which has direct access to the renderer
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
+                    GraphicsAPI.RemoveLightRenderInstance(ref lc.Mesh, lc);
                 }
                 else if (lc.Data.IsRenderable && lc.InstanceID == -1)
                 {
                     Log($"Adding Light Volume Instance {n.Name}", LogVerbosityLevel.DEBUG);
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.AddLightRenderInstance(ref lc, td);
+                    GraphicsAPI.AddLightRenderInstance(ref lc, td);
                 }
                 else if (lc.Data.IsRenderable)
                 {
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetInstanceWorldMat(lc.Mesh, lc.InstanceID, td.WorldTransformMat);
-                    instance_updated = true;
+                    GraphicsAPI.SetInstanceWorldMat(lc.Mesh, lc.InstanceID, td.WorldTransformMat);
+                    light_instance_updated = true;
                 }
 
                 if (lc.Data.IsUpdated && lc.InstanceID != -1)
                 {
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.SetLightInstanceData(lc);
-                    instance_updated = true;
-                    lc.Data.IsUpdated = false;
+                    GraphicsAPI.SetLightInstanceData(lc);
+                    light_instance_updated = true;
                 }
 
-                if (instance_updated)
-                    EngineRef.GetSystem<RenderingSystem>().Renderer.UpdateInstance(lc.Mesh, lc.InstanceID);
+                if (light_instance_updated)
+                    GraphicsAPI.UpdateInstance(lc.Mesh, lc.InstanceID);
 
             }
         }
 
+        private void ResetComponentUpdateStatus(SceneGraph graph)
+        {
+            foreach (SceneGraphNode n in graph.Nodes)
+            {
+                if (n.HasComponent<ImposterComponent>())
+                {
+                    ImposterComponent ic = n.GetComponent<ImposterComponent>();
+                    ic.Data.IsUpdated = false;
+                    ic.IsUpdated = false;
+                }
+
+                if (n.HasComponent<MeshComponent>())
+                {
+                    MeshComponent ic = n.GetComponent<MeshComponent>();
+                    ic.IsUpdated = false;
+                }
+
+                if (n.HasComponent<LightComponent>())
+                {
+                    LightComponent ic = n.GetComponent<LightComponent>();
+                    ic.IsUpdated = false;
+                    ic.Data.IsUpdated = false;
+                }
+
+            }
+        }
+
+
         public void UpdateSceneGraph(SceneGraph graph)
         {
             UpdateMeshNodes(graph);
+            UpdateImposterNodes(graph);
             UpdateLightNodes(graph);
+
+            //Reset Component Update Status
+            ResetComponentUpdateStatus(graph);
         }
 
         public void ClearSceneGraph(SceneGraph graph)

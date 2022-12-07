@@ -1,4 +1,5 @@
-﻿using NbCore.Math;
+﻿using NbCore.Common;
+using NbCore.Math;
 
 namespace NbCore.Platform.Windowing
 {
@@ -27,10 +28,22 @@ namespace NbCore.Platform.Windowing
         public NbMouseWheelEventHandler OnMouseWheel;
         public NbResizeEventHandler OnResize;
         public NbTextInputEventHandler OnTextInput;
-        
-        public virtual NbVector2i Size { get; set; }
 
+        public virtual NbVector2i Size { get; set; }
+        public virtual NbVector2 MousePosition { get; }
+        public virtual NbVector2 MouseScroll { get; }
+        public virtual NbVector2 MouseScrollPrevious { get; }
+        public virtual NbVector2 MouseScrollDelta { get; }
         public virtual NbVector2i ClientSize { get; }
+
+        public virtual bool IsKeyDown(NbKey key) { throw new System.NotImplementedException(); }
+        public virtual bool IsKeyPressed(NbKey key) { throw new System.NotImplementedException(); }
+        public virtual bool IsKeyReleased(NbKey key) { throw new System.NotImplementedException(); }
+        public virtual bool IsMouseButtonDown(NbMouseButton btn) { throw new System.NotImplementedException(); }
+        public virtual bool IsMouseButtonPressed(NbMouseButton btn) { throw new System.NotImplementedException(); }
+        public virtual bool IsMouseButtonReleased(NbMouseButton btn) { throw new System.NotImplementedException(); }
+
+
 
         public void InvokeMouseButtonDownEvent(NbMouseButtonArgs args)
         {
@@ -57,6 +70,10 @@ namespace NbCore.Platform.Windowing
             OnTextInput?.Invoke(args);
         }
 
+        public void Log(string msg, LogVerbosityLevel lvl)
+        {
+            Callbacks.Log(this, msg, lvl);
+        }
 
     }
 }

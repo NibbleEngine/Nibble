@@ -1,10 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-#if OPENGL
-using NbCore.Platform.Graphics.OpenGL; 
-#endif
-
 using NbCore;
 using NbCore.Common;
 using NbCore.Platform.Graphics;
@@ -48,7 +44,7 @@ namespace NbCore.Systems
 
         //Entity Managers used by the rendering system
         public readonly ObjectManager<ulong, NbMeshData> MeshDataMgr = new();
-        public readonly MaterialManager MaterialMgr = new();
+        public readonly NbMaterialManager MaterialMgr = new();
         public readonly GeometryManager GeometryMgr = new();
         public readonly TextureManager TextureMgr = new();
         public readonly ShaderManager ShaderMgr = new();
@@ -199,46 +195,29 @@ namespace NbCore.Systems
             //Store Mesh Data Here
             MeshDataMgr.Add(mesh.Data.Hash, mesh.Data);
 
-            //Add to MeshGroup
-            if (mesh.Group != null)
-                AddNewMeshGroup(mesh.Group);
-        }
-
-        public void RegisterEntity(MeshComponent mc)
-        {
-            process_model(mc);
-        }   
-
-        private void process_model(MeshComponent m)
-        {
-            if (m == null)
-                return;
-            
-            bool connect_material_to_shader = false;
             bool save_to_group = false;
             //Explicitly handle locator, scenes and collision meshes
-            switch (m.Mesh.Type)
+            switch (mesh.Type)
             {
                 case (NbMeshType.Mesh):
                     {
-                        connect_material_to_shader = true;
                         save_to_group = true;
                         break;
                     }
-                case (NbMeshType.Locator):  
+                case (NbMeshType.Locator):
                     {
-                        if (!locatorMeshList.Contains(m.Mesh))
-                            locatorMeshList.Add(m.Mesh);
+                        if (!locatorMeshList.Contains(mesh))
+                            locatorMeshList.Add(mesh);
                         break;
                     }
                 case (NbMeshType.Collision):
-                    collisionMeshList.Add(m.Mesh);
+                    collisionMeshList.Add(mesh);
                     break;
                 case (NbMeshType.Joint):
-                    jointMeshList.Add(m.Mesh);
+                    jointMeshList.Add(mesh);
                     break;
                 case (NbMeshType.Light):
-                    lightMeshList.Add(m.Mesh);
+                    lightMeshList.Add(mesh);
                     break;
                 case (NbMeshType.LightVolume):
                     {
@@ -248,37 +227,46 @@ namespace NbCore.Systems
             }
 
             //Check if the shader has been registered to the rendering system
-            if (!ShaderMgr.ShaderIDExists(m.Mesh.Material.Shader.ID))
+            if (mesh.Material != null && mesh.Material.Shader != null)
             {
-                ShaderMgr.AddShader(m.Mesh.Material.Shader);
-            }
-
-            //Add all meshes to the global meshlist
-            if (!globalMeshList.Contains(m.Mesh))
-                globalMeshList.Add(m.Mesh);
-
-            //Organize Meshes to Meshgroup
-            if (m.Mesh.Group == null && save_to_group)
-            {
-                if (!MeshGroupDict[0].Meshes.Contains(m.Mesh))
+                if (!ShaderMgr.ShaderIDExists(mesh.Material.Shader.ID))
                 {
-                    MeshGroupDict[0].Meshes.Add(m.Mesh);
-                    m.Mesh.Group = MeshGroupDict[0];
+                    ShaderMgr.AddShader(mesh.Material.Shader);
                 }
-                    
             }
             
-        }
+            //Add all meshes to the global meshlist
+            if (!globalMeshList.Contains(mesh))
+                globalMeshList.Add(mesh);
 
-        private void process_models(SceneGraphNode root)
+            //Add mesh to the default mesh group if it is not assigned to any group
+            if (save_to_group && mesh.Group == null)
+                MeshGroupDict[0].AddMesh(mesh); //Add to default mesh group
+        }
+        
+        
+        public void RegisterEntity(MeshComponent mc)
+        {
+            if (mc == null)
+                return;
+
+            if (mc.Mesh == null)
+                return;
+
+            RegisterEntity(mc.Mesh);
+            if (mc.Mesh.Group != null)
+                AddNewMeshGroup(mc.Mesh.Group);
+        }   
+
+        private void RegisterEntity(SceneGraphNode root)
         {
             MeshComponent mc = root.GetComponent<MeshComponent>() as MeshComponent;
-            process_model(mc);
+            RegisterEntity(mc);
             
             //Repeat process with children
             foreach (SceneGraphNode child in root.Children)
             {
-                process_models(child);
+                RegisterEntity(child);
             }
         }
 
@@ -314,6 +302,7 @@ namespace NbCore.Systems
             OpenMeshGroups[mg.ID] = mg;
         }
 
+        
         public void DeleteOpenMeshGroup(int id)
         {
             if (!OpenMeshGroups.ContainsKey(id))
@@ -619,7 +608,7 @@ namespace NbCore.Systems
             NbMaterial mat = MaterialMgr.GetByName("redMat");
             NbShader shader = mat.Shader;
             Renderer.SetProgram(mat.Shader.ProgramID);
-
+            
             Renderer.RenderQuad(EngineRef.GetMesh(NbHasher.Hash("default_renderquad")),
                 shader, shader.CurrentState);
         }
@@ -628,10 +617,10 @@ namespace NbCore.Systems
         {
             //Set polygon mode
             GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
-            
-            foreach(NbMeshGroup mg in MeshGroups)
-            {
+            Renderer.SetCullFace(false); //TODO: REMOVE
 
+            foreach (NbMeshGroup mg in MeshGroups)
+            {
                 Renderer.BindGroupBuffer(mg);
                 foreach (NbMesh mesh in mg.Meshes)
                 {
@@ -645,7 +634,8 @@ namespace NbCore.Systems
                     frameStats.RenderedIndices += mesh.InstanceCount * mesh.MetaData.BatchCount;
                 }
             }
-            
+
+            Renderer.SetCullFace(true); //TODO: REMOVE
             //Set polygon mode
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         }
@@ -842,7 +832,7 @@ namespace NbCore.Systems
         }
 
         //Rendering Mechanism
-        public void testrender(double dt)
+        public void render(double dt)
         {
             frameStats.Clear();
             //Previous frame time but makes sense
@@ -1201,25 +1191,26 @@ namespace NbCore.Systems
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
             GL.DrawBuffer(DrawBufferMode.ColorAttachment0); //Draw to the color channel only
 
-            GL.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.ColorBufferBit);
-            
+            Renderer.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
+
+
             //Enable Blend
             //At first render the static meshes
             //GL.Enable(EnableCap.Blend);
-            GL.Disable(EnableCap.CullFace);
             
-
+            Renderer.SetCullFace(false);
+            Renderer.SetBlend(true);
             GL.BlendEquation(BlendEquationMode.FuncAdd);
             GL.BlendFunc(0, BlendingFactorSrc.One, BlendingFactorDest.One);
 
             //Disable DepthTest and Depth Write
             GL.DepthMask(false);
-            GL.Disable(EnableCap.DepthTest);
-
-            NbMesh mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere"));
+            Renderer.SetDepthTest(false);
             
-            GL.UseProgram(shader_conf.ProgramID);
+            NbMesh mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere"));
 
+            Renderer.EnableShaderProgram(shader_conf);
+            
             //Upload samplers
             string[] sampler_names = new string[] { "albedoTex", "depthTex", "normalTex", "parameterTex01", "parameterTex02" };
             int[] texture_ids = new int[] { gBuffer.GetTexture(NbFBOAttachment.Attachment0).texID,
@@ -1245,10 +1236,9 @@ namespace NbCore.Systems
                 Renderer.RenderMesh(mesh);
 
             GL.DepthMask(true);
-            GL.Enable(EnableCap.DepthTest);
-            GL.Enable(EnableCap.CullFace);
-            GL.Disable(EnableCap.Blend);
-
+            Renderer.SetDepthTest(true);
+            Renderer.SetCullFace(true);
+            Renderer.SetBlend(false);
         }
 
 #endregion Rendering Methods
@@ -1296,7 +1286,7 @@ namespace NbCore.Systems
             }
             
             //Render Scene
-            testrender(dt); //Render Everything
+            render(dt); //Render Everything
         }
 
         public override void OnFrameUpdate(double dt)

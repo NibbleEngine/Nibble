@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace NbCore.Managers
+namespace NbCore
 {
-    sealed public class MaterialManager : EntityManager<NbMaterial>
+    sealed public class NbMaterialManager : NbEntityManager<NbMaterial>
     {
         public readonly Dictionary<string, NbMaterial> MaterialNameMap = new();
 

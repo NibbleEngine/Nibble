@@ -3,20 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
 using NbCore.Math;
-using OpenTK.Graphics.OpenGL4;
-using System.Linq;
-using System.ComponentModel;
-using PixelFormat = OpenTK.Graphics.OpenGL4.PixelFormat;
-using System.Collections.ObjectModel;
-using System.Windows.Input;
-using System.Runtime.InteropServices;
-using NbCore.Platform.Graphics.OpenGL; //TODO: Abstract
-using NbCore.Common;
-using NbCore.Utils;
 
 namespace NbCore
 {
@@ -31,7 +18,6 @@ namespace NbCore
         Int2101010Rev,
         Int,
     }
-    
     
 
     public enum NbRenderPass

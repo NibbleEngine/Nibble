@@ -12,6 +12,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json.Schema;
+using NbCore.Platform.Graphics;
 
 namespace NbCore
 {
@@ -356,9 +357,9 @@ namespace NbCore
                     //Register mesh, material and the corresponding shader if necessary
                     MeshComponent mc = e.GetComponent<MeshComponent>() as MeshComponent;
 
-                    RegisterEntity(mc.Mesh);
                     RegisterEntity(mc.Mesh.Material);
-
+                    RegisterEntity(mc.Mesh);
+                    
                     GetSystem<RenderingSystem>().RegisterEntity(mc); //Register Mesh to Rendering System
                 }
 
@@ -534,24 +535,24 @@ namespace NbCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GLSLShaderSource GetShaderSourceByFilePath(string path)
+        public NbShaderSource GetShaderSourceByFilePath(string path)
         {
             return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.ShaderSource)
-                .Find(x => ((GLSLShaderSource)x).SourceFilePath == FileUtils.FixPath(path)) as GLSLShaderSource;
+                .Find(x => ((NbShaderSource)x).SourceFilePath == FileUtils.FixPath(path)) as NbShaderSource;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GLSLShaderConfig GetShaderConfigByName(string name)
+        public NbShaderConfig GetShaderConfigByName(string name)
         {
             return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.ShaderConfig)
-                .Find(x => ((GLSLShaderConfig)x).Name == name) as GLSLShaderConfig;
+                .Find(x => ((NbShaderConfig)x).Name == name) as NbShaderConfig;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GLSLShaderConfig GetShaderConfigByHash(ulong hash)
+        public NbShaderConfig GetShaderConfigByHash(ulong hash)
         {
             return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.ShaderConfig)
-                .Find(x => ((GLSLShaderConfig)x).Hash == hash) as GLSLShaderConfig;
+                .Find(x => ((NbShaderConfig)x).Hash == hash) as NbShaderConfig;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -599,6 +600,7 @@ namespace NbCore
             //Initialize the render manager
             GetSystem<RenderingSystem>().init();
 
+            //TODO: These are editor resources, move them to the editor
             //Load Resources 
             LoadDefaultResources();
             AddDefaultShaderSources();
@@ -636,7 +638,7 @@ namespace NbCore
                         if (GetShaderSourceByFilePath(filepath) == null)
                         {
                             //Construction includes registration
-                            GLSLShaderSource ss = new(filepath, true);
+                            NbShaderSource ss = new(filepath, true);
                         }
                     }
                 }
@@ -654,7 +656,7 @@ namespace NbCore
             int i = 0;
             while (i < sourceList.Count) //This way can account for new entries 
             {
-                ((GLSLShaderSource)sourceList[i]).Process();
+                ((NbShaderSource)sourceList[i]).Process();
                 i++;
             }
 
@@ -665,7 +667,7 @@ namespace NbCore
         {
             //Create Debug Shader Config
             //Debug Shader
-            GLSLShaderConfig conf;
+            NbShaderConfig conf;
             conf = CreateShaderConfig(GetShaderSourceByFilePath("Shaders/Simple_VSEmpty.glsl"),
                                       GetShaderSourceByFilePath("Shaders/Simple_FSEmpty.glsl"),
                                       GetShaderSourceByFilePath("Shaders/Simple_GS.glsl"), null, null,
@@ -802,7 +804,7 @@ namespace NbCore
         {
             //Populate shader list
 
-            GLSLShaderConfig shader_conf;
+            NbShaderConfig shader_conf;
             NbShader shader;
 
             //LIT
@@ -927,8 +929,8 @@ namespace NbCore
         {
             //Cross Material
             NbMaterial mat;
-            GLSLShaderConfig config_deferred = GetShaderConfigByName("UberShader_Deferred");
-            GLSLShaderConfig config_deferred_lit = GetShaderConfigByName("UberShader_Deferred_Lit");
+            NbShaderConfig config_deferred = GetShaderConfigByName("UberShader_Deferred");
+            NbShaderConfig config_deferred_lit = GetShaderConfigByName("UberShader_Deferred_Lit");
             NbShader shader;
 
             mat = new()
@@ -938,17 +940,8 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
             mat.AddFlag(NbMaterialFlagEnum._NB_VERTEX_COLOUR);
-            NbUniform uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            NbVector4 vec = new(1.0f, 1.0f, 1.0f, 1.0f);
-            uf.Bind(ref vec);
+            NbUniform uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 1.0f, 1.0f, 1.0f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
             mat.Uniforms.Add(uf);
 
             shader = CreateShader(config_deferred, GetMaterialShaderDirectives(mat));
@@ -956,7 +949,7 @@ namespace NbCore
             mat.AttachShader(shader);
 #if DEBUG
             //Report UBOs
-            GetSystem<RenderingSystem>().Renderer.ShaderReport(shader);
+            GraphicsAPI.ShaderReport(shader);
 #endif
             RegisterEntity(mat); //Register Material
 
@@ -968,17 +961,8 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(1.0f, 0.0f, 0.0f, 1.0f);
-            uf.Bind(ref vec);
+            uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 1.0f, 0.0f, 0.0f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
 
             mat.Uniforms.Add(uf);
 
@@ -1001,17 +985,8 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(1.0f, 1.0f, 0.0f, 1.0f);
-            uf.Bind(ref vec);
+            uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 1.0f, 1.0f, 0.0f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
 
             mat.Uniforms.Add(uf);
 
@@ -1034,17 +1009,8 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(0.7f, 0.7f, 0.7f, 1.0f);
-            uf.Bind(ref vec);
+            uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 0.7f, 0.7f, 0.7f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
 
             mat.Uniforms.Add(uf);
 
@@ -1066,19 +1032,10 @@ namespace NbCore
                 Name = "redMat"
             };
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(0.7f, 0.7f, 0.7f, 1.0f);
-            uf.Bind(ref vec);
+            NbUniform uf1 = new(NbUniformType.Vector4, "gMaterialColourVec4", 0.7f, 0.7f, 0.7f, 1.0f);
+            uf1.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
+            mat.Uniforms.Add(uf1);
 
-            mat.Uniforms.Add(uf);
 
             shader_hash = CalculateShaderHash(config_deferred, GetMaterialShaderDirectives(mat));
             shader = GetShaderByHash(shader_hash);
@@ -1100,17 +1057,8 @@ namespace NbCore
             };
             mat.AddFlag(NbMaterialFlagEnum._NB_UNLIT);
 
-            uf = new()
-            {
-                Name = "gMaterialColourVec4",
-                State = new()
-                {
-                    Type = NbUniformType.Vector4,
-                    ShaderBinding = "mpCustomPerMaterial.uniforms[0]",
-                }
-            };
-            vec = new(0.8f, 0.8f, 0.2f, 1.0f);
-            uf.Bind(ref vec);
+            uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 0.8f, 0.8f, 0.2f, 1.0f);
+            uf.ShaderBinding = "mpCustomPerMaterial.uniforms[0]";
 
             mat.Uniforms.Add(uf);
             shader_hash = CalculateShaderHash(config_deferred, GetMaterialShaderDirectives(mat));
@@ -1367,22 +1315,18 @@ namespace NbCore
             };
 
             NbShader shader = null;
-            GLSLShaderConfig conf;
+            NbShaderConfig conf;
 
             //Sphere Material
             NbMaterial mat = new();
             mat.Name = "default_scn";
-            
-            NbUniform uf = new();
-            NbVector4 vec = new(1.0f, 0.0f, 0.0f, 1.0f);
-            uf.Name = "gMaterialColourVec4";
-            uf.Bind(ref vec);
+            NbVector4 vec;
+
+            NbUniform uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 1.0f, 0.0f, 0.0f, 1.0f);
             mat.Uniforms.Add(uf);
 
-            uf = new();
-            uf.Name = "gMaterialParamsVec4";
-            vec = new(0.15f, 0.0f, 0.2f, 0.0f);
-            uf.Bind(ref vec);
+            uf = new(NbUniformType.Vector4, "gMaterialParamsVec4", 0.15f, 0.0f, 0.2f, 0.0f);
+
             //x: roughness
             //z: metallic
             mat.Uniforms.Add(uf);
@@ -1466,7 +1410,7 @@ namespace NbCore
             {
                 Mesh = GetMesh(NbHasher.Hash("default_cross"))
             };
-            
+
             n.AddComponent<MeshComponent>(mc);
 
             return n;
@@ -1600,10 +1544,23 @@ namespace NbCore
             };
             n.AddComponent<LightComponent>(lc);
 
+            //Add Imposter Component
+            ImposterComponent ic = new()
+            {
+                Mesh = EngineRef.GetMesh(NbHasher.Hash("default_imposter_quad")),
+                Data = new()
+                {
+                    Color = new(1.0f, 0.0f, 0.0f),
+                    Width = 1.0f,
+                    Height = 1.0f,
+                    ImageID = 0
+                }
+            };
+            n.AddComponent<ImposterComponent>(ic);
+
             return n;
         }
 
-        
         #endregion
         
         #region GLRelatedRequests
@@ -1663,7 +1620,7 @@ namespace NbCore
             return CalculateShaderHash(shader.GetShaderConfig(), shader.directives);
         }
 
-        public ulong CalculateShaderHash(GLSLShaderConfig conf, List<string> extradirectives = null)
+        public ulong CalculateShaderHash(NbShaderConfig conf, List<string> extradirectives = null)
         {
             ulong hash = conf.Hash;
             if (extradirectives != null)
@@ -1677,13 +1634,13 @@ namespace NbCore
             return hash;
         }
 
-        public GLSLShaderConfig CreateShaderConfig(GLSLShaderSource vs, GLSLShaderSource fs,
-                                                GLSLShaderSource gs, GLSLShaderSource tcs,
-                                                GLSLShaderSource tes, NbShaderMode mode,
+        public NbShaderConfig CreateShaderConfig(NbShaderSource vs, NbShaderSource fs,
+                                                NbShaderSource gs, NbShaderSource tcs,
+                                                NbShaderSource tes, NbShaderMode mode,
                                                 string name, bool isGeneric = false)
         {
 
-            GLSLShaderConfig shader_conf = new GLSLShaderConfig(vs, fs, gs, tcs, tes, mode);
+            NbShaderConfig shader_conf = new NbShaderConfig(vs, fs, gs, tcs, tes, mode);
             shader_conf.Name = name;
             shader_conf.IsGeneric = isGeneric;
             return shader_conf;
@@ -1699,7 +1656,7 @@ namespace NbCore
             return script;
         }
 
-        public NbShader CreateShader(GLSLShaderConfig conf, List<string> extradirectives = null)
+        public NbShader CreateShader(NbShaderConfig conf, List<string> extradirectives = null)
         {
             NbShader shader = new(conf);
             if (extradirectives != null)
@@ -1707,7 +1664,7 @@ namespace NbCore
             return shader;
         }
 
-        public void SetMaterialShader(NbMaterial mat, GLSLShaderConfig conf)
+        public void SetMaterialShader(NbMaterial mat, NbShaderConfig conf)
         {
             //Calculate requested shader hash
             ulong shader_hash = CalculateShaderHash(conf, GetMaterialShaderDirectives(mat));
@@ -1736,7 +1693,7 @@ namespace NbCore
                 return false;
             }
 
-            if (!Platform.Graphics.GraphicsAPI.CompileShader(shader))
+            if (!GraphicsAPI.CompileShader(shader))
                 return false;
             
             shader.Hash = CalculateShaderHash(shader);
@@ -1761,7 +1718,7 @@ namespace NbCore
             writer.WriteStartObject();
 
             //Step A: Export SceneGraph
-            List<GLSLShaderConfig> configs = new();
+            List<NbShaderConfig> configs = new();
             List<NbMaterial> materials = new();
             List<NbTexture> textures = new();
             List<string> scripts = new();
@@ -1828,7 +1785,7 @@ namespace NbCore
             //Step B: Export Shader Configurations
             writer.WritePropertyName("SHADER_CONFIGS");
             writer.WriteStartArray();
-            foreach (GLSLShaderConfig conf in configs)
+            foreach (NbShaderConfig conf in configs)
                 IO.NbSerializer.Serialize(conf, writer);
             writer.WriteEndArray();
 
@@ -1886,7 +1843,7 @@ namespace NbCore
 
             foreach (var s in ob["SHADER_CONFIGS"])
             {
-                GLSLShaderConfig conf = (GLSLShaderConfig)IO.NbDeserializer.Deserialize(s);
+                NbShaderConfig conf = (NbShaderConfig)IO.NbDeserializer.Deserialize(s);
                 
                 if (GetShaderConfigByHash(conf.Hash) == null)
                     RegisterEntity(conf);
@@ -1947,7 +1904,7 @@ namespace NbCore
             {
                 MeshComponent mc = node.GetComponent<MeshComponent>() as MeshComponent;
                 if (mc.InstanceID >= 0)
-                    GetSystem<RenderingSystem>().Renderer.RemoveRenderInstance(ref mc.Mesh, mc);
+                    GraphicsAPI.RemoveRenderInstance(ref mc.Mesh, mc);
             }
 
             //Light Node Disposal
@@ -1955,7 +1912,7 @@ namespace NbCore
             {
                 LightComponent lc = node.GetComponent<LightComponent>() as LightComponent;
                 if (lc.InstanceID >= 0)
-                    GetSystem<RenderingSystem>().Renderer.RemoveLightRenderInstance(ref lc.Mesh, lc);
+                    GraphicsAPI.RemoveLightRenderInstance(ref lc.Mesh, lc);
             }
 
             if (node.HasComponent<AnimComponent>())

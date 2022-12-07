@@ -4,7 +4,7 @@ using System.Text;
 
 namespace NbCore.Managers
 {
-    public class GeometryManager :EntityManager<Entity>
+    public class GeometryManager : NbEntityManager<Entity>
     {
         public Dictionary<string, GeomObject> Geoms = new();
         

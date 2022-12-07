@@ -151,7 +151,7 @@ namespace NbCore
     {
         public NbMaterial mat;
         public NbShader shader;
-        public GLSLShaderConfig config;
+        public NbShaderConfig config;
     }
 
 }

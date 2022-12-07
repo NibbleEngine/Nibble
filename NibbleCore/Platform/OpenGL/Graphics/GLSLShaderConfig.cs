@@ -8,12 +8,12 @@ namespace NbCore
     public delegate void ShaderConfigUpdatedEventHandler();
 
     [NbSerializable]
-    public class GLSLShaderConfig : Entity
+    public class NbShaderConfig : Entity
     {
         public string Name = "";
         public ulong Hash;
         public bool IsGeneric = false;
-        public Dictionary<NbShaderSourceType, GLSLShaderSource> Sources = new();
+        public Dictionary<NbShaderSourceType, NbShaderSource> Sources = new();
         public ShaderConfigUpdatedEventHandler IsUpdated;
 
         //Store the raw shader text temporarily
@@ -25,14 +25,14 @@ namespace NbCore
                                        "#extension GL_ARB_texture_query_lod : enable\n" +
                                        "#extension GL_ARB_gpu_shader5 : enable\n";
 
-        public GLSLShaderConfig() : base(EntityType.ShaderConfig)
+        public NbShaderConfig() : base(EntityType.ShaderConfig)
         {
 
         }
 
-        public GLSLShaderConfig(GLSLShaderSource vvs,
-            GLSLShaderSource ffs, GLSLShaderSource ggs,
-            GLSLShaderSource ttcs, GLSLShaderSource ttes,
+        public NbShaderConfig(NbShaderSource vvs,
+            NbShaderSource ffs, NbShaderSource ggs,
+            NbShaderSource ttcs, NbShaderSource ttes,
             NbShaderMode mode) : base(EntityType.ShaderConfig)
         {
             ShaderMode = mode;
@@ -48,9 +48,9 @@ namespace NbCore
             Hash = GetHash(vvs,ffs,ggs,ttcs, ttes, mode);
         }
 
-        public static ulong GetHash(GLSLShaderSource vvs,
-            GLSLShaderSource ffs, GLSLShaderSource ggs,
-            GLSLShaderSource ttcs, GLSLShaderSource ttes,
+        public static ulong GetHash(NbShaderSource vvs,
+            NbShaderSource ffs, NbShaderSource ggs,
+            NbShaderSource ttcs, NbShaderSource ttes,
             NbShaderMode mode)
         {
             ulong hs = (ulong)mode;
@@ -68,20 +68,20 @@ namespace NbCore
             return hs;
         }
 
-        public void AddSource(NbShaderSourceType t, GLSLShaderSource s)
+        public void AddSource(NbShaderSourceType t, NbShaderSource s)
         {
             if (s == null)
                 return;
             Sources[t] = s;
 
             //Add shader reference to source object
-            List<GLSLShaderSource> RefShaderSources = new();
+            List<NbShaderSource> RefShaderSources = new();
             s.GetReferencedShaderSources(ref RefShaderSources);
-            foreach (GLSLShaderSource ss in RefShaderSources)
+            foreach (NbShaderSource ss in RefShaderSources)
                 ss.IsUpdated += OnSourceUpdate;
         }   
 
-        public override GLSLShaderConfig Clone()
+        public override NbShaderConfig Clone()
         {
             throw new NotImplementedException();
         }
@@ -117,12 +117,12 @@ namespace NbCore
             writer.WriteEndObject();
         }
 
-        public static GLSLShaderConfig Deserialize(Newtonsoft.Json.Linq.JToken token)
+        public static NbShaderConfig Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
             string name = token.Value<string>("Name");
 
-            GLSLShaderSource vs = null;
-            GLSLShaderSource fs = null;
+            NbShaderSource vs = null;
+            NbShaderSource fs = null;
 
             foreach (var ct in token["Sources"])
             {
@@ -132,7 +132,7 @@ namespace NbCore
                     vs = Common.RenderState.engineRef.GetShaderSourceByFilePath(path);
                     if (vs == null)
                     {
-                        vs = new GLSLShaderSource(path, true);
+                        vs = new NbShaderSource(path, true);
                     }
                 } else if (ct["FragmentShader"] != null)
                 {
@@ -140,14 +140,14 @@ namespace NbCore
                     fs = Common.RenderState.engineRef.GetShaderSourceByFilePath(path);
                     if (fs == null)
                     {
-                        fs = new GLSLShaderSource(path, true);
+                        fs = new NbShaderSource(path, true);
                     }
                 }
             }
 
             NbShaderMode mode = (NbShaderMode) token.Value<int>("ShaderMode");
 
-            GLSLShaderConfig config = new GLSLShaderConfig(vs, fs, null, null, null, mode);
+            NbShaderConfig config = new NbShaderConfig(vs, fs, null, null, null, mode);
             config.Name = name;
             config.Hash = GetHash(vs, fs, null, null, null, mode);
             

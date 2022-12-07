@@ -1,23 +1,16 @@
-﻿using System;
-using OpenTK;
-using NbCore.Math;
+﻿using NbCore.Math;
 using NbCore.Common;
-using NbCore.Systems;
-using NbCore.Utils;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
 
 
-namespace NbCore.Platform.Graphics.OpenGL
+namespace NbCore
 {
 
     //Light attributes are saved starting from the first uniform of the MeshInstance struct
     //In particular:
     //First uniform (x: fov. y: intensity, z: falloff, w:)
 
-    public class GLLightBufferManager : GLMeshBufferManager
+    public class NbLightBufferManager : NbMeshBufferManager
     {
-
         public static void AddRenderInstance(ref LightComponent lc, TransformData td)
         {
             NbMesh mesh = lc.Mesh;
@@ -39,12 +32,12 @@ namespace NbCore.Platform.Graphics.OpenGL
             SetInstanceNormalMat(mesh, lc.InstanceID, NbMatrix4.Transpose(actualWorldMatInv));
 
             //LightAttributes
-            SetLightInstanceData(lc);
+            SetInstanceData(lc);
 
             mesh.InstanceCount++;
         }
         
-        public static void SetLightInstanceData(LightComponent lc)
+        public static void SetInstanceData(LightComponent lc)
         {
             SetInstanceFOV(lc);
             SetInstanceIntensity(lc);

@@ -9,17 +9,24 @@ namespace NbCore.Platform.Windowing
 {
     public class NbMouseButtonArgs
     {
-        public static readonly Dictionary<MouseButton, NbMouseButton> OpenTKButtonMap = new()
+        public static readonly Dictionary<MouseButton, NbMouseButton> OpenTKToNbKeyMap = new()
         {
             { MouseButton.Left, NbMouseButton.LEFT},
             { MouseButton.Right, NbMouseButton.RIGHT},
             { MouseButton.Middle, NbMouseButton.MIDDLE},
         };
 
+        public static readonly Dictionary<NbMouseButton, MouseButton> NbKeyToOpenTKMap = new()
+        {
+            { NbMouseButton.LEFT, MouseButton.Left},
+            { NbMouseButton.RIGHT, MouseButton.Right},
+            { NbMouseButton.MIDDLE, MouseButton.Middle},
+        };
+
         private MouseButtonEventArgs _mouseButtonEventArgs;
 
 
-        public NbMouseButtonArgs (MouseButtonEventArgs args)
+        public NbMouseButtonArgs(MouseButtonEventArgs args)
         {
             _mouseButtonEventArgs = args;
         }
@@ -36,7 +43,7 @@ namespace NbCore.Platform.Windowing
         {
             get
             {
-                return OpenTKButtonMap[_mouseButtonEventArgs.Button];
+                return OpenTKToNbKeyMap[_mouseButtonEventArgs.Button];
             }
         }
 

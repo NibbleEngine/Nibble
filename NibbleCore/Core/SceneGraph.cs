@@ -14,6 +14,7 @@ namespace NbCore
         public SceneGraphNode Root = null;
         public readonly List<SceneGraphNode> Nodes = new();
         public readonly List<SceneGraphNode> MeshNodes = new();
+        public readonly List<SceneGraphNode> ImposterNodes = new();
         public readonly List<SceneGraphNode> JointNodes = new();
         public readonly List<SceneGraphNode> SceneNodes = new();
         public readonly List<SceneGraphNode> LightNodes = new();
@@ -22,6 +23,7 @@ namespace NbCore
         {
             Nodes = new();
             MeshNodes = new();
+            ImposterNodes = new();
             SceneNodes = new();
             LightNodes = new();
             JointNodes = new();
@@ -40,6 +42,17 @@ namespace NbCore
         public SceneGraphNode GetNodeByName(string name)
         {
             return Nodes.Find(x => x.Name == name);
+        }
+
+        public SceneGraphNode GetJointNodeByJointID(int jointID)
+        {
+            foreach (SceneGraphNode node in JointNodes)
+            {
+                JointComponent jc = (JointComponent)node.GetComponent<JointComponent>();
+                if (jc.JointIndex == jointID)
+                    return node;
+            }
+            return null;
         }
 
         public void RemoveNode(SceneGraphNode n)
@@ -67,6 +80,9 @@ namespace NbCore
             if (n.HasComponent<MeshComponent>())
                 MeshNodes.Remove(n);
 
+            if (n.HasComponent<ImposterComponent>())
+                ImposterNodes.Remove(n);
+
             if (n.HasComponent<LightComponent>())
                 LightNodes.Remove(n);
 
@@ -92,6 +108,9 @@ namespace NbCore
             if (n.HasComponent<MeshComponent>())
                 MeshNodes.Add(n);
 
+            if (n.HasComponent<ImposterComponent>())
+                ImposterNodes.Add(n);
+
             if (n.HasComponent<LightComponent>())
                 LightNodes.Add(n);
 
@@ -107,6 +126,7 @@ namespace NbCore
             Root.Children.Clear();
             Nodes.Clear();
             MeshNodes.Clear();
+            ImposterNodes.Clear();
             SceneNodes.Clear();
             LightNodes.Clear();
             JointNodes.Clear();

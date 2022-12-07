@@ -4,7 +4,7 @@ using System.Text;
 
 namespace NbCore.Managers
 {
-    public class AnimationManager : EntityManager<Animation>
+    public class AnimationManager : NbEntityManager<Animation>
     {
         public bool AddAnimation(Animation o)
         {

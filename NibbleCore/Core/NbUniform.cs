@@ -1,85 +1,64 @@
+using NbCore.IO;
 using NbCore.Math;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.CodeDom;
 using System.Runtime.CompilerServices;
 
 namespace NbCore
 {
-
-    unsafe public class MyRef2<T>
+    //Not needed for now
+    public class DataRef<T>
     {
-        private T* _ref;
-        public ref T Ref
+        public T Data;
+
+        public DataRef()
         {
-            get
-            {
-                return ref *_ref;
-            }
-        }
-            
-        public MyRef2()
-        {
-            _ref = null;
         }
 
-        public void SetRef(ref T r)
+        public DataRef(T ob)
         {
-            _ref = (T*)Unsafe.AsPointer(ref r);
+            Data = ob;
         }
     }
 
-    public class MyRef<T>
-    {
-        T Ref { get; set; }
-    }
-
-    [NbSerializable]
     public class NbUniform
     {
         public string Name = "Uniform"; //Uniform custom name
-        private MyRef2<NbVector4> ValuesRef = new MyRef2<NbVector4>();
-        public NbUniformState State;
-        public bool IsBound = false;
-        
-        public NbUniform() 
+        public NbUniformType Type;
+        public string ShaderBinding;
+        public int ShaderLocation;
+        public NbVector4 Values;
+
+        public NbUniform()
         {
-            NbVector4 vec = new();
-            ValuesRef.SetRef(ref vec);
+
         }
-        
-        public NbUniform(string name, NbVector4 values)
+
+        public NbUniform(NbUniformType type, string name = "", float x = 0.0f, float y = 0.0f, float z = 0.0f, float w = 0.0f)
         {
             Name = name;
-            ValuesRef.SetRef(ref values);
-            State = new()
+            ShaderBinding = "";
+            ShaderLocation = -1;
+            Type = type;
+            Values = new(x, y, z, w);
+        }
+
+        public bool HasInitializedState
+        {
+            get
             {
-                ShaderBinding = "",
-                ShaderLocation = -1,
-                Type = NbUniformType.Float
-            };
+                bool status = true;
+                status &= ShaderLocation != -1;
+                status &= ShaderBinding != "";
+                return status;
+            }
         }
 
-        public void SetX(float x)
+        public void SetState(string binding, int loc)
         {
-            ValuesRef.Ref.X = x;
-        }
-
-        public void Bind(ref NbVector4 vec)
-        {
-            ValuesRef.SetRef(ref vec);
-            IsBound = true;
-        }
-
-        public void UnBind()
-        {
-            NbVector4 v = new();
-            ValuesRef.SetRef(ref v);
-            IsBound = false;
-        }
-        
-        public NbVector4 Values
-        {
-            get { return ValuesRef.Ref; }
+            ShaderBinding = binding;
+            ShaderLocation = loc;
         }
 
         public void Serialize(JsonTextWriter writer)
@@ -89,28 +68,30 @@ namespace NbCore
             writer.WriteValue(GetType().ToString());
             writer.WritePropertyName("Name");
             writer.WriteValue(Name);
-            writer.WritePropertyName("State");
-            IO.NbSerializer.Serialize(State, writer);
+            writer.WritePropertyName("Type");
+            writer.WriteValue(Type);
+            writer.WritePropertyName("ShaderBinding");
+            writer.WriteValue(ShaderBinding);
+            writer.WritePropertyName("ShaderLocation");
+            writer.WriteValue(ShaderLocation);
             writer.WritePropertyName("Values");
-            IO.NbSerializer.Serialize(Values, writer);
-            
+            NbSerializer.Serialize(Values, writer);
             writer.WriteEndObject();
         }
 
         public static NbUniform Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
-            NbUniform uf = new()
+            return new()
             {
-                Name = token.Value<string>("Name"),
-                State = (NbUniformState)IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("State"))
+                Name = (string)token.Value<Newtonsoft.Json.Linq.JToken>("Name"),
+                Type = (NbUniformType)IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("Type")),
+                ShaderBinding = (string)token.Value<Newtonsoft.Json.Linq.JToken>("ShaderBinding"),
+                ShaderLocation = (int)token.Value<Newtonsoft.Json.Linq.JToken>("ShaderLocation"),
+                Values = (NbVector4)IO.NbDeserializer.Deserialize(token),
             };
-
-            NbVector4 vec = (NbVector4)IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("Values"));
-            uf.Bind(ref vec);
-            return uf;
         }
 
-        
+
 
     }
 

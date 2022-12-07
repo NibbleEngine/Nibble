@@ -10,6 +10,7 @@ using NbCore.Common;
 using NbCore.Math;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using NbCore.Platform.Windowing;
 
 namespace NbCore.UI.ImGui
 {
@@ -29,8 +30,7 @@ namespace NbCore.UI.ImGui
         private int _windowWidth;
         private int _windowHeight;
 
-        private NbMouseState MouseState;
-        private NbKeyboardState KeyboardState;
+        private NbWindow WindowRef;
         private System.Numerics.Vector2 _scaleFactor = System.Numerics.Vector2.One;
         private float _scrollFactor = 0.5f;
         
@@ -182,9 +182,7 @@ void main()
 
             SetPerFrameImGuiData(deltaSeconds);
             UpdateImGuiInput();
-            //Reset Scrolling so that its not used till a new state is set
-            MouseState.Scroll = new NbVector2(0.0f);
-
+            
             _frameBegun = true;
             ImGuiNET.ImGui.NewFrame();
         }
@@ -206,37 +204,32 @@ void main()
 
         readonly List<char> PressedChars = new List<char>();
 
-        public void SetMouseState(NbMouseState state)
+        public void SetWindowRef(NbWindow win)
         {
-            MouseState = state;
-        }
-
-        public void SetKeyboardState(NbKeyboardState state)
-        {
-            KeyboardState = state;
+            WindowRef = win;
         }
 
         private void UpdateImGuiInput()
         {
             ImGuiIOPtr io = ImGuiNET.ImGui.GetIO();
 
-            io.MouseDown[0] = MouseState.IsButtonDown(NbMouseButton.LEFT);
-            io.MouseDown[1] = MouseState.IsButtonDown(NbMouseButton.RIGHT);
-            io.MouseDown[2] = MouseState.IsButtonDown(NbMouseButton.MIDDLE);
-            io.MouseWheel = _scrollFactor * MouseState.Scroll.Y;
-            io.MouseWheelH = _scrollFactor * MouseState.Scroll.X;
-
-            var screenPoint = new Vector2i((int)MouseState.Position.X, (int) MouseState.Position.Y);
+            io.MouseDown[0] = WindowRef.IsMouseButtonDown(NbMouseButton.LEFT);
+            io.MouseDown[1] = WindowRef.IsMouseButtonDown(NbMouseButton.RIGHT);
+            io.MouseDown[2] = WindowRef.IsMouseButtonDown(NbMouseButton.MIDDLE);
+            io.MouseWheel = _scrollFactor * WindowRef.MouseScrollDelta.Y;
+            io.MouseWheelH = _scrollFactor * WindowRef.MouseScrollDelta.X; 
+            //Console.WriteLine($"{WindowRef.MouseScroll.X} {WindowRef.MouseScroll.Y} {WindowRef.MouseScrollDelta.X} {WindowRef.MouseScrollDelta.Y}");
+            var screenPoint = new Vector2i((int) WindowRef.MousePosition.X, (int)WindowRef.MousePosition.Y);
             var point = screenPoint;//wnd.PointToClient(screenPoint);
             io.MousePos = new System.Numerics.Vector2(point.X, point.Y);
 
             foreach (NbKey key in Enum.GetValues(typeof(NbKey)))
             {
-                io.KeysDown[(int) key] = KeyboardState.IsKeyDown(key);
+                io.KeysDown[(int) key] = WindowRef.IsKeyDown(key);
             }
 
             //Use Keypad Enter as normal enter
-            io.KeysDown[(int) NbKey.Enter] |= KeyboardState.IsKeyDown(NbKey.KeyPadEnter);
+            io.KeysDown[(int) NbKey.Enter] |= WindowRef.IsKeyDown(NbKey.KeyPadEnter);
 
             foreach (var c in PressedChars)
             {
@@ -244,23 +237,15 @@ void main()
             }
             PressedChars.Clear();
 
-            io.KeyCtrl = KeyboardState.IsKeyDown(NbKey.LeftCtrl) || KeyboardState.IsKeyDown(NbKey.RightCtrl);
-            io.KeyAlt = KeyboardState.IsKeyDown(NbKey.LeftAlt) || KeyboardState.IsKeyDown(NbKey.RightAlt);
-            io.KeyShift = KeyboardState.IsKeyDown(NbKey.LeftShift) || KeyboardState.IsKeyDown(NbKey.RightShift);
-            io.KeySuper = KeyboardState.IsKeyDown(NbKey.LeftSuper) || KeyboardState.IsKeyDown(NbKey.RightSuper);
+            io.KeyCtrl = WindowRef.IsKeyDown(NbKey.LeftCtrl) || WindowRef.IsKeyDown(NbKey.RightCtrl);
+            io.KeyAlt = WindowRef.IsKeyDown(NbKey.LeftAlt) || WindowRef.IsKeyDown(NbKey.RightAlt);
+            io.KeyShift = WindowRef.IsKeyDown(NbKey.LeftShift) || WindowRef.IsKeyDown(NbKey.RightShift);
+            io.KeySuper = WindowRef.IsKeyDown(NbKey.LeftSuper) || WindowRef.IsKeyDown(NbKey.RightSuper);
         }
 
         internal void PressChar(char keyChar)
         {
             PressedChars.Add(keyChar);
-        }
-
-        internal void MouseScroll(Vector2 offset)
-        {
-            ImGuiIOPtr io = ImGuiNET.ImGui.GetIO();
-
-            io.MouseWheel = offset.Y;
-            io.MouseWheelH = offset.X;
         }
 
         private static void SetKeyMappings()

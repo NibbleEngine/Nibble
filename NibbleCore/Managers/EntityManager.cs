@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
 using NbCore.Common;
 
-namespace NbCore.Managers
+namespace NbCore
 {
-    public class EntityManager<T>
+    public class NbEntityManager<T>
     {
         public int EntityCount = 0;
         public List<T> Entities = new();

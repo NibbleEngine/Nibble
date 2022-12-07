@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using NbCore.Platform.Graphics.OpenGL; //TODO: Abstract
 using NbCore.Common;
 using Newtonsoft.Json;
-using NbCore.Math;
 
 namespace NbCore
 {
@@ -19,7 +17,7 @@ namespace NbCore
         _NB_EMISSIVE_MAP,
         _NB_UNLIT,
         _NB_VERTEX_COLOUR,
-        
+
         //OLD FLAGS TO BE TRANSFORMED
         //_F01_DIFFUSEMAP, //CHECK
         //_F02_SKINNED, //CHECK
@@ -29,7 +27,7 @@ namespace NbCore
         _F06_BRIGHT_EDGE,
         //_F07_UNLIT, //CHECK
         _F08_REFLECTIVE,
-        _F09_TRANSPARENT, 
+        _F09_TRANSPARENT,
         _F10_NORECEIVESHADOW,
         _F11_ALPHACUTOUT,
         _F12_BATCHED_BILLBOARD,
@@ -49,7 +47,7 @@ namespace NbCore
         _F26_STRETCHY_PARTICLE,
         _F27_VBTANGENT,
         _F28_VBSKINNED,
-        _F29_VBCOLOUR, 
+        _F29_VBCOLOUR,
         _F30_REFRACTION,
         _F31_DISPLACEMENT,
         _F32_REFRACTION_MASK,
@@ -60,7 +58,7 @@ namespace NbCore
         _F37_,
         _F38_NO_DEFORM,
         //_F39_METALLIC_MASK, //CHECK
-        _F40_SUBSURFACE_MASK, 
+        _F40_SUBSURFACE_MASK,
         _F41_DETAIL_DIFFUSE,
         _F42_DETAIL_NORMAL,
         _F43_NORMAL_TILING,
@@ -92,21 +90,21 @@ namespace NbCore
     {
         public string Name = "";
         public string Class = "";
-        public NbVector4 DiffuseColor = new();
-        public NbVector4 AmbientColor = new();
-        public NbVector4 SpecularColor = new();
+        public NbUniform DiffuseColor = new(NbUniformType.Vector4, "DiffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
+        public NbUniform AmbientColor = new(NbUniformType.Vector4, "AmbientColor", 1.0f, 1.0f, 1.0f, 1.0f);
+        public NbUniform SpecularColor = new(NbUniformType.Vector4, "SpecularColor", 1.0f, 1.0f, 1.0f, 1.0f);
         public bool IsPBR = false;
-        public float MetallicFactor = 0.0f;
-        public float Roughness = 0.0f;
-        public float Emissive = 0.0f;
-        
+        public NbUniform MetallicFactor = new(NbUniformType.Float, "MetallicFactor", 0.0f);
+        public NbUniform RoughnessFactor = new(NbUniformType.Float, "RoughnessFactor", 0.0f);
+        public NbUniform EmissiveFactor = new(NbUniformType.Float, "EmissiveFactor", 0.0f);
+
         public bool IsGeneric = false;
         public TextureManager texMgr;
         public NbShader Shader;
         private List<NbMaterialFlagEnum> Flags = new();
         public List<NbUniform> Uniforms = new();
         public List<NbSampler> Samplers = new();
-        
+
         public float[] material_flags = new float[64];
 
         public static List<NbMaterialFlagEnum> supported_flags = new() {
@@ -138,6 +136,8 @@ namespace NbCore
         public List<NbUniform> ActiveUniforms = new();
         public List<NbSampler> ActiveSamplers = new();
 
+        public Dictionary<string, NbUniform> UniformBindings = new();
+
         //Disposable Stuff
         private bool disposed = false;
         private Microsoft.Win32.SafeHandles.SafeFileHandle handle = new(IntPtr.Zero, true);
@@ -147,7 +147,7 @@ namespace NbCore
             Name = "NULL";
             Class = "NULL";
             Type = EntityType.Material;
-            
+
             //Clear material flags
             for (int i = 0; i < 64; i++)
                 material_flags[i] = 0.0f;
@@ -160,7 +160,8 @@ namespace NbCore
                 sampler.ShaderLocation = Shader.uniformLocations[sampler.ShaderBinding].loc;
                 if (!ActiveSamplers.Contains(sampler))
                     ActiveSamplers.Add(sampler);
-            } else
+            }
+            else
             {
                 sampler.ShaderBinding = "";
                 sampler.ShaderLocation = -1;
@@ -176,47 +177,13 @@ namespace NbCore
             //No need to dispose the sampler
         }
 
-        private void AddUniforms()
+        public void UpdateUniform(NbUniform uf)
         {
-            Uniforms.Clear();
-            ActiveUniforms.Clear();
-            foreach (string uf_name in Shader.uniformLocations.Keys)
+            if (Shader.uniformLocations.ContainsKey(uf.ShaderBinding))
             {
-                NbUniformFormat uf_format = Shader.uniformLocations[uf_name];
-
-                switch (uf_format.type)
-                {
-                    case NbUniformType.Int:
-                    case NbUniformType.Sampler2D:
-                    case NbUniformType.Sampler2DArray:
-                    case NbUniformType.Sampler3D:
-                    case NbUniformType.Matrix3:
-                    case NbUniformType.Matrix4:
-                        continue;
-                }
-                    
-                NbUniform uf = new()
-                {
-                    Name = uf_name,
-                    State = new()
-                    {
-                        ShaderBinding = uf_name,
-                        ShaderLocation = uf_format.loc,
-                        Type = uf_format.type
-                    }
-                };
-                ActiveUniforms.Add(uf);
-                Uniforms.Add(uf);
-            }
-        }
-
-        public void UpdateUniform(NbUniform uf) 
-        { 
-            if (Shader.uniformLocations.ContainsKey(uf.State.ShaderBinding))
-            {
-                NbUniformFormat fmt = Shader.uniformLocations[uf.State.ShaderBinding];
-                uf.State.ShaderBinding = fmt.name;
-                uf.State.ShaderLocation = fmt.loc;
+                NbUniformFormat fmt = Shader.uniformLocations[uf.ShaderBinding];
+                uf.ShaderBinding = fmt.name;
+                uf.ShaderLocation = fmt.loc;
                 if (!ActiveUniforms.Contains(uf))
                     ActiveUniforms.Add(uf);
             }
@@ -238,7 +205,7 @@ namespace NbCore
         //Wrapper to support uberflags
         public bool HasFlag(NbMaterialFlagEnum flag)
         {
-            return material_flags[(int) flag] > 0.0f;
+            return material_flags[(int)flag] > 0.0f;
         }
 
         public List<NbMaterialFlagEnum> GetFlags()
@@ -250,7 +217,7 @@ namespace NbCore
         {
             if (!HasFlag((flag)))
                 return;
-            
+
             material_flags[(int)flag] = 0.0f;
             Flags.Remove(flag);
             //Raise Material Modified event
@@ -262,18 +229,18 @@ namespace NbCore
             if (HasFlag((flag)))
                 return false;
 
-            material_flags[(int) flag] = 1.0f;
+            material_flags[(int)flag] = 1.0f;
             Flags.Add(flag);
-            
+
             return true;
         }
 
         public override Entity Clone()
         {
             NbMaterial newmat = new();
-            
+
             newmat.CopyFrom(this); //Copy components
-            
+
             //Remix textures
             return newmat;
         }
@@ -339,7 +306,7 @@ namespace NbCore
         public void Serialize(JsonTextWriter writer)
         {
             writer.WriteStartObject();
-            
+
             writer.WritePropertyName("ObjectType");
             writer.WriteValue(GetType().FullName);
 
@@ -374,7 +341,7 @@ namespace NbCore
             writer.WriteEndArray();
 
             writer.WriteEndObject();
-        
+
         }
 
         public static NbMaterial Deserialize(Newtonsoft.Json.Linq.JToken token)
@@ -383,22 +350,22 @@ namespace NbCore
             mat.Name = token.Value<string>("Name");
             mat.Class = token.Value<string>("Class");
 
-            GLSLShaderConfig conf = RenderState.engineRef.GetShaderConfigByName(token.Value<string>("ShaderConfig"));
+            NbShaderConfig conf = RenderState.engineRef.GetShaderConfigByName(token.Value<string>("ShaderConfig"));
 
             //Deserialize flags
             Newtonsoft.Json.Linq.JToken flag_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Flags");
             foreach (Newtonsoft.Json.Linq.JToken tkn in flag_tkns.Children())
-                mat.AddFlag((NbMaterialFlagEnum) Enum.Parse(typeof(NbMaterialFlagEnum), tkn.ToString()));
+                mat.AddFlag((NbMaterialFlagEnum)Enum.Parse(typeof(NbMaterialFlagEnum), tkn.ToString()));
 
             //Deserialize samplers
             Newtonsoft.Json.Linq.JToken sampler_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Samplers");
             foreach (Newtonsoft.Json.Linq.JToken tkn in sampler_tkns.Children())
-                mat.Samplers.Add((NbSampler) IO.NbDeserializer.Deserialize(tkn));
+                mat.Samplers.Add((NbSampler)IO.NbDeserializer.Deserialize(tkn));
 
             //Deserialize uniforms
             Newtonsoft.Json.Linq.JToken uniform_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Uniforms");
             foreach (Newtonsoft.Json.Linq.JToken tkn in uniform_tkns.Children())
-                mat.Uniforms.Add((NbUniform) IO.NbDeserializer.Deserialize(tkn));
+                mat.Uniforms.Add((NbUniform)IO.NbDeserializer.Deserialize(tkn));
 
             //Calculate Shader hash
             ulong shader_hash = RenderState.engineRef.CalculateShaderHash(conf, RenderState.engineRef.GetMaterialShaderDirectives(mat));
@@ -412,7 +379,7 @@ namespace NbCore
                 {
                     directives = RenderState.engineRef.GetMaterialShaderDirectives(mat)
                 };
-                
+
                 shader.SetShaderConfig(conf);
                 RenderState.engineRef.CompileShader(shader);
 

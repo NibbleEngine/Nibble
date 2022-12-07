@@ -15,7 +15,7 @@ namespace NbCore
         public bool IsGeneric = false; //Used to flag internal shaders
 
         //References
-        private GLSLShaderConfig RefShaderConfig = null;
+        private NbShaderConfig RefShaderConfig = null;
         public List<string> directives = new(); //Extra Compilation directives (on top of the config directives)
 
         //Keep active uniforms
@@ -34,7 +34,7 @@ namespace NbCore
             
         }
 
-        public NbShader(GLSLShaderConfig conf) : base(EntityType.Shader)
+        public NbShader(NbShaderConfig conf) : base(EntityType.Shader)
         {
             SetShaderConfig(conf);
         }
@@ -52,12 +52,12 @@ namespace NbCore
             CurrentState.Clear();
         }
 
-        public GLSLShaderConfig GetShaderConfig()
+        public NbShaderConfig GetShaderConfig()
         {
             return RefShaderConfig;
         }
 
-        public void SetShaderConfig(GLSLShaderConfig conf)
+        public void SetShaderConfig(NbShaderConfig conf)
         {
             if (RefShaderConfig != null)
                 RefShaderConfig.IsUpdated -= OnShaderUpdate;

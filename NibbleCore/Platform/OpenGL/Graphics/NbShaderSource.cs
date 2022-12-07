@@ -10,12 +10,12 @@ namespace NbCore
     public delegate void SourceUpdatedEventHandler();
     
     [NbSerializable]
-    public class GLSLShaderSource : Entity
+    public class NbShaderSource : Entity
     {
         public string Name = "";
         public ulong Hash;
         public NbShaderTextType SourceType;
-        private List<GLSLShaderSource> _dynamicTextParts = new();
+        private List<NbShaderSource> _dynamicTextParts = new();
         private List<string> _staticTextParts = new();
         [NbSerializable]
         public string SourceFilePath = ""; //Path of the file where the source is fetched from
@@ -32,21 +32,21 @@ namespace NbCore
         public SourceUpdatedEventHandler IsUpdated;
 
         //Keep source texts that the current text refers to
-        public HashSet<GLSLShaderSource> ReferencedSources = new();
+        public HashSet<NbShaderSource> ReferencedSources = new();
         //Keep source texts that reference this source
-        public HashSet<GLSLShaderSource> ReferencedBySources = new();
+        public HashSet<NbShaderSource> ReferencedBySources = new();
         //Keeps track of all the Shaders that the current source is used by
-        public HashSet<GLSLShaderConfig> ReferencedByConfigs = new(); 
+        public HashSet<NbShaderConfig> ReferencedByConfigs = new(); 
         
         //Static random generator used in temp file name generation
         private static readonly Random rand_gen = new(999991);
 
-        public GLSLShaderSource() : base(EntityType.ShaderSource)
+        public NbShaderSource() : base(EntityType.ShaderSource)
         {
             SourceType = NbShaderTextType.Static;
         }
 
-        public GLSLShaderSource(string text) : base(EntityType.ShaderSource)
+        public NbShaderSource(string text) : base(EntityType.ShaderSource)
         {
             SourceType = NbShaderTextType.Static;
             SourceText = text;
@@ -56,7 +56,7 @@ namespace NbCore
             RenderState.engineRef.RegisterEntity(this);
         }
 
-        public GLSLShaderSource(string filepath, bool watchFile) : base(EntityType.ShaderSource)
+        public NbShaderSource(string filepath, bool watchFile) : base(EntityType.ShaderSource)
         {
             SourceType = NbShaderTextType.Dynamic;
             HasWatcher = watchFile;
@@ -127,11 +127,11 @@ namespace NbCore
                         npath = Path.Combine(dirpath, npath);
                         //Add dynamic source
                         //Check if Shader Source exists for this path
-                        GLSLShaderSource ss = RenderState.engineRef.GetShaderSourceByFilePath(npath);
+                        NbShaderSource ss = RenderState.engineRef.GetShaderSourceByFilePath(npath);
                         if (ss == null)
                         {
                             Console.WriteLine($"Loading new dynamic source {npath}");
-                            ss = new GLSLShaderSource(npath, true);
+                            ss = new NbShaderSource(npath, true);
                         }
                         if (!ss.Processed)
                             ss.Process();
@@ -190,10 +190,10 @@ namespace NbCore
             Resolved = true;
         }
 
-        public void GetReferencedShaderSources(ref List<GLSLShaderSource> sources)
+        public void GetReferencedShaderSources(ref List<NbShaderSource> sources)
         {
             sources.Add(this);
-            foreach (GLSLShaderSource childSource in _dynamicTextParts)
+            foreach (NbShaderSource childSource in _dynamicTextParts)
                 childSource.GetReferencedShaderSources(ref sources);
         }
         
@@ -201,7 +201,7 @@ namespace NbCore
         {
             FileSystemWatcher fw = (FileSystemWatcher)sender;
             string path = Path.Combine(fw.Path, fw.Filter);
-
+            
             lock (_watchFiles)
             {
                 if (_watchFiles.Count > 0)
@@ -232,9 +232,12 @@ namespace NbCore
                         Console.WriteLine(NewSourceText);
                         Process();
                         Resolve(); //Recalculate ShaderText
-
+                        //Check if the buffer is not flushed yet
+                        if (ResolvedText == "")
+                            Console.Write("asdasdasd");
+                        
                         //Re-resolve all parent sources
-                        foreach (GLSLShaderSource ps in ReferencedBySources)
+                        foreach (NbShaderSource ps in ReferencedBySources)
                         {
                             ps.Resolved = false;
                             ps.Resolve();
@@ -346,7 +349,7 @@ namespace NbCore
             return text;
         }
 
-        public override GLSLShaderSource Clone()
+        public override NbShaderSource Clone()
         {
             throw new NotImplementedException();
         }
@@ -369,13 +372,13 @@ namespace NbCore
         }
     
     
-        public static GLSLShaderSource Deserialize(Newtonsoft.Json.Linq.JToken token)
+        public static NbShaderSource Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
             //Parse path
             string filepath = token.Value<string>("SourceFilePath");
             bool haswatcher = token.Value<bool>("HasWatcher");
 
-            return new GLSLShaderSource(filepath, haswatcher);
+            return new NbShaderSource(filepath, haswatcher);
         }
     
     }

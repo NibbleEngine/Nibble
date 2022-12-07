@@ -7,7 +7,6 @@ using NbCore;
 using NbCore.Systems;
 using NbCore.Math;
 using NbCore.Common;
-using NbCore.Platform.Graphics.OpenGL;
 using OpenTK.Graphics.OpenGL4;
 
 
@@ -44,22 +43,22 @@ namespace NbCore.Platform.Graphics
         [FieldOffset(96)]
         public OpenTK.Mathematics.Matrix4 rotMatInv;
         [FieldOffset(160)]
-        public OpenTK.Mathematics.Matrix4 mvp;
+        public OpenTK.Mathematics.Matrix4 projMat;
         [FieldOffset(224)]
-        public OpenTK.Mathematics.Matrix4 lookMatInv;
-        [FieldOffset(288)]
         public OpenTK.Mathematics.Matrix4 projMatInv;
+        [FieldOffset(288)]
+        public OpenTK.Mathematics.Matrix4 lookMat;
         [FieldOffset(352)]
+        public OpenTK.Mathematics.Matrix4 lookMatInv;
+        [FieldOffset(416)]
+        public OpenTK.Mathematics.Matrix4 cameraRotMat;
+        [FieldOffset(480)]
         public OpenTK.Mathematics.Vector4 cameraPositionExposure; //Exposure is the W component
-        [FieldOffset(368)]
-        public int light_number;
-        [FieldOffset(384)]
+        [FieldOffset(496)]
         public OpenTK.Mathematics.Vector3 cameraDirection;
-        [FieldOffset(400)]
-        public unsafe fixed float lights[32 * 64];
-        //[FieldOffset(400), MarshalAs(UnmanagedType.LPArray, SizeConst=32*64)]
-        //public float[] lights;
-        public static readonly int SizeInBytes = 8592;
+        [FieldOffset(508)]
+        public int light_number;
+        public static readonly int SizeInBytes = 512;
     };
 
     public enum NbBufferMask
@@ -165,7 +164,8 @@ namespace NbCore.Platform.Graphics
 
         public void Init()
         {
-#if (DEBUG)
+
+#if (OPENGL)
             GL.Enable(EnableCap.DebugOutput);
             GL.Enable(EnableCap.DebugOutputSynchronous);
 
@@ -176,9 +176,7 @@ namespace NbCore.Platform.Graphics
                 DebugSeverityControl.DontCare, 0, new int[] { 0 }, true);
 
             GL.DebugMessageInsert(DebugSourceExternal.DebugSourceApplication, DebugType.DebugTypeMarker, 0, DebugSeverity.DebugSeverityNotification, -1, "Debug output enabled");
-#endif
 
-#if (DEBUG)
             //Query GL Extensions
             Log("OPENGL AVAILABLE EXTENSIONS:", LogVerbosityLevel.INFO);
             string[] ext = GL.GetString(StringNameIndexed.Extensions, 0).Split(' ');
@@ -197,7 +195,7 @@ namespace NbCore.Platform.Graphics
 #endif
 
             //Default Enables
-            EnableBlend();
+            SetBlend(true);
             
             //Setup per Frame UBOs
             setupFrameUBO();
@@ -333,15 +331,15 @@ namespace NbCore.Platform.Graphics
             GL.BindBuffer(BufferTarget.ShaderStorageBuffer, SSBOs["_COMMON_PER_MESH"]);
 
             //Prepare UBO data
-            int max_ubo_offset = GLMeshInstanceManager.GetAtlasSize();
+            int max_ubo_offset = NbMeshInstanceManager.GetAtlasSize();
 
             //METHOD 2: Use MAP Buffer
             IntPtr ptr = GL.MapBufferRange(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
                  max_ubo_offset, BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapWriteBit);
 
-            if (SSBO_size < GLMeshInstanceManager.GetAtlasSize())
+            if (SSBO_size < NbMeshInstanceManager.GetAtlasSize())
             {
-                int new_size = GLMeshInstanceManager.GetAtlasSize();
+                int new_size = NbMeshInstanceManager.GetAtlasSize();
 
                 //Unmap and unbind buffer
                 GL.UnmapBuffer(BufferTarget.ShaderStorageBuffer);
@@ -353,12 +351,11 @@ namespace NbCore.Platform.Graphics
                 GL.BindBuffer(BufferTarget.ShaderStorageBuffer, SSBOs["_COMMON_PER_MESH"]);
                 ptr = GL.MapBufferRange(BufferTarget.ShaderStorageBuffer, IntPtr.Zero,
                 new_size, BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapWriteBit);
-
             }
-
+            
             unsafe
             {
-                GCHandle handle = GCHandle.Alloc(GLMeshInstanceManager.atlas_cpmu, GCHandleType.Pinned);
+                GCHandle handle = GCHandle.Alloc(NbMeshInstanceManager.atlas_cpmu, GCHandleType.Pinned);
                 IntPtr handlePtr = handle.AddrOfPinnedObject();
                 System.Buffer.MemoryCopy(handlePtr.ToPointer(), ptr.ToPointer(), max_ubo_offset, max_ubo_offset);
             }
@@ -378,18 +375,20 @@ namespace NbCore.Platform.Graphics
         public void SetRenderSettings(RenderSettings settings)
         {
             //Prepare Struct
-            cpfu.diffuseFlag = (RenderState.settings.RenderSettings.UseTextures) ? 1.0f : 0.0f;
-            cpfu.use_lighting = (RenderState.settings.RenderSettings.UseLighting) ? 1.0f : 0.0f;
-            cpfu.cameraPositionExposure.W = RenderState.settings.RenderSettings.HDRExposure;
+            cpfu.diffuseFlag = (settings.UseTextures) ? 1.0f : 0.0f;
+            cpfu.use_lighting = (settings.UseLighting) ? 1.0f : 0.0f;
+            cpfu.cameraPositionExposure.W = settings.HDRExposure;
         }
 
         public void SetCameraData(Camera cam)
         {
-            cpfu.mvp = RenderState.activeCam.viewMat._Value;
-            cpfu.lookMatInv = RenderState.activeCam.lookMatInv._Value;
-            cpfu.projMatInv = RenderState.activeCam.projMatInv._Value;
-            cpfu.cameraPositionExposure.Xyz = RenderState.activeCam.Position._Value;
-            cpfu.cameraDirection = RenderState.activeCam.Front._Value;
+            cpfu.projMat = cam.projMat._Value;
+            cpfu.projMatInv = cam.projMatInv._Value;
+            cpfu.lookMat = cam.lookMat._Value;
+            cpfu.lookMatInv = cam.lookMatInv._Value;
+            cpfu.cameraRotMat = cam.cameraRotMat._Value;
+            cpfu.cameraPositionExposure.Xyz = cam.Position._Value;
+            cpfu.cameraDirection = cam.Front._Value;
             cpfu.cameraNearPlane = RenderState.settings.CamSettings.zNear;
             cpfu.cameraFarPlane = RenderState.settings.CamSettings.zFar;
         }
@@ -398,8 +397,8 @@ namespace NbCore.Platform.Graphics
         {
             cpfu.frameDim.X = gBuffer.Size.X;
             cpfu.frameDim.Y = gBuffer.Size.Y;
-            cpfu.rotMat = RenderState.rotMat._Value;
-            cpfu.rotMatInv = RenderState.rotMat._Value.Inverted();
+            cpfu.rotMat = rotMat._Value;
+            cpfu.rotMatInv = rotMat._Value.Inverted();
             cpfu.gfTime = (float)time;
             cpfu.MSAA_SAMPLES = gBuffer.msaa_samples;
         }
@@ -414,10 +413,33 @@ namespace NbCore.Platform.Graphics
             GL.Viewport(0, 0, x, y);
         }
 
-        public void EnableBlend()
+        public void SetCullFace(bool status)
         {
-            GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            if (status)
+                GL.Enable(EnableCap.CullFace);
+            else
+                GL.Disable(EnableCap.CullFace);
+        }
+
+        public void SetDepthTest(bool status)
+        {
+            if (status)
+                GL.Enable(EnableCap.DepthTest);
+            else
+                GL.Disable(EnableCap.DepthTest);
+        }
+
+        public void SetBlend(bool status)
+        {
+            if (status)
+            {
+                GL.Enable(EnableCap.Blend);
+                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            } else
+            {
+                GL.Disable(EnableCap.Blend);
+            }
+                
         }
 
         public void ClearColor(NbVector4 vec)
@@ -1132,22 +1154,22 @@ namespace NbCore.Platform.Graphics
         
         private void UploadUniform(NbUniform uf)
         {
-            switch (uf.State.Type)
+            switch (uf.Type)
             {
                 case (NbUniformType.Float):
-                    GL.Uniform1(uf.State.ShaderLocation, uf.Values._Value.X);
+                    GL.Uniform1(uf.ShaderLocation, uf.Values._Value.X);
                     break;
                 case (NbUniformType.Vector2):
-                    GL.Uniform2(uf.State.ShaderLocation, uf.Values._Value.Xy);
+                    GL.Uniform2(uf.ShaderLocation, uf.Values._Value.Xy);
                     break;
                 case (NbUniformType.Vector3):
-                    GL.Uniform3(uf.State.ShaderLocation, uf.Values._Value.Xyz);
+                    GL.Uniform3(uf.ShaderLocation, uf.Values._Value.Xyz);
                     break;
                 case (NbUniformType.Vector4):
-                    GL.Uniform4(uf.State.ShaderLocation, uf.Values._Value);
+                    GL.Uniform4(uf.ShaderLocation, uf.Values._Value);
                     break;
                 default:
-                    Console.WriteLine($"Unsupported Uniform {uf.State.Type}");
+                    Console.WriteLine($"Unsupported Uniform {uf.Type}");
                     break;
             }
         }
@@ -1281,7 +1303,7 @@ namespace NbCore.Platform.Graphics
         public static bool CompileShaderSource(NbShader shader, 
             NbShaderSourceType type, ref int object_id, ref string temp_log, string append_text = "")
         {
-            GLSLShaderSource _source = shader.GetShaderConfig().Sources[type];
+            NbShaderSource _source = shader.GetShaderConfig().Sources[type];
 
             if (_source == null)
                 return false;
@@ -1295,7 +1317,7 @@ namespace NbCore.Platform.Graphics
             shader_object_id = GL.CreateShader(ShaderTypeMap[type]);
             
             //Compile Shader
-            GL.ShaderSource(shader_object_id, GLSLShaderConfig.version + "\n" + append_text + "\n" + _source.ResolvedText);
+            GL.ShaderSource(shader_object_id, NbShaderConfig.version + "\n" + append_text + "\n" + _source.ResolvedText);
 
             //Get resolved shader text
             GL.GetShaderSource(shader_object_id, 32768, out int actual_shader_length, out ActualShaderSource);
@@ -1321,7 +1343,7 @@ namespace NbCore.Platform.Graphics
         //Shader Creation
         public static bool CompileShader(NbShader shader)
         {
-            GLSLShaderConfig conf = shader.GetShaderConfig();
+            NbShaderConfig conf = shader.GetShaderConfig();
             bool gsflag = conf.Sources.ContainsKey(NbShaderSourceType.GeometryShader);
 
             bool tsflag = conf.Sources.ContainsKey(NbShaderSourceType.TessControlShader) |
@@ -1493,7 +1515,7 @@ namespace NbCore.Platform.Graphics
             }
         }
 
-        public void ShaderReport(NbShader shader)
+        public static void ShaderReport(NbShader shader)
         {
             //Print Debug Information for the UBO
             // Get named blocks info
@@ -1549,60 +1571,71 @@ namespace NbCore.Platform.Graphics
 
         }
 
-        public void AddRenderInstance(ref MeshComponent mc, TransformData td)
+        public static void AddRenderInstance(ref MeshComponent mc, TransformData td)
         {
-            GLMeshBufferManager.AddRenderInstance(ref mc, td);
-            GLMeshInstanceManager.AddMeshInstance(ref mc.Mesh, mc.InstanceID);
+            NbMeshBufferManager.AddRenderInstance(ref mc, td);
+            NbMeshInstanceManager.AddMeshInstance(ref mc.Mesh, mc.InstanceID);
         }
 
-        public void RemoveRenderInstance(ref NbMesh mesh, MeshComponent mc)
+        public static void AddRenderInstance(ref ImposterComponent ic, TransformData td)
         {
-            GLMeshInstanceManager.RemoveMeshInstance(ref mesh, mc.InstanceID);
-            GLMeshBufferManager.RemoveRenderInstance(ref mesh, mc);
+            NbImposterBufferManager.AddRenderInstance(ref ic, td);
+            NbMeshInstanceManager.AddMeshInstance(ref ic.Mesh, ic.InstanceID);
+        }
+
+        public static void RemoveRenderInstance(ref NbMesh mesh, MeshComponent mc)
+        {
+            NbMeshInstanceManager.RemoveMeshInstance(ref mesh, mc.InstanceID);
+            NbMeshBufferManager.RemoveRenderInstance(ref mesh, mc);
             mc.InstanceID = -1;
         }
 
-        public void UpdateInstance(NbMesh mesh, int index)
+        public static void UpdateInstance(NbMesh mesh, int index)
         {
-            GLMeshInstanceManager.UpdateMeshInstance(ref mesh, index);
+            NbMeshInstanceManager.UpdateMeshInstance(ref mesh, index);
         }
 
-        public void AddLightRenderInstance(ref LightComponent lc, TransformData td)
+        public static void AddLightRenderInstance(ref LightComponent lc, TransformData td)
         {
-            GLLightBufferManager.AddRenderInstance(ref lc, td);
-            GLMeshInstanceManager.AddMeshInstance(ref lc.Mesh, lc.InstanceID);
+            NbLightBufferManager.AddRenderInstance(ref lc, td);
+            NbMeshInstanceManager.AddMeshInstance(ref lc.Mesh, lc.InstanceID);
         }
 
-        public void SetLightInstanceData(LightComponent lc)
+        public static void SetLightInstanceData(LightComponent lc)
         {
-            GLLightBufferManager.SetLightInstanceData(lc);
+            NbLightBufferManager.SetInstanceData(lc);
         }
 
-        public void RemoveLightRenderInstance(ref NbMesh mesh, LightComponent lc)
+        public static void SetImposterInstanceData(ImposterComponent ic)
         {
-            GLMeshInstanceManager.RemoveMeshInstance(ref mesh, lc.InstanceID);
-            GLLightBufferManager.RemoveRenderInstance(ref mesh, lc);
+            NbImposterBufferManager.SetInstanceData(ic);
+        }
+
+        public static void RemoveLightRenderInstance(ref NbMesh mesh, LightComponent lc)
+        {
+            NbMeshInstanceManager.RemoveMeshInstance(ref mesh, lc.InstanceID);
+            NbLightBufferManager.RemoveRenderInstance(ref mesh, lc);
             lc.InstanceID = -1;
         }
 
-        public void SetInstanceWorldMat(NbMesh mesh, int instanceID, NbMatrix4 mat)
+        public static void SetInstanceWorldMat(NbMesh mesh, int instanceID, NbMatrix4 mat)
         {
-            GLMeshBufferManager.SetInstanceWorldMat(mesh, instanceID, mat);
+            NbMeshBufferManager.SetInstanceWorldMat(mesh, instanceID, mat);
         }
 
-        public void SetInstanceUniform4(NbMesh mesh, int instanceID, int uniformID, NbVector4 uf)
+        public static void SetInstanceUniform4(NbMesh mesh, int instanceID, int uniformID, NbVector4 uf)
         {
-            GLMeshBufferManager.SetInstanceUniform4(mesh, instanceID, uniformID, uf);
+            NbMeshBufferManager.SetInstanceUniform4(mesh, instanceID, uniformID, uf);
         }
 
-        public NbVector4 GetInstanceUniform4(NbMesh mesh, int instanceID, int uniformID)
+        public static NbVector4 GetInstanceUniform4(NbMesh mesh, int instanceID, int uniformID)
         {
-            return GLMeshBufferManager.GetInstanceUniform4(mesh, instanceID, uniformID);
+            return NbMeshBufferManager.GetInstanceUniform4(mesh, instanceID, uniformID);
         }
 
-        public void SetInstanceWorldMatInv(NbMesh mesh, int instanceID, NbMatrix4 mat)
+        public static void SetInstanceWorldMatInv(NbMesh mesh, int instanceID, NbMatrix4 mat)
         {
-            GLMeshBufferManager.SetInstanceWorldMatInv(mesh, instanceID, mat);
+            NbMeshBufferManager.SetInstanceWorldMatInv(mesh, instanceID, mat);
         }
 
         #endregion

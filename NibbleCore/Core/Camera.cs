@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
-using OpenTK.Graphics.OpenGL4;
-using NbCore;
 using NbCore.Math;
-using NbCore.Utils;
-using MathNet.Numerics;
-using MathNet.Numerics.LinearAlgebra.Complex;
-using System.ComponentModel;
-using System.Drawing.Design;
-using System.Security.Permissions;
+using NbCore.Common;
+using OpenTK.Mathematics;
 
 namespace NbCore
 {
@@ -32,25 +25,25 @@ namespace NbCore
         public static NbVector3 BaseUp = new(0.0f, 1.0f, 0.0f);
 
         //Current Vectors
+        public NbVector3 Position = new(0.0f, 0.0f, 0.0f);
         public NbVector3 Right;
         public NbVector3 Front;
         public NbVector3 Up;
-        //public float yaw = MathUtils.radians(-90.0f);
-        //public float pitch = 0.0f;
-        public NbVector3 Position = new(0.0f, 0.0f, 0.0f);
+        public float pitch = 0.0f;
+        public float yaw = -90.0f;
+
         //Movement Time
-        
-        //public float Speed = 1.0f; //Speed in Units/Sec
+
         public static float SpeedScale = 0.001f;
-        //public float Sensitivity = 0.2f;
+        public static float SensitivityScale = 0.001f;
         public bool isActive = false;
-        public float yaw, pitch, roll = 0.0f;
-        
+
         //Matrices
         public NbMatrix4 projMat;
         public NbMatrix4 projMatInv;
         public NbMatrix4 lookMat;
         public NbMatrix4 lookMatInv;
+        public NbMatrix4 cameraRotMat;
         public NbMatrix4 viewMat = NbMatrix4.Identity();
         public int type;
         public bool culling;
@@ -75,112 +68,107 @@ namespace NbCore
             Front = BaseFront;
 
         }
-        
+
         public void updateViewMatrix()
         {
-            lookMat = NbMatrix4.LookAt(Position, Position + 10 * Front, BaseUp);
-            float fov_rad = MathUtils.radians(Common.RenderState.settings.CamSettings.FOV);
+            lookMat = NbMatrix4.LookAt(Position, Position + Front, BaseUp);
+            
 
-            NbVector2i viewport_size = Common.RenderState.engineRef.GetSystem<Systems.RenderingSystem>().GetViewportSize();
-            float aspect = (float) viewport_size.X / viewport_size.Y;
+            NbVector2i viewport_size = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().GetViewportSize();
+            float aspect = (float)viewport_size.X / viewport_size.Y;
 
-            if (type == 0) {
-                //projMat = Matrix4.CreatePerspectiveFieldOfView(fov, aspect, zNear, zFar);
-                //Call Custom
-                //projMat = this.ComputeFOVProjection();
-                float w, h;
-                float tangent = (float) System.Math.Tan(fov_rad / 2.0f);   // tangent of half fovY
-                h = Common.RenderState.settings.CamSettings.zNear * tangent;  // half height of near plane
-                w = h * aspect;       // half width of near plane
+            CameraSettings settings = RenderState.settings.CamSettings;
 
-                //projMat = Matrix4.CreatePerspectiveOffCenter(-w, w, -h, h, zNear, zFar);
-                projMat = NbMatrix4.CreatePerspectiveFieldOfView(fov_rad, aspect, 
-                    Common.RenderState.settings.CamSettings.zNear,
-                    Common.RenderState.settings.CamSettings.zFar);
-                viewMat = lookMat * projMat;
+            if (type == 0)
+            {
+                projMat = NbMatrix4.CreatePerspectiveFieldOfView(MathUtils.radians(settings.FOV), aspect, settings.zNear, settings.zFar);
             }
             else
             {
                 //Create orthographic projection
-                projMat = NbMatrix4.CreateOrthographic(aspect * 2.0f, 2.0f,
-                    Common.RenderState.settings.CamSettings.zNear,
-                    Common.RenderState.settings.CamSettings.zFar);
-                //projMat.Transpose();
+                projMat = NbMatrix4.CreateOrthographic(viewport_size.X, viewport_size.Y, settings.zNear, settings.zFar);
                 //Create scale matrix based on the fov
-                NbMatrix4 scaleMat = NbMatrix4.CreateScale(0.8f * fov_rad);
-                viewMat = scaleMat * lookMat * projMat;
+                NbMatrix4 scaleMat = NbMatrix4.CreateScale(0.8f * MathUtils.radians(settings.FOV));
             }
+
+            viewMat = lookMat * projMat;
+            
+            cameraRotMat = NbMatrix4.CreateRotationX(MathUtils.radians(System.Math.Clamp(pitch, -89, 89)));
+            cameraRotMat *= NbMatrix4.CreateRotationY(MathUtils.radians(-yaw - 90));
             
             //Calculate invert Matrices
             lookMatInv = lookMat.Inverted();
             projMatInv = projMat.Inverted();
-            
+
             updateFrustumPlanes();
         }
 
         public static void UpdateCameraDirectionalVectors(Camera cam)
         {
-            //Update Camera Vectors
-            TransformController t_controller = Common.RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
-            
-            //Rotation
-            NbQuaternion q = t_controller.Rotation;
-            
-            //Apply Current Position to the Camera
+            TransformController t_controller = RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
             cam.Position = t_controller.Position;
-            cam.Front = NbVector3.Transform(BaseFront, q);
+
+            cam.Front.X = (float)System.Math.Cos(MathUtils.radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Cos(MathUtils.radians(cam.yaw));
+            cam.Front.Y = (float)System.Math.Sin(MathUtils.radians(System.Math.Clamp(cam.pitch, -89, 89)));
+            cam.Front.Z = (float)System.Math.Cos(MathUtils.radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Sin(MathUtils.radians(cam.yaw));
             cam.Front.Normalize();
-            cam.Up = NbVector3.Transform(BaseUp, q);
-            cam.Up.Normalize();
-            cam.Right = cam.Front.Cross(cam.Up).Normalized();
+
+            //NbQuaternion q = t_controller.Rotation;
+            //cam.Front = NbVector3.Transform(new NbVector3(-1.0f, 0.0f, 0.0f), q);
+            //cam.Front.Normalize();
+
+            cam.Right = cam.Front.Cross(BaseUp).Normalized();
+            cam.Up = cam.Right.Cross(cam.Front).Normalized();
 
             //Console.WriteLine($"Camera Up {cam.Up.X} {cam.Up.Y} {cam.Up.Z}");
             //Console.WriteLine($"Camera Front {cam.Front.X} {cam.Front.Y} {cam.Front.Z}");
             //Console.WriteLine($"Camera Right {cam.Right.X} {cam.Right.Y} {cam.Right.Z}");
 
-
         }
 
         public static void CalculateNextCameraState(Camera cam, CameraPos target)
         {
-            TransformController t_controller = Common.RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
+            TransformController t_controller = RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
 
             //Calculate actual camera speed
-            float pitch = Common.RenderState.settings.CamSettings.Sensitivity * MathUtils.radians(target.Rotation.Y);
-            float yaw = Common.RenderState.settings.CamSettings.Sensitivity * MathUtils.radians(target.Rotation.X);
-            
-            NbQuaternion yaw_q = NbQuaternion.FromAxis(cam.Up, yaw);
-            NbQuaternion pitch_q = NbQuaternion.FromAxis(cam.Right, pitch);
+
+            if (cam.yaw > 360) cam.yaw = 0;
+            if (cam.yaw < -360) cam.yaw = 0;
+
+            cam.pitch -= 0.1f * RenderState.settings.CamSettings.Sensitivity * target.Rotation.Y;
+            cam.yaw += 0.1f * RenderState.settings.CamSettings.Sensitivity * target.Rotation.X;
+
+            NbQuaternion yaw_q = NbQuaternion.FromAxis(BaseUp, MathUtils.radians(cam.yaw));
+            NbQuaternion pitch_q = NbQuaternion.FromAxis(BaseRight, MathUtils.radians(cam.pitch));
             NbQuaternion new_rot = pitch_q * yaw_q;
-            new_rot = new_rot * t_controller.Rotation;
-            
+
             //Console.WriteLine("Mouse Displacement {0} {1}",
             //                target.Rotation.X, target.Rotation.Y);
 
             //Console.WriteLine(string.Format("Camera Rotation {0} {1} {2} {3}",
-            //                    rx.X, rx.Y, rx.Z, rx.W),
+            //                    new_rot.X, new_rot.Y, new_rot.Z, new_rot.W),
             //                    LogVerbosityLevel.INFO);
 
             //Move Camera based on the impulse
-            
+
             //Calculate Next State 
-            NbVector3 currentPosition = t_controller.Position;
+            NbVector3 currentPosition = t_controller.FuturePosition;
             NbQuaternion currentRotation = new_rot;
             NbVector3 currentScale = new(1.0f);
 
             NbVector3 offset = new();
-            offset += SpeedScale * Common.RenderState.settings.CamSettings.Speed * target.PosImpulse.X * cam.Right;
-            offset += SpeedScale * Common.RenderState.settings.CamSettings.Speed * target.PosImpulse.Y * cam.Front;
-            offset += SpeedScale * Common.RenderState.settings.CamSettings.Speed * target.PosImpulse.Z * cam.Up;
+            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.X * cam.Right;
+            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.Y * cam.Front;
+            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.Z * cam.Up;
 
             //Console.WriteLine(string.Format("Camera offset {0} {1} {2}",
             //                    offset.X, offset.Y, offset.Z));
-            
+
             currentPosition += offset;
             //There is no need to update rotation for the camera. Pitch/Yaw is all we need
             //Quaternion rall = Quaternion.FromEulerAngles(cam.pitch, cam.yaw, 0.0f);
             //currentRotation = rall;
-            
+
             t_controller.AddFutureState(currentPosition, currentRotation, currentScale);
         }
 
@@ -325,7 +313,7 @@ namespace NbCore
 
             v1 = new NbVector4(mesh.MetaData.AABBMIN, 1.0f);
             v2 = new NbVector4(mesh.MetaData.AABBMAX, 1.0f);
-            
+
             return frustum_occlude(v1.Xyz, v2.Xyz, transform);
         }
 
@@ -341,7 +329,7 @@ namespace NbCore
     {
         private readonly NbVector4[] _frustum = new NbVector4[6];
         public float[,] _frustum_points = new float[8, 3];
-        
+
         public const int A = 0;
         public const int B = 1;
         public const int C = 2;
@@ -371,12 +359,12 @@ namespace NbCore
         {
             for (int i = 0; i < 6; i++)
             {
-                if (NbVector4.Dot(_frustum[i],point) <= 0.0f)
+                if (NbVector4.Dot(_frustum[i], point) <= 0.0f)
                 {
                     //Console.WriteLine("Point vs Frustum, Plane {0} Failed. Failed Vector {1} {2} {3}", (ClippingPlane)p, x, y, z);
                     return false;
                 }
-                    
+
             }
             return true;
         }
@@ -406,7 +394,7 @@ namespace NbCore
             verts[6] = new NbVector4(tr_AABB[0].X, tr_AABB[1].Y, tr_AABB[1].Z, 1.0f);
             verts[7] = new NbVector4(tr_AABB[1].X, tr_AABB[1].Y, tr_AABB[1].Z, 1.0f);
 
-            
+
             //Check if all points are outside one of the planes
             for (int p = 0; p < 6; p++)
             {
@@ -535,7 +523,7 @@ namespace NbCore
                                                              mvp.M42 - mvp.M44);
 
             //Bottom Plane
-            _frustum[(int)ClippingPlane.Bottom] = new NbVector4(  -mvp.M14 - mvp.M12,
+            _frustum[(int)ClippingPlane.Bottom] = new NbVector4(-mvp.M14 - mvp.M12,
                                                                 -mvp.M24 - mvp.M22,
                                                                 -mvp.M34 - mvp.M32,
                                                                 -mvp.M44 - mvp.M42);
@@ -570,7 +558,7 @@ namespace NbCore
             _frustum_points[7, 0] = p[0]; _frustum_points[7, 1] = p[1]; _frustum_points[7, 2] = p[2];
 
             */
-            
+
         }
 
 
