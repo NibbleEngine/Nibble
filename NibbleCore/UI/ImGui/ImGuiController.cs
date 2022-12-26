@@ -55,12 +55,12 @@ namespace NbCore.UI.ImGui
             io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 16.0f);
             io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 11.0f);
             
-            
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
+            io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; //Enable Docking
+            io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; //Enable MultipleViewport
 
             CreateDeviceResources();
             SetKeyMappings();
-
             SetPerFrameImGuiData(1f / 60f);
 
             pinnedArray.Free();
@@ -223,6 +223,7 @@ void main()
             var point = screenPoint;//wnd.PointToClient(screenPoint);
             io.MousePos = new System.Numerics.Vector2(point.X, point.Y);
 
+            
             foreach (NbKey key in Enum.GetValues(typeof(NbKey)))
             {
                 io.KeysDown[(int) key] = WindowRef.IsKeyDown(key);
@@ -236,22 +237,17 @@ void main()
                 io.AddInputCharacter(c);
             }
             PressedChars.Clear();
-
+            
             io.KeyCtrl = WindowRef.IsKeyDown(NbKey.LeftCtrl) || WindowRef.IsKeyDown(NbKey.RightCtrl);
             io.KeyAlt = WindowRef.IsKeyDown(NbKey.LeftAlt) || WindowRef.IsKeyDown(NbKey.RightAlt);
             io.KeyShift = WindowRef.IsKeyDown(NbKey.LeftShift) || WindowRef.IsKeyDown(NbKey.RightShift);
             io.KeySuper = WindowRef.IsKeyDown(NbKey.LeftSuper) || WindowRef.IsKeyDown(NbKey.RightSuper);
         }
 
-        internal void PressChar(char keyChar)
-        {
-            PressedChars.Add(keyChar);
-        }
-
         private static void SetKeyMappings()
         {
             ImGuiIOPtr io = ImGuiNET.ImGui.GetIO();
-            io.KeyMap[(int)ImGuiKey.Tab] = (int) NbKey.Tab;
+            io.KeyMap[(int)ImGuiKey.Tab] = (int)NbKey.Tab;
             io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)NbKey.LeftArrow;
             io.KeyMap[(int)ImGuiKey.RightArrow] = (int)NbKey.RightArrow;
             io.KeyMap[(int)ImGuiKey.UpArrow] = (int)NbKey.UpArrow;
@@ -263,14 +259,13 @@ void main()
             io.KeyMap[(int)ImGuiKey.Delete] = (int)NbKey.Delete;
             io.KeyMap[(int)ImGuiKey.Backspace] = (int)NbKey.Backspace;
             io.KeyMap[(int)ImGuiKey.Enter] = (int)NbKey.Enter;
-            io.KeyMap[(int)ImGuiKey.KeyPadEnter] = (int)NbKey.KeyPadEnter;
+            io.KeyMap[(int)ImGuiKey.KeypadEnter] = (int)NbKey.KeyPadEnter;
             io.KeyMap[(int)ImGuiKey.Escape] = (int)NbKey.Escape;
-            io.KeyMap[(int)ImGuiKey.A] = (int)NbKey.A;
-            io.KeyMap[(int)ImGuiKey.C] = (int)NbKey.C;
-            io.KeyMap[(int)ImGuiKey.V] = (int)NbKey.V;
-            io.KeyMap[(int)ImGuiKey.X] = (int)NbKey.X;
-            io.KeyMap[(int)ImGuiKey.Y] = (int)NbKey.Y;
-            io.KeyMap[(int)ImGuiKey.Z] = (int)NbKey.Z;
+        }
+
+        internal void PressChar(char keyChar)
+        {
+            PressedChars.Add(keyChar);
         }
 
         private void RenderImDrawData(ImDrawDataPtr draw_data)
@@ -310,7 +305,7 @@ void main()
                 io.DisplaySize.X,
                 io.DisplaySize.Y,
                 0.0f,
-                -1.0f,
+                0.0f,
                 1.0f);
 
             _shader.UseShader();

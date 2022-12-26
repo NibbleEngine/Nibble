@@ -15,19 +15,19 @@ namespace NbCore
             Layers.Add(layer);
         }
 
-        public void OnRenderFrame(NbWindow win, double dt)
+        public void OnRenderFrame(double dt)
         {
             for (int i = 0; i < Layers.Count; i++)
             {
-                Layers[i].OnRenderFrameUpdate(win, dt);
+                Layers[i].OnRenderFrameUpdate(dt);
             }
         }
 
-        public void OnFrameUpdate(NbWindow win, double dt)
+        public void OnFrameUpdate(double dt)
         {
             for (int i = 0; i < Layers.Count; i++)
             {
-                Layers[i].OnFrameUpdate(win, dt);
+                Layers[i].OnFrameUpdate(dt);
             }
         }
 
@@ -50,19 +50,21 @@ namespace NbCore
         public string Name;
         public ApplicationLayer Next;
         protected Engine EngineRef;
+        protected NbWindow WindowRef;
         private bool disposedValue;
 
-        public ApplicationLayer(Engine engine)
+        public ApplicationLayer(NbWindow win, Engine engine)
         {
             EngineRef = engine;
+            WindowRef = win;
         }
 
-        public virtual void OnRenderFrameUpdate(NbWindow win, double dt)
+        public virtual void OnRenderFrameUpdate(double dt)
         {
 
         }
 
-        public virtual void OnFrameUpdate(NbWindow win, double dt)
+        public virtual void OnFrameUpdate(double dt)
         {
 
         }

@@ -5,15 +5,15 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using NbCore.Math;
 using ImGuiNET;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace NbCore.Platform.Windowing
 {
     public class NbOpenGLWindow : NbWindow
     {
         private GameWindow _win;
-        private NbVector2 MouseScrollPrevious = new();
-        private NbVector2 MouseScroll = new();
-
+        
         //Properties
         public string Title
         {
@@ -65,7 +65,7 @@ namespace NbCore.Platform.Windowing
             }
         }
 
-        public NbVector2 MouseDelta
+        public override NbVector2 MouseDelta
         {
             get
             {
@@ -112,55 +112,29 @@ namespace NbCore.Platform.Windowing
             };
 
             //OnRender
-            _win.RenderFrame += (FrameEventArgs a) =>
-            {
-                OnRenderUpdate(a.Time);
-                _win.SwapBuffers();
-                //Explicitly Handle Scroll
-                MouseScrollPrevious = MouseScroll;
-                MouseScroll.X = _win.MouseState.Scroll.X;
-                MouseScroll.Y = _win.MouseState.Scroll.Y;
-            };
-
-            _win.UpdateFrame += (FrameEventArgs a) =>
-            {
-                OnFrameUpdate(a.Time);
-            };
-
-            //_win.KeyDown += (KeyboardKeyEventArgs a) =>
-            //{
-            //    OnKeyDown?.Invoke(new NbKeyArgs(a));
-            //};
-
-            //_win.KeyUp += (KeyboardKeyEventArgs a) =>
-            //{
-            //    OnKeyUp?.Invoke(new NbKeyArgs(a));
-            //};
-
-            //_win.MouseMove += (MouseMoveEventArgs a) =>
-            //{
-            //    OnMouseMove?.Invoke(new NbMouseMoveArgs(a));
-            //};
-
-            //_win.MouseWheel += (MouseWheelEventArgs a) =>
-            //{
-            //    InvokeMouseWheelEvent(new NbMouseWheelArgs(a));
-            //};
-
-            //_win.MouseDown += (MouseButtonEventArgs a) =>
-            //{
-            //    InvokeMouseButtonDownEvent(new NbMouseButtonArgs(a));
-            //};
-
-            //_win.MouseUp += (MouseButtonEventArgs a) =>
-            //{
-            //    InvokeMouseButtonUpEvent(new NbMouseButtonArgs(a));
-            //};
+            _win.RenderFrame += RenderFrameDelegate;
+            _win.UpdateFrame += FrameUpdateDelegate;
 
             _win.TextInput += (TextInputEventArgs a) =>
             {
                 InvokeTextInput(new NbTextInputArgs(a));
             };
+        }
+
+        //Delegates
+        private void RenderFrameDelegate(FrameEventArgs args)
+        {
+            OnRenderUpdate(args.Time);
+            _win.SwapBuffers();
+            //Explicitly Handle Mouse Scroll
+            MouseScrollPrevious = MouseScroll;
+            MouseScroll.X = _win.MouseState.Scroll.X;
+            MouseScroll.Y = _win.MouseState.Scroll.Y;
+        }
+
+        private void FrameUpdateDelegate(FrameEventArgs args)
+        {
+            OnFrameUpdate(args.Time);
         }
 
         public override bool IsKeyDown(NbKey key)
@@ -220,8 +194,6 @@ namespace NbCore.Platform.Windowing
         {
             _win.Close();
         }
-
-
     }
 }
 

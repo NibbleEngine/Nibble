@@ -89,7 +89,7 @@ namespace NbCore.UI.ImGui
             ImGuiCore.SetNextWindowSizeConstraints(new(600, 300), new(1000, 1000));
             if (ImGuiCore.BeginPopupModal(_uid, ref isopen, ImGuiNET.ImGuiWindowFlags.None))
             {
-                if (ImGuiCore.IsKeyPressedMap(ImGuiNET.ImGuiKey.Escape))
+                if (ImGuiCore.IsKeyPressed(ImGuiNET.ImGuiKey.Escape))
                     Close();
 
                 if (filePicker.CurrentFolder == null)

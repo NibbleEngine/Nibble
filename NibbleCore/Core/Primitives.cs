@@ -15,7 +15,7 @@ namespace NbCore.Primitives
         internal float[] uvs;
         internal float[] colors;
         internal int[] indices;
-
+        
         public GeomObject geom;
         private bool disposedValue;
 
@@ -42,6 +42,21 @@ namespace NbCore.Primitives
         {
             GeomObject geom = new();
             geom.Name = name;
+
+            //Find AABBs
+            NbVector3 AABBMIN = new NbVector3(100000000);
+            NbVector3 AABBMAX = new NbVector3(-100000000);
+            for (int i = 0; i < verts.Length / 3; i++)
+            {
+                AABBMIN.X = System.Math.Min(verts[i + 0], AABBMIN.X);
+                AABBMIN.Y = System.Math.Min(verts[i + 1], AABBMIN.Y);
+                AABBMIN.Z = System.Math.Min(verts[i + 2], AABBMIN.Z);
+
+                AABBMAX.X = System.Math.Max(verts[i + 0], AABBMAX.X);
+                AABBMAX.Y = System.Math.Max(verts[i + 1], AABBMAX.Y);
+                AABBMAX.Z = System.Math.Max(verts[i + 2], AABBMAX.Z);
+            }
+            geom.bboxes.Add(new NbVector3[] { AABBMIN, AABBMAX });
 
             //Set main Geometry Info
             geom.vertCount = verts.Length / 3;
@@ -623,6 +638,21 @@ namespace NbCore.Primitives
         {
             GeomObject geom = new();
 
+            //Find AABBs
+            NbVector3 AABBMIN = new NbVector3(100000000);
+            NbVector3 AABBMAX = new NbVector3(-100000000);
+            for (int i = 0; i < verts.Length / 3; i++)
+            {
+                AABBMIN.X = System.Math.Min(verts[i + 0], AABBMIN.X);
+                AABBMIN.Y = System.Math.Min(verts[i + 1], AABBMIN.Y);
+                AABBMIN.Z = System.Math.Min(verts[i + 2], AABBMIN.Z);
+
+                AABBMAX.X = System.Math.Max(verts[i + 0], AABBMAX.X);
+                AABBMAX.Y = System.Math.Max(verts[i + 1], AABBMAX.Y);
+                AABBMAX.Z = System.Math.Max(verts[i + 2], AABBMAX.Z);
+            }
+            geom.bboxes.Add(new NbVector3[] { AABBMIN, AABBMAX });
+
             //Set main Geometry Info
             geom.vertCount = verts.Length / 0x3;
             geom.indicesCount = indices.Length;
@@ -703,101 +733,6 @@ namespace NbCore.Primitives
             return geom;
         }
     }
-
-    public class TranslationGizmo : Primitive
-    {
-        public TranslationGizmo(NbVector3 scale, bool generateGeom = false)
-        {
-            Arrow XAxis = new(0.015f, 0.25f, new NbVector3(1.0f, 0.0f, 0.0f), false, 20);
-            Arrow YAxis = new(0.015f, 0.25f, new NbVector3(0.0f, 1.0f, 0.0f), false, 20);
-            Arrow ZAxis = new(0.015f, 0.25f, new NbVector3(0.0f, 0.0f, 1.0f), false, 20);
-
-            //Transform Primitives before merging
-            //Scale matrix
-            NbMatrix4 s = NbMatrix4.CreateScale(scale);
-            //Move arrowhead up in place
-            NbMatrix4 t = s * NbMatrix4.CreateRotationZ(MathUtils.radians(90));
-            XAxis.applyTransform(t);
-            t = s * NbMatrix4.CreateRotationX(MathUtils.radians(90));
-            ZAxis.applyTransform(t);
-            
-            //Merge Primitives
-            Primitive p1 = mergePrimitives(XAxis, YAxis);
-            Primitive p = mergePrimitives(p1, ZAxis);
-
-            verts = p.verts;
-            indices = p.indices;
-            colors = p.colors;
-
-            if (generateGeom)
-                geom = getGeom();
-        }
-
-
-        public GeomObject getGeom()
-        {
-            GeomObject geom = new();
-
-            //Set main Geometry Info
-            geom.vertCount = verts.Length / 0x3;
-            geom.indicesCount = indices.Length;
-            geom.indicesType = NbPrimitiveDataType.Int;
-
-            //Set Strides
-            geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
-
-            //Set Buffer Offsets
-            geom.mesh_descr = "vn";
-            
-            NbMeshBufferInfo buf = new()
-            {
-                count = 3,
-                normalize = false,
-                offset = 0,
-                sem_text = "vPosition",
-                semantic = 0,
-                stride = 0,
-                type = NbPrimitiveDataType.Float
-            };
-            geom.bufInfo.Add(buf);
-            
-            buf = new()
-            {
-                count = 3,
-                normalize = false,
-                offset = geom.vertCount * 12,
-                sem_text = "nPosition",
-                semantic = 2,
-                stride = 0,
-                type = NbPrimitiveDataType.Float
-            };
-            geom.bufInfo.Add(buf);
-            
-            buf = new()
-            {
-                count = 3,
-                normalize = false,
-                offset = geom.vertCount * 12,
-                sem_text = "bPosition",
-                semantic = 4,
-                stride = 0,
-                type = NbPrimitiveDataType.Float
-            };
-            geom.bufInfo.Add(buf);
-            
-            //Set Buffers
-            geom.ibuffer = new byte[4 * indices.Length];
-            System.Buffer.BlockCopy(indices, 0, geom.ibuffer, 0, geom.ibuffer.Length);
-
-            geom.vbuffer = new byte[4 * verts.Length + 4 * colors.Length];
-            System.Buffer.BlockCopy(verts, 0, geom.vbuffer, 0, 4 * verts.Length); //Copy Vertices
-            System.Buffer.BlockCopy(colors, 0, geom.vbuffer, 4 * verts.Length, 4 * colors.Length); //Copy Colors
-
-            return geom;
-        }
-    }
-
-
 
     public class ArrowHead : Primitive
     {
@@ -1102,6 +1037,21 @@ namespace NbCore.Primitives
             GeomObject geom = new();
             geom.Name = name;
 
+            //Find AABBs
+            NbVector3 AABBMIN = new NbVector3(100000000);
+            NbVector3 AABBMAX = new NbVector3(-100000000);
+            for (int i = 0; i < verts.Length / 3; i++)
+            {
+                AABBMIN.X = System.Math.Min(verts[i + 0], AABBMIN.X);
+                AABBMIN.Y = System.Math.Min(verts[i + 1], AABBMIN.Y);
+                AABBMIN.Z = System.Math.Min(verts[i + 2], AABBMIN.Z);
+
+                AABBMAX.X = System.Math.Max(verts[i + 0], AABBMAX.X);
+                AABBMAX.Y = System.Math.Max(verts[i + 1], AABBMAX.Y);
+                AABBMAX.Z = System.Math.Max(verts[i + 2], AABBMAX.Z);
+            }
+            geom.bboxes.Add(new NbVector3[] { AABBMIN, AABBMAX });
+
             //Set main Geometry Info
             geom.vertCount = verts.Length / 0x3;
             geom.indicesCount = indices.Length;
@@ -1197,16 +1147,12 @@ namespace NbCore.Primitives
         //Constructor
         public LineCross(float scale)
         {
-            //Set type
-            //this.type = "LOCATOR";
-            //Assemble geometry in the constructor
-            //X
-            verts = new float[6 * 3] { 1.0f, 0.0f, 0.0f,
-                   -1.0f, 0.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, -1.0f, 0.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, -1.0f};
+            verts = new float[6 * 3] { 1.0f,  0.0f,   0.0f,
+                                      -1.0f,  0.0f,   0.0f,
+                                       0.0f,  1.0f,   0.0f,
+                                       0.0f, -1.0f,   0.0f,
+                                       0.0f,  0.0f,   1.0f,
+                                       0.0f,  0.0f,  -1.0f};
 
             //Apply Scane to verts
             for (int i = 0; i < 3 * 6; i++)
@@ -1217,6 +1163,7 @@ namespace NbCore.Primitives
             float[] verts_combined = new float[b_size];
 
             Array.Copy(verts, 0, verts_combined, 0, arraysize);
+            
             //Colors
             float[] colors = new float[6 * 3] { 1.0f, 0.0f, 0.0f,
                     1.0f, 0.0f, 0.0f,
@@ -1337,6 +1284,21 @@ namespace NbCore.Primitives
             
             //Replace verts
             verts = verts_combined;
+
+            geom = getGeom();
+        }
+
+        public LineSegment(NbVector3 start, NbVector3 end, NbVector3 color)
+        {
+            verts = new float[2 * 3];
+            verts[0] = start.X; verts[1] = start.Y; verts[2] = start.Z;
+            verts[3] = end.X; verts[4] = end.Y; verts[5] = end.Z;
+
+            float[] colors = new float[2 * 3];
+            colors[0] = color.X; colors[1] = color.Y; colors[2] = color.Z;
+            colors[3] = color.X; colors[4] = color.Y; colors[5] = color.Z;
+
+            indices = new int[0];
 
             geom = getGeom();
         }

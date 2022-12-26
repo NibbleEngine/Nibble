@@ -79,7 +79,7 @@ namespace NbCore
             s.GetReferencedShaderSources(ref RefShaderSources);
             foreach (NbShaderSource ss in RefShaderSources)
                 ss.IsUpdated += OnSourceUpdate;
-        }   
+        }
 
         public override NbShaderConfig Clone()
         {
@@ -96,6 +96,9 @@ namespace NbCore
             writer.WriteStartObject();
             writer.WritePropertyName("ObjectType");
             writer.WriteValue(GetType().FullName);
+
+            writer.WritePropertyName("Path");
+            writer.WriteValue(Path);
 
             writer.WritePropertyName("Name");
             writer.WriteValue(Name);
@@ -120,6 +123,7 @@ namespace NbCore
         public static NbShaderConfig Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
             string name = token.Value<string>("Name");
+            string entitypath = token.Value<string>("Path");
 
             NbShaderSource vs = null;
             NbShaderSource fs = null;
@@ -149,6 +153,7 @@ namespace NbCore
 
             NbShaderConfig config = new NbShaderConfig(vs, fs, null, null, null, mode);
             config.Name = name;
+            config.Path = entitypath;
             config.Hash = GetHash(vs, fs, null, null, null, mode);
             
             return config;

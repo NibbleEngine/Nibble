@@ -21,11 +21,6 @@ namespace NbCore.UI.ImGui
             EngineRef = engine;
             _controller = new ImGuiController(width, height); //Init with a start size
 
-            //Enable docking by default
-            ImGuiIOPtr io = ImGuiNET.ImGui.GetIO();
-            io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; //Enable Docking
-            io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; //Enable MultipleViewport
-
             //Initialize items
             LogViewer = new();
         }

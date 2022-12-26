@@ -241,9 +241,14 @@ namespace NbCore.Systems
 
             //Add mesh to the default mesh group if it is not assigned to any group
             if (save_to_group && mesh.Group == null)
-                MeshGroupDict[0].AddMesh(mesh); //Add to default mesh group
+            {
+                //Add to default mesh group
+                if (mesh.Material?.Class == NbMaterialClass.Transluscent)
+                    MeshGroupDict[0].AddTransparentMesh(mesh); 
+                else
+                    MeshGroupDict[0].AddOpaqueMesh(mesh);
+            }
         }
-        
         
         public void RegisterEntity(MeshComponent mc)
         {
@@ -510,7 +515,7 @@ namespace NbCore.Systems
 
         private void renderDefaultMeshes()
         {
-            GL.Disable(EnableCap.CullFace);
+            Renderer.SetCullFace(false);
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
             //Collisions
@@ -593,9 +598,7 @@ namespace NbCore.Systems
                 }
             }
 
-            
-
-            GL.Enable(EnableCap.CullFace);
+            Renderer.SetCullFace(true);
         }
 
         private void renderTestQuad()
@@ -622,7 +625,7 @@ namespace NbCore.Systems
             foreach (NbMeshGroup mg in MeshGroups)
             {
                 Renderer.BindGroupBuffer(mg);
-                foreach (NbMesh mesh in mg.Meshes)
+                foreach (NbMesh mesh in mg.OpaqueMeshes)
                 {
                     if (mesh.InstanceCount == 0)
                         continue;
@@ -656,6 +659,7 @@ namespace NbCore.Systems
             //renderTestQuad();
             renderStaticMeshes(); //Deferred Rendered MESHES
             //renderDecalMeshes(); //Render Decals
+            renderTransparent();
             renderDefaultMeshes(); //Collisions, Locators, Joints
             
             if (RenderState.settings.RenderSettings.UseLighting)
@@ -668,7 +672,6 @@ namespace NbCore.Systems
 
             //FORWARD STAGE - TRANSPARENT MESHES
             //renderTransparent(); //Directly to Pbuf
-
         }
         
         private void renderDecalMeshes()
@@ -736,26 +739,22 @@ namespace NbCore.Systems
             //Set polygon mode
             GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
 
-            //REWRITE
-            //foreach (GLSLShaderConfig shader in ShaderMgr.GLForwardTransparentShaders)
-            //{
-            //    Renderer.EnableShaderProgram(shader); //Set Program
-                
-            //    foreach (NbMaterial mat in ShaderMgr.GetShaderMaterials(shader))
-            //    {
-                    
-            //        //foreach (NbMesh mesh in MaterialMgr.GetMaterialMeshes(mat))
-            //        //{
-            //        //    if (mesh.InstanceCount == 0)
-            //        //        continue;
-                    
-            //        //    Renderer.RenderMesh(mesh, mat);
-            //        //}
-                    
-            //    }
-            //}
+            foreach (NbMeshGroup mg in MeshGroups)
+            {
+                Renderer.BindGroupBuffer(mg);
+                foreach (NbMesh mesh in mg.TransparentMeshes)
+                {
+                    if (mesh.InstanceCount == 0)
+                        continue;
 
-            Renderer.UnbindMeshBuffers();
+                    NbMaterial mat = MaterialMgr.Get(mesh.Material.ID);
+                    Renderer.SetProgram(mat.Shader.ProgramID);
+                    Renderer.RenderMesh(mesh, mat);
+                    frameStats.RenderedVerts += mesh.InstanceCount * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics);
+                    frameStats.RenderedIndices += mesh.InstanceCount * mesh.MetaData.BatchCount;
+                }
+            }
+            
             GL.DepthMask(true); //Re-enable depth buffer
             
             //Composite Step

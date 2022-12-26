@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using NbCore.Common;
 using System.Reflection;
-using Newtonsoft.Json;
+
 
 namespace NbCore
 {
@@ -76,8 +76,8 @@ namespace NbCore
         {
             FileSystemWatcher fw = new FileSystemWatcher();
             fw.Changed += file_changed;
-            fw.Path = Path.GetDirectoryName(filepath);
-            fw.Filter = Path.GetFileName(filepath);
+            fw.Path = System.IO.Path.GetDirectoryName(filepath);
+            fw.Filter = System.IO.Path.GetFileName(filepath);
             fw.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size;
             fw.EnableRaisingEvents = true;
             _watcher = fw;
@@ -97,7 +97,7 @@ namespace NbCore
             {
                 //Parse source file
                 StringReader sr = new StringReader(SourceText);
-                string dirpath = Path.GetDirectoryName(SourceFilePath);
+                string dirpath = System.IO.Path.GetDirectoryName(SourceFilePath);
                 string line;
                 string[] split;
                 string staticpart = "";
@@ -124,7 +124,7 @@ namespace NbCore
 
                         //get included filepath
                         string npath = split[1].Trim('"');
-                        npath = Path.Combine(dirpath, npath);
+                        npath = System.IO.Path.Combine(dirpath, npath);
                         //Add dynamic source
                         //Check if Shader Source exists for this path
                         NbShaderSource ss = RenderState.engineRef.GetShaderSourceByFilePath(npath);
@@ -200,7 +200,7 @@ namespace NbCore
         private void file_changed(object sender, FileSystemEventArgs e)
         {
             FileSystemWatcher fw = (FileSystemWatcher)sender;
-            string path = Path.Combine(fw.Path, fw.Filter);
+            string path = System.IO.Path.Combine(fw.Path, fw.Filter);
             
             lock (_watchFiles)
             {
@@ -276,18 +276,18 @@ namespace NbCore
             bool use_tmp_file = false;
             if (path.EndsWith(".glsl"))
             {
-                string execPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+                string execPath = System.IO.Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
                 //string execPath = "G:\\Projects\\Model Viewer C#\\Model Viewer\\Viewer_Unit_Tests\\bin\\Debug";
-                path = Path.Combine(execPath, path);
+                path = System.IO.Path.Combine(execPath, path);
                 Console.WriteLine(path);
                 //Check if file exists
                 if (!File.Exists(path))
                 {
                     //Because of shader files coming either in raw or path format, I should check for resources in
                     //the local Shaders folder as well
-                    string basename = Path.GetFileName(path);
-                    string dirname = Path.GetDirectoryName(path);
-                    path = Path.Combine(dirname, "Shaders", basename);
+                    string basename = System.IO.Path.GetFileName(path);
+                    string dirname = System.IO.Path.GetDirectoryName(path);
+                    path = System.IO.Path.Combine(dirname, "Shaders", basename);
                     if (!File.Exists(path))
                         throw new ApplicationException("Preprocessor: File not found. Check the input filepath");
                 }
@@ -296,7 +296,7 @@ namespace NbCore
                 if (initWatchers)
                     addFileWatcher(path);
 
-                split = Path.GetDirectoryName(path).Split(Path.PathSeparator);
+                split = System.IO.Path.GetDirectoryName(path).Split(System.IO.Path.PathSeparator);
                 relpath = split[split.Length - 1];
 
                 //FileStream fs = new FileStream(path, FileMode.Open);
@@ -329,7 +329,7 @@ namespace NbCore
                     //get included filepath
                     string npath = split[1].Trim('"');
                     npath = npath.TrimStart('/');
-                    npath = Path.Combine(relpath, npath);
+                    npath = System.IO.Path.Combine(relpath, npath);
                     outline = Parser(npath, initWatchers);
                 }
                 //Skip Comments

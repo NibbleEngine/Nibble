@@ -163,8 +163,10 @@ namespace NbCore
                 BatchCount = ibuffer.Length / indicesLength,
                 FirstSkinMat = 0,
                 LastSkinMat = 0,
-                VertrEndGraphics = vbuffer.Length / ((int) vx_size) - 1,
-                VertrEndPhysics = vbuffer.Length / ((int) vx_size)
+                VertrEndGraphics = vbuffer.Length / ((int)vx_size) - 1,
+                VertrEndPhysics = vbuffer.Length / ((int)vx_size),
+                AABBMIN = bboxes[0][0],
+                AABBMAX = bboxes[0][1]
             };
         }
 
@@ -178,7 +180,7 @@ namespace NbCore
         public NbMeshData GetMeshData()
         {
             NbMeshData data = new();
-            data.Hash = (ulong)(ibuffer.GetHashCode() ^ vbuffer.GetHashCode());
+            data.Hash = (ulong)(System.Math.Max(1,ibuffer.GetHashCode()) ^ vbuffer.GetHashCode());
             data.IndexBuffer = new byte[ibuffer.Length];
             data.VertexBuffer = new byte[vbuffer.Length];
             data.VertexBufferStride = vx_size;
@@ -193,8 +195,8 @@ namespace NbCore
                 data.IndicesLength = NbPrimitiveDataType.UnsignedInt;
 
             //Copy buffer data
-            System.Buffer.BlockCopy(vbuffer, 0, data.VertexBuffer, 0, vbuffer.Length);
-            System.Buffer.BlockCopy(ibuffer, 0, data.IndexBuffer, 0, ibuffer.Length);
+            Buffer.BlockCopy(vbuffer, 0, data.VertexBuffer, 0, vbuffer.Length);
+            Buffer.BlockCopy(ibuffer, 0, data.IndexBuffer, 0, ibuffer.Length);
 
             return data;
         }

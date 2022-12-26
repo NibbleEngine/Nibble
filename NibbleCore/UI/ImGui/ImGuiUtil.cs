@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using NbCore.Common;
 using OpenTK.Graphics.OpenGL4;
 
 namespace NbCore.UI.ImGui
@@ -24,7 +25,7 @@ namespace NbCore.UI.ImGui
             var error = GL.GetError();
             if (error != ErrorCode.NoError)
             {
-                Debug.Print($"{title}: {error}");
+                Callbacks.Log("IMGUI", $"{title}: {error}", LogVerbosityLevel.ERROR);
             }
         }
 

@@ -9,12 +9,12 @@ namespace NbCore
     [Flags]
     public enum NbShaderMode
     {
-        DEFAULT,
-        DEFFERED,
-        LIT,
-        FORWARD,
-        DECAL,
-        SKINNED
+        DEFAULT = 1,
+        DEFFERED = 2,
+        LIT = 4,
+        FORWARD = 8,
+        DECAL = 16,
+        SKINNED = 32
     }
 
     public enum NbShaderType
@@ -37,14 +37,14 @@ namespace NbCore
         TEXT_SHADER,
         MATERIAL_SHADER,
         GBUFFER_SHADER,
-        LIGHT_PASS_LIT_SHADER,
+        LIGHT_PASS_LIT_SHADER, //18
         LIGHT_PASS_UNLIT_SHADER, //Stupid but keeping that for testing...
         BRIGHTNESS_EXTRACT_SHADER,
         GAUSSIAN_HORIZONTAL_BLUR_SHADER,
         GAUSSIAN_VERTICAL_BLUR_SHADER,
         ADDITIVE_BLEND_SHADER,
         FXAA_SHADER,
-        TONE_MAPPING,
+        TONE_MAPPING,  //25
         INV_TONE_MAPPING,
         BWOIT_COMPOSITE_SHADER
     }
@@ -123,7 +123,7 @@ namespace NbCore
 
     public enum NbUniformType
     {
-        Bool,
+        Bool = 0x0,
         Sampler2D,
         Sampler3D,
         Sampler2DArray,

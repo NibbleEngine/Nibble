@@ -546,7 +546,7 @@ namespace NbCore.Platform.Graphics
                         {
                             //Upload sampler
                             NbSampler nbSampler = (NbSampler) sstate.Value;
-                            GL.Uniform1(shader.uniformLocations[key].loc, nbSampler.SamplerID);
+                            GL.Uniform1(shader.uniformLocations[key].loc, sampler_id);
                             GL.ActiveTexture(TextureUnit.Texture0 + sampler_id);
                             GL.BindTexture(TextureTargetMap[nbSampler.Texture.Data.target], nbSampler.Texture.texID);
                             sampler_id++;

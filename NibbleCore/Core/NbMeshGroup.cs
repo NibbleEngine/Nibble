@@ -10,6 +10,8 @@ namespace NbCore
     {
         public int ID;
         public List<NbMesh> Meshes = new();
+        public List<NbMesh> OpaqueMeshes = new();
+        public List<NbMesh> TransparentMeshes = new();
         public int ActiveLOD;
         public List<float> LODDistances;
         public int GroupTBO1;
@@ -28,7 +30,7 @@ namespace NbCore
                 JointBindingDataList.Add(new JointBindingData());
         }
 
-        public void AddMesh(NbMesh mesh)
+        public void AddOpaqueMesh(NbMesh mesh)
         {
             if (Meshes.Contains(mesh))
             {
@@ -36,9 +38,24 @@ namespace NbCore
                 return;
             }
 
+            OpaqueMeshes.Add(mesh);
             Meshes.Add(mesh);
             mesh.Group = this;
         }
+
+        public void AddTransparentMesh(NbMesh mesh)
+        {
+            if (Meshes.Contains(mesh))
+            {
+                Common.Callbacks.Log(this, "Mesh Already in group", LogVerbosityLevel.WARNING);
+                return;
+            }
+
+            TransparentMeshes.Add(mesh);
+            Meshes.Add(mesh);
+            mesh.Group = this;
+        }
+
     }
 
     

@@ -100,7 +100,7 @@ namespace NbCore
             writer.WritePropertyName("MeshDataHash");
             writer.WriteValue(Data.Hash.ToString());
             writer.WritePropertyName("Material");
-            writer.WriteValue(Material.Name);
+            writer.WriteValue(Material is null ? "" : Material.Name);
             writer.WriteEndObject();
         }
 

@@ -20,6 +20,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Components\ScriptComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimNodeFrameData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimPoseData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\NbConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbMeshBufferInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Image\NbImagingAPI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\TransformData.cs" />
@@ -43,7 +44,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Managers\NonEntityManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Input\KeyboardInput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Input\MouseInput.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\GLSLShaderConfig.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\NbShaderConfig.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\NbShaderSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbShader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\Half.cs" />

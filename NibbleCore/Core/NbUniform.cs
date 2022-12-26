@@ -2,6 +2,7 @@ using NbCore.IO;
 using NbCore.Math;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.CodeDom;
 using System.Runtime.CompilerServices;
 
@@ -22,6 +23,7 @@ namespace NbCore
         }
     }
 
+    [NbSerializable]
     public class NbUniform
     {
         public string Name = "Uniform"; //Uniform custom name
@@ -83,11 +85,11 @@ namespace NbCore
         {
             return new()
             {
-                Name = (string)token.Value<Newtonsoft.Json.Linq.JToken>("Name"),
-                Type = (NbUniformType)IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("Type")),
-                ShaderBinding = (string)token.Value<Newtonsoft.Json.Linq.JToken>("ShaderBinding"),
-                ShaderLocation = (int)token.Value<Newtonsoft.Json.Linq.JToken>("ShaderLocation"),
-                Values = (NbVector4)IO.NbDeserializer.Deserialize(token),
+                Name = token.Value<string>("Name"),
+                Type = (NbUniformType) Enum.Parse(typeof(NbUniformType), token.Value<string>("Type")),
+                ShaderBinding = token.Value<string>("ShaderBinding"),
+                ShaderLocation = token.Value<int>("ShaderLocation"),
+                Values = (NbVector4) NbDeserializer.Deserialize(token.Value<JToken>("Values")),
             };
         }
 

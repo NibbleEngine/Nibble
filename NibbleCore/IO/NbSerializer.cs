@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace NbCore
 {
@@ -67,6 +68,14 @@ namespace NbCore.IO
             
         }
 
+        public static void Serialize<T>(T ob, string filepath)
+        {
+            StreamWriter sw = new(filepath);
+            JsonTextWriter writer = new JsonTextWriter(sw);
+            writer.Formatting = Formatting.Indented;
+            Serialize(ob, writer);
+            writer.Close();
+        }
 
         public static void Serialize<T>(T ob, JsonTextWriter writer)
         {

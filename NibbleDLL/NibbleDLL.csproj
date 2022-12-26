@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
 		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 		<BaseOutputPath>..\Build</BaseOutputPath>
 		<RootNamespace>NibbleDLL</RootNamespace>
@@ -27,6 +27,7 @@
 	</PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="ImGui.NET" Version="1.88.0" />
       <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.2.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
@@ -46,12 +47,6 @@
 
 	<ItemGroup>
 		<ShaderFiles Include="..\NibbleCore\Shaders\**\*.glsl" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Reference Include="ImGui.NET">
-	    <HintPath>..\lib\ImGui.NET.dll</HintPath>
-	  </Reference>
 	</ItemGroup>
 
     <Import Project="..\NibbleCore\NibbleCore.projitems" Label="Shared" />

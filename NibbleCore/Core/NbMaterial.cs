@@ -1,10 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using NbCore.Common;
+using NbCore.IO;
 using Newtonsoft.Json;
 
 namespace NbCore
 {
+    public enum NbMaterialClass
+    {
+        Default,
+        Transluscent,
+    }
+
     //Stolen from NMS sorry HG ^.^
     public enum NbMaterialFlagEnum
     {
@@ -89,7 +96,7 @@ namespace NbCore
     public class NbMaterial : Entity
     {
         public string Name = "";
-        public string Class = "";
+        public NbMaterialClass Class = NbMaterialClass.Default;
         public NbUniform DiffuseColor = new(NbUniformType.Vector4, "DiffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
         public NbUniform AmbientColor = new(NbUniformType.Vector4, "AmbientColor", 1.0f, 1.0f, 1.0f, 1.0f);
         public NbUniform SpecularColor = new(NbUniformType.Vector4, "SpecularColor", 1.0f, 1.0f, 1.0f, 1.0f);
@@ -145,7 +152,7 @@ namespace NbCore
         public NbMaterial() : base(EntityType.Material)
         {
             Name = "NULL";
-            Class = "NULL";
+            Class = NbMaterialClass.Default;
             Type = EntityType.Material;
 
             //Clear material flags
@@ -348,9 +355,10 @@ namespace NbCore
         {
             NbMaterial mat = new NbMaterial();
             mat.Name = token.Value<string>("Name");
-            mat.Class = token.Value<string>("Class");
+            mat.Class = (NbMaterialClass) Enum.Parse(typeof(NbMaterialClass), token.Value<string>("Class"));
 
-            NbShaderConfig conf = RenderState.engineRef.GetShaderConfigByName(token.Value<string>("ShaderConfig"));
+            string conf_name = token.Value<string>("ShaderConfig");
+            NbShaderConfig conf = RenderState.engineRef.GetShaderConfigByName(conf_name);
 
             //Deserialize flags
             Newtonsoft.Json.Linq.JToken flag_tkns = token.Value<Newtonsoft.Json.Linq.JToken>("Flags");
@@ -367,25 +375,31 @@ namespace NbCore
             foreach (Newtonsoft.Json.Linq.JToken tkn in uniform_tkns.Children())
                 mat.Uniforms.Add((NbUniform)IO.NbDeserializer.Deserialize(tkn));
 
-            //Calculate Shader hash
-            ulong shader_hash = RenderState.engineRef.CalculateShaderHash(conf, RenderState.engineRef.GetMaterialShaderDirectives(mat));
 
-            NbShader shader = RenderState.engineRef.GetShaderByHash(shader_hash);
-
-            if (shader == null)
+            if (conf == null)
             {
-                //Compile shader
-                shader = new()
+                Callbacks.Log(typeof(NbDeserializer), $"Unknown shader configuration {conf_name}. Unable to attach shader to material {mat.Name}", LogVerbosityLevel.WARNING);
+            } else
+            {
+                //Calculate Shader hash
+                ulong shader_hash = RenderState.engineRef.CalculateShaderHash(conf, RenderState.engineRef.GetMaterialShaderDirectives(mat));
+                NbShader shader = RenderState.engineRef.GetShaderByHash(shader_hash);
+
+                if (shader == null)
                 {
-                    directives = RenderState.engineRef.GetMaterialShaderDirectives(mat)
-                };
+                    //Compile shader
+                    shader = new()
+                    {
+                        directives = RenderState.engineRef.GetMaterialShaderDirectives(mat)
+                    };
 
-                shader.SetShaderConfig(conf);
-                RenderState.engineRef.CompileShader(shader);
+                    shader.SetShaderConfig(conf);
+                    RenderState.engineRef.CompileShader(shader);
 
+                }
+                mat.AttachShader(shader);
             }
 
-            mat.AttachShader(shader);
             return mat;
         }
 

@@ -39,6 +39,7 @@ namespace NbCore
     {
         //Public
         public ulong NameHash;
+        public string Path = ""; //Entity path (if any)
         public EntityType Type;
         public ulong ID = 0xFFFFFFFF;
         public long testID = 0; //TODO: remove that when we're happy with memory disposal

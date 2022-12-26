@@ -1,11 +1,16 @@
-﻿using System;
+﻿using NbCore.Common;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace NbCore
 {
     public delegate void ShaderUpdatedEventHandler(NbShader shader);
 
+    [NbSerializable]
     public class NbShader : Entity
     {
         //Program ID
@@ -22,7 +27,7 @@ namespace NbCore
         public Dictionary<string, NbUniformFormat> uniformLocations = new();
         public NbShaderState CurrentState = NbShaderState.Create(); //Empty state
         public Dictionary<NbShaderSourceType, int> SourceObjects = new();
-        public new NbShaderType Type;
+        public new NbShaderType Type = NbShaderType.NULL_SHADER;
 
         //Shader Compilation log
         public string CompilationLog = "";
@@ -97,6 +102,57 @@ namespace NbCore
         {
             throw new NotImplementedException();
         }
+
+
+        public void Serialize(JsonTextWriter writer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().FullName);
+
+            writer.WritePropertyName("Path");
+            writer.WriteValue(Path);
+
+            writer.WritePropertyName("Config");
+            writer.WriteValue(RefShaderConfig.Name);
+
+            writer.WritePropertyName("Type");
+            writer.WriteValue(Type);
+
+            writer.WritePropertyName("IsGeneric");
+            writer.WriteValue(IsGeneric);
+
+            writer.WritePropertyName("Directives");
+            writer.WriteStartArray();
+            foreach (string val in directives)
+                writer.WriteValue(val);
+            
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+
+        }
+        
+        public static NbShader Deserialize(JToken token)
+        {
+            string path = token.Value<string>("Path");
+            string confname = token.Value<string>("Config");
+            
+            //LIT
+            NbShader shader = new()
+            {
+                Type = (NbShaderType)token.Value<int>("Type"),
+                IsGeneric = token.Value<bool>("IsGeneric") //TODO: Fix
+            };
+
+            //Add Directives
+            foreach (string directive in token["directives"])
+                shader.directives.Add(directive);
+            
+            shader.SetShaderConfig(RenderState.engineRef.GetShaderConfigByName(confname));
+            Callbacks.Assert(RenderState.engineRef.CompileShader(shader), "Error on shader compilation");
+            return shader;
+        }
+
 
     }
 }

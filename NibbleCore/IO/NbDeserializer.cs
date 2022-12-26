@@ -4,12 +4,24 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.IO;
 
 namespace NbCore.IO
 {
     public static class NbDeserializer
     {
-        public static object Deserialize(Newtonsoft.Json.Linq.JToken token)
+        public static JObject DeserializeToToken(string filepath)
+        {
+            StreamReader sr = new(filepath);
+            JsonTextReader reader = new JsonTextReader(sr);
+            var serializer = new JsonSerializer();
+            JObject ob = serializer.Deserialize<JObject>(reader);
+            reader.Close();
+            return ob;
+        }
+
+        public static object Deserialize(JToken token)
         {
             Type type = Type.GetType(token.Value<string>("ObjectType"));
             
