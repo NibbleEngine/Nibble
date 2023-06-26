@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using OpenTK.Graphics.OpenGL4;
 using Newtonsoft.Json.Linq;
-
+using NbCore.Common;
 
 namespace NbCore.Text
 {
@@ -32,33 +32,19 @@ namespace NbCore.Text
         public Dictionary<string, Symbol> symbols = new Dictionary<string, Symbol>();
         private bool disposedValue;
 
-        public Font(string path, int format)
+        public Font(string fnt_path, string img_path, int format)
         {
-            FileStream fnt_fs = new FileStream(path, FileMode.Open);
-            StreamReader fnt_sr = new StreamReader(fnt_fs);
-
-            string img_path = Path.ChangeExtension(path, "png");
-
-            byte[] data = File.ReadAllBytes(img_path);
-
             if (format == 1)
-                loadHieroFont(fnt_sr, data);
+                loadHieroFont(fnt_path, img_path);
             else
-                loadJsonFont(fnt_sr, data);
+                loadJsonFont(fnt_path, img_path);
         }
 
-        public Font(byte[] fnt_data, byte[] img_data, int format)
+
+        private void loadHieroFont(string fnt_path, string img_path)
         {
-            MemoryStream ms = new MemoryStream(fnt_data);
-            StreamReader fnt_sr = new StreamReader(ms);
+            StreamReader fnt_sr = new StreamReader(fnt_path);
             
-            if (format == 1)
-                loadHieroFont(fnt_sr, img_data);
-        }
-
-
-        private void loadHieroFont(StreamReader fnt_sr, byte[] img_data)
-        {
             while (!fnt_sr.EndOfStream)
             {
                 string line = fnt_sr.ReadLine();
@@ -115,10 +101,14 @@ namespace NbCore.Text
                 }
             }
 
+            byte[] img_data = File.ReadAllBytes(img_path);
+
             //Generate texture
-            NbTexture tex = new NbTexture();
-            tex.Data.target = NbTextureTarget.Texture2DArray;
-            tex.texID = genGLTexture(img_data);
+            NbTexture tex = RenderState.engineRef.CreateTexture(img_data, img_path, NbTextureWrapMode.Repeat, 
+                                                                NbTextureFilter.LinearMipmapLinear, NbTextureFilter.Linear);
+            
+            //tex.Data.target = NbTextureTarget.Texture2DArray;
+            //tex.texID = genGLTexture(img_data);
 
             //Generate Sampler
             NbSampler sampl = new NbSampler();
@@ -132,8 +122,10 @@ namespace NbCore.Text
             material = new NbMaterial();
         }
 
-        private void loadJsonFont(StreamReader fnt_sr, byte[] img_data)
+        private void loadJsonFont(string fnt_path, string img_path)
         {
+            StreamReader fnt_sr = new StreamReader(fnt_path);
+            
             fnt_sr.BaseStream.Seek(0, SeekOrigin.Begin);
             string data = fnt_sr.ReadToEnd();
 
@@ -162,10 +154,10 @@ namespace NbCore.Text
 
             //Generate texture
             //TODO: This should be done by the engine. MOVE IT
-            NbTexture tex = new NbTexture();
-            tex.Data.target = NbTextureTarget.Texture2DArray;
-            tex.texID = genGLTexture(img_data);
-
+            byte[] img_data = File.ReadAllBytes(img_path);
+            NbTexture tex = RenderState.engineRef.CreateTexture(img_data, img_path,
+                NbTextureWrapMode.Repeat, NbTextureFilter.LinearMipmapLinear, NbTextureFilter.Linear);
+            
             //Generate Sampler
             NbSampler sampl = new NbSampler();
             sampl.Name = "gDiffuseMap";

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NbCore.Common;
 using Newtonsoft.Json;
 
 namespace NbCore
@@ -44,6 +45,11 @@ namespace NbCore
             AddSource(NbShaderSourceType.TessControlShader, ttcs);
             AddSource(NbShaderSourceType.TessEvaluationShader, ttes);
 
+            //Check if all sources are null
+            if (vvs == null && ffs == null && ggs == null && ttcs == null && ttes == null)
+                Callbacks.Log(this, string.Format("Null shader sources for configuration {0}. Nothing to add to the config.", Name),
+                    LogVerbosityLevel.WARNING);
+
             //Calculate Config Hash
             Hash = GetHash(vvs,ffs,ggs,ttcs, ttes, mode);
         }
@@ -72,6 +78,7 @@ namespace NbCore
         {
             if (s == null)
                 return;
+            
             Sources[t] = s;
 
             //Add shader reference to source object
@@ -133,7 +140,7 @@ namespace NbCore
                 if (ct["VertexShader"] != null)
                 {
                     string path = ct.Value<string>("VertexShader");
-                    vs = Common.RenderState.engineRef.GetShaderSourceByFilePath(path);
+                    vs = RenderState.engineRef.GetShaderSourceByFilePath(path);
                     if (vs == null)
                     {
                         vs = new NbShaderSource(path, true);
@@ -141,7 +148,7 @@ namespace NbCore
                 } else if (ct["FragmentShader"] != null)
                 {
                     string path = ct.Value<string>("FragmentShader");
-                    fs = Common.RenderState.engineRef.GetShaderSourceByFilePath(path);
+                    fs = RenderState.engineRef.GetShaderSourceByFilePath(path);
                     if (fs == null)
                     {
                         fs = new NbShaderSource(path, true);

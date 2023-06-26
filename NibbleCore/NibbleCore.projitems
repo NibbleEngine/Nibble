@@ -21,6 +21,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimNodeFrameData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimPoseData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)core\NbConfig.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\NbFont.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbMeshBufferInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Image\NbImagingAPI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\TransformData.cs" />

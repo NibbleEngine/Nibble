@@ -220,45 +220,12 @@ namespace NbCore
         }
 
 
-        private void LoadDefaultResources()
-        {
-            //Iterate in local folder and load existing resources
-            string fontPath = "Fonts";
-
-            if (Directory.Exists(fontPath))
-            {
-                foreach (string fontFileName in Directory.GetFiles(fontPath))
-                {
-                    string ext = Path.GetExtension(fontFileName).ToUpper();
-                    if (ext == "FNT")
-                    {
-                        string fontAtlasName = fontFileName;
-                        Path.ChangeExtension(fontAtlasName, "png");
-
-                        if (File.Exists(Path.Combine(fontPath, fontAtlasName)))
-                        {
-                            AddFont(Path.Combine(fontPath, fontFileName),
-                                Path.Combine(fontPath, fontAtlasName));
-                        }
-                        else
-                        {
-                            Log(string.Format("Cannot load font {0}. Missing font atas", fontFileName),
-                                LogVerbosityLevel.WARNING);
-                        }
-                    }
-                }
-            }
-
-        }
-
+        
         #endregion
 
         public Font AddFont(string fontPath, string fontAtlas)
         {
-            byte[] fontData = File.ReadAllBytes(fontPath);
-            byte[] fontAtlasData = File.ReadAllBytes(fontAtlas);
-            
-            Font f = new Font(fontData, fontAtlasData, 1);
+            Font f = new Font(fontPath, fontAtlas, 1);
             GetSystem<RenderingSystem>().FontMgr.addFont(f);
             return f;
         }
@@ -292,6 +259,13 @@ namespace NbCore
             {
                 GetSystem<RenderingSystem>().ShaderMgr.AddShader(shader);
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RegisterEntity(NbFont font)
+        {
+            //TODO: Make sure to register the font as an entity
+            AddFont(font.fontPath, font.atlasPath);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -612,8 +586,6 @@ namespace NbCore
 
             //TODO: These are editor resources, move them to the editor
             //Load Resources 
-            LoadDefaultResources();
-            AddDefaultShaderSources();
             //AddDefaultShaderConfigs();
             
             LoadAssets();
@@ -625,55 +597,6 @@ namespace NbCore
             Log("Initialized", LogVerbosityLevel.INFO);
         }
 
-        private void AddDefaultShaderSources()
-        {
-            //Local function
-            void WalkDirectory(DirectoryInfo dir)
-            {
-                FileInfo[] files = dir.GetFiles("*.glsl");
-                DirectoryInfo[] subdirs = dir.GetDirectories();
-
-                if (subdirs.Length != 0)
-                {
-                    foreach (DirectoryInfo subdir in subdirs)
-                        WalkDirectory(subdir);
-                }
-
-                if (files.Length != 0)
-                {
-                    foreach (FileInfo file in files)
-                    {
-                        //Convert filepath to single 
-                        string filepath = FileUtils.FixPath(file.FullName);
-                        //Add source file
-                        Callbacks.Log(this, $"Working On {filepath}", LogVerbosityLevel.INFO);
-                        if (GetShaderSourceByFilePath(filepath) == null)
-                        {
-                            //Construction includes registration
-                            NbShaderSource ss = new(filepath, true);
-                        }
-                    }
-                }
-            }
-
-            DirectoryInfo dirInfo = new("Assets/Shaders/Source");
-            if (!dirInfo.Exists)
-                return;
-            
-            WalkDirectory(dirInfo);
-            
-            //Now that all sources are loaded we can start processing all of them
-            //Step 1: Process Shaders
-            List<Entity> sourceList = GetEntityTypeList(EntityType.ShaderSource);
-            int i = 0;
-            while (i < sourceList.Count) //This way can account for new entries 
-            {
-                ((NbShaderSource)sourceList[i]).Process();
-                i++;
-            }
-
-        }
-
         private void LoadAssets()
         {
             Dictionary<Type, List<string>> fileDict = new();
@@ -682,6 +605,7 @@ namespace NbCore
             fileDict[typeof(NbMaterial)] = new();
             fileDict[typeof(NbShaderConfig)] = new();
             fileDict[typeof(NbShader)] = new();
+            fileDict[typeof(NbFont)] = new();
 
             //Fetch files
             Directory.CreateDirectory("Assets");
@@ -699,6 +623,8 @@ namespace NbCore
                     fileDict[typeof(NbShaderConfig)].Add(file);
                 else if (file.EndsWith(".nbshader"))
                     fileDict[typeof(NbShader)].Add(file);
+                else if (file.EndsWith(".nbfont"))
+                    fileDict[typeof(NbFont)].Add(file);
             }
 
             //Load Shader configurations
@@ -733,6 +659,13 @@ namespace NbCore
             foreach (string file in fileDict[typeof(NbMesh)])
             {
                 NbMesh ob = (NbMesh)NbDeserializer.Deserialize(NbDeserializer.DeserializeToToken(file));
+                RegisterEntity(ob);
+            }
+
+            //Load Fonts
+            foreach (string file in fileDict[typeof(NbFont)])
+            {
+                NbFont ob = (NbFont)NbDeserializer.Deserialize(NbDeserializer.DeserializeToToken(file));
                 RegisterEntity(ob);
             }
 
@@ -1084,9 +1017,9 @@ namespace NbCore
         {
             //TODO: Possibly move that to a separate rendering thread
             NbTexture tex = new(name, data);
-            Platform.Graphics.GraphicsAPI.GenerateTexture(tex);
-            Platform.Graphics.GraphicsAPI.setupTextureParameters(tex, wrapmode, magFilter, minFilter, 8.0f);
-            Platform.Graphics.GraphicsAPI.UploadTexture(tex);
+            GraphicsAPI.GenerateTexture(tex);
+            GraphicsAPI.setupTextureParameters(tex, wrapmode, magFilter, minFilter, 8.0f);
+            GraphicsAPI.UploadTexture(tex);
             if (!keepData)
                 tex.Data.Data = null;
             //renderSys.TextureMgr.AddTexture(tex);
