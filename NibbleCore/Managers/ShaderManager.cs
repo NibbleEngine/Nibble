@@ -55,11 +55,6 @@ namespace NbCore.Managers
             return GenericShaderHashMap.ContainsKey(hash);
         }
 
-        public bool ShaderIDExists(ulong ID) //GUID
-        {
-            return EntityMap.ContainsKey(ID);
-        }
-
         public void MakeShaderGeneric(ulong hash)
         {
             if (ShaderHashExists(hash))

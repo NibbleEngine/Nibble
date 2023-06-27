@@ -255,8 +255,15 @@ namespace NbCore
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RegisterEntity(NbShader shader)
         {
+            if (shader is null)
+            {
+                Log("Null Shader", LogVerbosityLevel.WARNING);
+                return;
+            }
+
             if (GetSystem<EntityRegistrySystem>().RegisterEntity(shader))
             {
+                GetSystem<RenderingSystem>().RegisterEntity(shader);
                 GetSystem<RenderingSystem>().ShaderMgr.AddShader(shader);
             }
         }
@@ -297,8 +304,12 @@ namespace NbCore
                 
             if (GetSystem<EntityRegistrySystem>().RegisterEntity(mat))
             {
-                GetSystem<RenderingSystem>().MaterialMgr.AddMaterial(mat);
-
+                //Register Material to the rendering system
+                GetSystem<RenderingSystem>().RegisterEntity(mat);
+                
+                //Register Shader
+                RegisterEntity(mat.Shader);
+                
                 //Register Textures as well
                 foreach (NbSampler sampl in mat.Samplers)
                 {
@@ -339,17 +350,16 @@ namespace NbCore
                 if (e.HasComponent<MeshComponent>())
                 {
                     //Register mesh, material and the corresponding shader if necessary
-                    MeshComponent mc = e.GetComponent<MeshComponent>() as MeshComponent;
+                    MeshComponent mc = e.GetComponent<MeshComponent>();
 
-                    RegisterEntity(mc.Mesh.Material);
-                    RegisterEntity(mc.Mesh);
-                    
-                    GetSystem<RenderingSystem>().RegisterEntity(mc); //Register Mesh to Rendering System
+                    GetSystem<RenderingSystem>().RegisterEntity(mc); //Check the mesh group
+                    RegisterEntity(mc.Mesh.Material); //Register Material
+                    RegisterEntity(mc.Mesh); //Register Mesh
                 }
 
                 if (e.HasComponent<AnimComponent>())
                 {
-                    AnimComponent ac = e.GetComponent<AnimComponent>() as AnimComponent;
+                    AnimComponent ac = e.GetComponent<AnimComponent>();
                     //Iterate to all Animations
                     foreach (Animation anim in ac.AnimGroup.Animations)
                     {
@@ -589,11 +599,12 @@ namespace NbCore
             //AddDefaultShaderConfigs();
             
             LoadAssets();
-            
+
             //CompileMainShaders();
             //AddDefaultMaterials();
             //AddDefaultPrimitives();
-            
+
+            GetSystem<RenderingSystem>().SubmitOpenMeshGroups();
             Log("Initialized", LogVerbosityLevel.INFO);
         }
 

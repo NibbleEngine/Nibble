@@ -7,6 +7,7 @@ using NbCore.Platform.Graphics;
 using NbCore.Managers;
 using NbCore.Math;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Windowing.Common.Input;
 
 namespace NbCore.Systems
 {
@@ -188,10 +189,22 @@ namespace NbCore.Systems
             
         }
 
+        public void RegisterEntity(NbShader shader)
+        {
+            ShaderMgr.AddShader(shader);
+        }
+
+        public void RegisterEntity(NbMaterial mat)
+        {
+            MaterialMgr.AddMaterial(mat);
+        }
+
         public void RegisterEntity(NbMesh mesh)
         {
+            if (mesh == null)
+                return;
+
             Renderer.AddMesh(mesh);
-            MaterialMgr.AddMaterial(mesh.Material);
             //Store Mesh Data Here
             MeshDataMgr.Add(mesh.Data.Hash, mesh.Data);
 
@@ -226,27 +239,24 @@ namespace NbCore.Systems
                     }
             }
 
-            //Check if the shader has been registered to the rendering system
-            if (mesh.Material != null && mesh.Material.Shader != null)
-            {
-                if (!ShaderMgr.ShaderIDExists(mesh.Material.Shader.ID))
-                {
-                    ShaderMgr.AddShader(mesh.Material.Shader);
-                }
-            }
-            
             //Add all meshes to the global meshlist
             if (!globalMeshList.Contains(mesh))
                 globalMeshList.Add(mesh);
 
             //Add mesh to the default mesh group if it is not assigned to any group
-            if (save_to_group && mesh.Group == null)
+            if (save_to_group)
             {
-                //Add to default mesh group
-                if (mesh.Material?.Class == NbMaterialClass.Transluscent)
-                    MeshGroupDict[0].AddTransparentMesh(mesh); 
-                else
-                    MeshGroupDict[0].AddOpaqueMesh(mesh);
+                if (mesh.Group == null)
+                {
+                    //Add to default mesh group
+                    if (mesh.Material?.Class == NbMaterialClass.Transluscent)
+                        MeshGroupDict[0].AddTransparentMesh(mesh);
+                    else
+                        MeshGroupDict[0].AddOpaqueMesh(mesh);
+                } else
+                {
+                    AddMeshToOpenGroup(mesh.Group.ID, mesh);
+                }
             }
         }
         
@@ -255,25 +265,9 @@ namespace NbCore.Systems
             if (mc == null)
                 return;
 
-            if (mc.Mesh == null)
-                return;
-
-            RegisterEntity(mc.Mesh);
             if (mc.Mesh.Group != null)
                 AddNewMeshGroup(mc.Mesh.Group);
         }   
-
-        private void RegisterEntity(SceneGraphNode root)
-        {
-            MeshComponent mc = root.GetComponent<MeshComponent>() as MeshComponent;
-            RegisterEntity(mc);
-            
-            //Repeat process with children
-            foreach (SceneGraphNode child in root.Children)
-            {
-                RegisterEntity(child);
-            }
-        }
 
         //This method updates UBO data for rendering
         private void prepareCommonPerFrameUBO()

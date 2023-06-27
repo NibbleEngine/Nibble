@@ -44,7 +44,7 @@ namespace NbCore.Systems
                 return;
             }
             
-            TransformComponent tc = e.GetComponent<TransformComponent>() as TransformComponent;
+            TransformComponent tc = e.GetComponent<TransformComponent>();
             
             //Insert to Maps
             EntityDataMap[e.ID] = tc;
@@ -72,7 +72,7 @@ namespace NbCore.Systems
                 return;
             }
 
-            TransformComponent tc = e.GetComponent<TransformComponent>() as TransformComponent;
+            TransformComponent tc = e.GetComponent<TransformComponent>();
 
             //Remove from maps
             EntityDataMap.Remove(e.ID);
@@ -161,49 +161,49 @@ namespace NbCore.Systems
 
         public static void SetEntityLocation(Entity e, NbVector3 loc)
         {
-            TransformData td = (e.GetComponent<TransformComponent>() as TransformComponent).Data;
+            TransformData td = e.GetComponent<TransformComponent>().Data;
             td.localTranslation = loc;
         }
 
         public static void SetEntityRotation(Entity e, NbQuaternion rot)
         {
-            TransformData td = (e.GetComponent<TransformComponent>() as TransformComponent).Data;
+            TransformData td = (e.GetComponent<TransformComponent>()).Data;
             td.localRotation = rot;
         }
 
         public static void SetEntityScale(Entity e, NbVector3 scale)
         {
-            TransformData td = (e.GetComponent<TransformComponent>() as TransformComponent).Data;
+            TransformData td = e.GetComponent<TransformComponent>().Data;
             td.localScale = scale;
         }
 
         public static NbMatrix4 GetEntityLocalMat(Entity e)
         {
-            TransformData td = (e.GetComponent<TransformComponent>() as TransformComponent).Data;
+            TransformData td = e.GetComponent<TransformComponent>().Data;
             return td.LocalTransformMat;
         }
 
         public static NbQuaternion GetEntityLocalRotation(Entity e)
         {
-            TransformData td = (e.GetComponent<TransformComponent>() as TransformComponent).Data;
+            TransformData td = e.GetComponent<TransformComponent>().Data;
             return td.localRotation;
         }
 
         public static NbMatrix4 GetEntityWorldMat(Entity e)
         {
-            TransformData td = (e.GetComponent<TransformComponent>() as TransformComponent).Data;
+            TransformData td = e.GetComponent<TransformComponent>().Data;
             return td.WorldTransformMat;
         }
 
         public static NbVector4 GetEntityWorldPosition(Entity e)
         {
-            TransformData td = (e.GetComponent<TransformComponent>() as TransformComponent).Data;
+            TransformData td = e.GetComponent<TransformComponent>().Data;
             return td.WorldPosition;
         }
 
         public static TransformData GetEntityTransformData(Entity e)
         {
-            return (e.GetComponent<TransformComponent>() as TransformComponent).Data;
+            return e.GetComponent<TransformComponent>().Data;
         }
 
         public override void CleanUp()
