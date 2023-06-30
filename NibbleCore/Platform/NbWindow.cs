@@ -44,7 +44,9 @@ namespace NbCore.Platform.Windowing
         public virtual bool IsMouseButtonPressed(NbMouseButton btn) { throw new System.NotImplementedException(); }
         public virtual bool IsMouseButtonReleased(NbMouseButton btn) { throw new System.NotImplementedException(); }
 
-
+        public virtual void SetRenderFrameFrequency(int fps) { throw new System.NotImplementedException(); }
+        public virtual void SetUpdateFrameFrequency(int fps) { throw new System.NotImplementedException(); }
+        public virtual void SetVSync(bool status) { throw new System.NotImplementedException(); }
 
         public void InvokeMouseButtonDownEvent(NbMouseButtonArgs args)
         {

@@ -27,20 +27,17 @@
 	</PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="ImGui.NET" Version="1.88.0" />
+      <PackageReference Include="ImGui.NET" Version="1.89.6" />
       <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-      <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.2.0" />
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-      <PackageReference Condition="$(DefineConstants.Contains('OPENGL'))" Include="OpenTK" Version="4.7.4" />
-      <PackageReference Include="SixLabors.ImageSharp" Version="2.1.3" />
+      <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+      <PackageReference Condition="$(DefineConstants.Contains('OPENGL'))" Include="OpenTK" Version="4.7.7" />
+      <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
       <PackageReference Include="System.CodeDom" Version="6.0.0" />
     </ItemGroup>
 
 	<ItemGroup>
 		<Content Include="..\lib\cimgui\linux-x64\cimgui.so" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' ">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</Content>
-		<Content Include="..\lib\cimgui\win-x64\cimgui.dll" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' ">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>

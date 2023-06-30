@@ -7,6 +7,7 @@ using NbCore.Math;
 using ImGuiNET;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using NbCore.Common;
 
 namespace NbCore.Platform.Windowing
 {
@@ -125,11 +126,12 @@ namespace NbCore.Platform.Windowing
         private void RenderFrameDelegate(FrameEventArgs args)
         {
             OnRenderUpdate(args.Time);
-            _win.SwapBuffers();
             //Explicitly Handle Mouse Scroll
             MouseScrollPrevious = MouseScroll;
             MouseScroll.X = _win.MouseState.Scroll.X;
             MouseScroll.Y = _win.MouseState.Scroll.Y;
+
+            _win.SwapBuffers();
         }
 
         private void FrameUpdateDelegate(FrameEventArgs args)
@@ -167,22 +169,26 @@ namespace NbCore.Platform.Windowing
             return _win.IsMouseButtonReleased(NbMouseButtonArgs.NbKeyToOpenTKMap[btn]);
         }
 
-        public void SetRenderFrameFrequency(int freq)
+        public override void SetRenderFrameFrequency(int freq)
         {
             _win.RenderFrequency = freq;
+            RenderState.settings.RenderSettings.FPS = freq;
         }
 
-        public void SetFrameUpdateFrequency(int freq)
+        public override void SetUpdateFrameFrequency(int freq)
         {
             _win.UpdateFrequency = freq;
+            RenderState.settings.TickRate = freq;
         }
 
-        public void SetVSync(bool status)
+        public override void SetVSync(bool status)
         {
             if (status)
                 _win.VSync = VSyncMode.On;
             else
                 _win.VSync = VSyncMode.Off;
+            
+            RenderState.settings.RenderSettings.UseVSync = status;
         }
 
         public void Run()
