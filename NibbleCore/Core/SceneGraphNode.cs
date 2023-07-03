@@ -70,8 +70,14 @@ namespace NbCore
         public void SetRenderableStatusRec(bool status)
         {
             IsRenderable = status;
-            TransformComponent tc = GetComponent<TransformComponent>() as TransformComponent;
+            TransformComponent tc = GetComponent<TransformComponent>();
             tc.Data.IsActive = status;
+
+            if (HasComponent<LightComponent>())
+            {
+                LightComponent lc = GetComponent<LightComponent>();
+                lc.Data.IsRenderable = status;
+            }
             
             foreach (SceneGraphNode child in Children)
                 child.SetRenderableStatusRec(status);
@@ -105,8 +111,8 @@ namespace NbCore
             //Connect TransformComponents if both have
             if (e.HasComponent<TransformComponent>() && HasComponent<TransformComponent>())
             {
-                TransformComponent tc = GetComponent<TransformComponent>() as TransformComponent;
-                TransformComponent parent_tc = Parent.GetComponent<TransformComponent>() as TransformComponent;
+                TransformComponent tc = GetComponent<TransformComponent>();
+                TransformComponent parent_tc = Parent.GetComponent<TransformComponent>();
                 tc.Data.SetParentData(parent_tc.Data);
             }
         }
@@ -218,7 +224,7 @@ namespace NbCore
 
             if (HasComponent<MeshComponent>())
             {
-                MeshComponent mc = GetComponent<MeshComponent>() as MeshComponent;
+                MeshComponent mc = GetComponent<MeshComponent>();
                 //TODO: Remove mc from the corresponding mesh instanceRefs
             
             };

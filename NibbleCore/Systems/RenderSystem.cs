@@ -120,19 +120,18 @@ namespace NbCore.Systems
         {
             //Create gbuffer
             gBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y);
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //albedo
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //normals
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //info1
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, false); //info2
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, true); //depth
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //albedo
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //normals
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //info1
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //info2
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //depth
             
             renderBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y);
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, false); //final pass
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //color 0 - blur 0
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //color 1 - blur 1
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, false); //composite
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, true); //depth
-
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear); //final pass
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //color 0 - blur 0
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //color 1 - blur 1
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //composite
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //depth
 
             //Rebind the default framebuffer
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
@@ -259,7 +258,9 @@ namespace NbCore.Systems
                 }
             }
         }
-        
+
+        //TODO: Do we need that?
+
         public void RegisterEntity(MeshComponent mc)
         {
             if (mc == null)
@@ -297,6 +298,8 @@ namespace NbCore.Systems
                 Log("MeshGroup Already Open!", LogVerbosityLevel.WARNING);
                 return;
             }
+            
+            Log($"Opening MeshGroup with ID {mg.ID}", LogVerbosityLevel.DEBUG);
             
             OpenMeshGroups[mg.ID] = mg;
         }
@@ -355,8 +358,7 @@ namespace NbCore.Systems
         {
             if (!OpenMeshGroups.ContainsKey(id))
             {
-                Log($"There is no open MeshGroup with ID {id}!", LogVerbosityLevel.WARNING);
-                return;
+                AddNewMeshGroup(mesh.Group);
             }
 
             NbMeshGroup mg = OpenMeshGroups[id];
@@ -637,25 +639,15 @@ namespace NbCore.Systems
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         }
         
-        private void renderGeometry()
+        private void defferedShading()
         {
-            //DEFERRED STAGE - STATIC MESHES
-
-            //At first render the static meshes
-            GL.Enable(EnableCap.DepthTest);
-            GL.Enable(EnableCap.CullFace);
-            
             //DEFERRED STAGE
             GL.ClearColor(new OpenTK.Mathematics.Color4(0.0f, 0, 0, 1.0f));
-            Renderer.BindDrawFrameBuffer(gBuffer, new int[] {0, 1, 2, 3});
-            Renderer.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
-
-            //renderTestQuad();
-            renderStaticMeshes(); //Deferred Rendered MESHES
-            //renderDecalMeshes(); //Render Decals
-            renderTransparent();
-            renderDefaultMeshes(); //Collisions, Locators, Joints
+            Renderer.BindDrawFrameBuffer(gBuffer, new int[] { 0, 1, 2, 3 });
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             
+            renderGeometry();
+
             if (RenderState.settings.RenderSettings.UseLighting)
                 renderDeferredLightPass(); //Deferred Lighting Pass to pbuf
             else
@@ -666,6 +658,42 @@ namespace NbCore.Systems
 
             //FORWARD STAGE - TRANSPARENT MESHES
             //renderTransparent(); //Directly to Pbuf
+
+        }
+
+        private void forwardShading()
+        {
+            //Bind the color channel of the pbuf for drawing
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
+            GL.DrawBuffer(DrawBufferMode.ColorAttachment0); //Draw to the color channel only
+            
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
+
+            renderGeometry();
+
+            //GL.BindTexture(TextureTarget.Texture2D, renderBuffer.GetTexture(NbFBOAttachment.Attachment0).texID);
+            //GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+        }
+
+        private void renderGeometry()
+        {
+
+            //Prepare UBOs
+            prepareCommonPerFrameUBO();
+
+            //Prepare Mesh UBO
+            Renderer.PrepareMeshBuffers();
+
+            //At first render the static meshes
+            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.CullFace);
+
+            //renderTestQuad();
+            renderStaticMeshes(); //Deferred Rendered MESHES
+            //renderDecalMeshes(); //Render Decals
+            renderTransparent();
+            renderDefaultMeshes(); //Collisions, Locators, Joints
+        
         }
         
         private void renderDecalMeshes()
@@ -796,6 +824,7 @@ namespace NbCore.Systems
 
             //B: Normals
             //GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, gBuffer.fbo);
+            //GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             GL.ReadBuffer(ReadBufferMode.ColorAttachment1);
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
             GL.BlitFramebuffer(0, 0, gBuffer.Size.X, gBuffer.Size.Y, renderBuffer.Size.X / 8, 0,
@@ -834,23 +863,22 @@ namespace NbCore.Systems
             
             //Log("Rendering Frame");
             
-            //Prepare UBOs
-            prepareCommonPerFrameUBO();
-
-            //Prepare Mesh UBO
-            Renderer.PrepareMeshBuffers();
             
-            //Render Geometry
-            renderGeometry();
+            //Deferred Shading
+            //defferedShading();
 
+            //Forward Shading
+            forwardShading();
+
+            
             Renderer.PostRendering();
-            
+
             //POST-PROCESSING
-            post_process();
+            //post_process();
 
             //Pass results to Screen
-            renderFinalPass();
-            
+            //renderFinalPass();
+
             //Pass Result to Render FBO
             //Render to render_fbo
             //GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, render_fbo.fbo);
@@ -859,50 +887,7 @@ namespace NbCore.Systems
 
         }
 
-        public void render()
-        {
-            //Prepare UBOs
-            prepareCommonPerFrameUBO();
-            
-            //Render Shadows
-            renderShadows();
-
-            //Sort Lights
-            sortLights();
-            
-            //Sort Transparent Objects
-            //sortTransparent(); //NOT NEEDED ANYMORE
-            
-            //LOD filtering
-            if (RenderState.settings.RenderSettings.LODFiltering)
-            {
-                //LOD_filtering(staticMeshQueue); TODO: FIX
-                //LOD_filtering(transparentMeshQueue); TODO: FIX
-            }
-
-            //Prepare Mesh UBOs
-            Renderer.PrepareMeshBuffers();
-
-            //Render octree
-            //octree.render(resMgr.GLShaders[GLSLHelper.NbShaderType.BBOX_SHADER].program_id);
-
-            //Render Geometry
-            renderGeometry();
-
-            //Light Pass
-
-
-            //POST-PROCESSING
-            post_process();
-
-            //Final Pass
-            renderFinalPass();
-
-            //Render UI();
-            //UI Rendering is handled for now by the Window. We'll see if this has to be brought back
-            
-        }
-
+        
         /*
         private void render_cameras()
         {
@@ -1184,7 +1169,7 @@ namespace NbCore.Systems
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
             GL.DrawBuffer(DrawBufferMode.ColorAttachment0); //Draw to the color channel only
 
-            Renderer.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
 
 
             //Enable Blend
@@ -1202,15 +1187,19 @@ namespace NbCore.Systems
             
             NbMesh mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere"));
 
+            //Dump Normals
+            //GraphicsAPI.DumpTexture(gBuffer.GetTexture(NbFBOAttachment.Attachment0), "albedo");
+            //GraphicsAPI.DumpTexture(gBuffer.GetTexture(NbFBOAttachment.Attachment1), "normals");
+            
             Renderer.EnableShaderProgram(shader_conf);
             
             //Upload samplers
-            string[] sampler_names = new string[] { "albedoTex", "depthTex", "normalTex", "parameterTex01", "parameterTex02" };
+            string[] sampler_names = new string[] { "albedoTex", "normalTex", "parameterTex01", "parameterTex02", "depthTex" };
             int[] texture_ids = new int[] { gBuffer.GetTexture(NbFBOAttachment.Attachment0).texID,
-                                            gBuffer.GetTexture(NbFBOAttachment.Depth).texID,
                                             gBuffer.GetTexture(NbFBOAttachment.Attachment1).texID,
                                             gBuffer.GetTexture(NbFBOAttachment.Attachment2).texID,
-                                            gBuffer.GetTexture(NbFBOAttachment.Attachment3).texID };
+                                            gBuffer.GetTexture(NbFBOAttachment.Attachment3).texID,
+                                            gBuffer.GetTexture(NbFBOAttachment.Depth).texID};
             TextureTarget[] sampler_targets = new TextureTarget[] { TextureTarget.Texture2D, TextureTarget.Texture2D,
                                                             TextureTarget.Texture2D, TextureTarget.Texture2D, TextureTarget.Texture2D };
             for (int i = 0; i < sampler_names.Length; i++)

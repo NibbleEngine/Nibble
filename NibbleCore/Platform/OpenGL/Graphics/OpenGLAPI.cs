@@ -8,7 +8,8 @@ using NbCore.Systems;
 using NbCore.Math;
 using NbCore.Common;
 using OpenTK.Graphics.OpenGL4;
-
+using OpenTK.Mathematics;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace NbCore.Platform.Graphics
 {
@@ -93,6 +94,7 @@ namespace NbCore.Platform.Graphics
 
         public static readonly Dictionary<NbTextureFilter, int> TextureFilterMap = new()
         {
+
             { NbTextureFilter.Nearest , (int) TextureMagFilter.Nearest}, //Nearest enum for Mag and Min filters are the same
             { NbTextureFilter.Linear , (int) TextureMagFilter.Linear}, //Same
             { NbTextureFilter.NearestMipmapLinear , (int) TextureMinFilter.NearestMipmapLinear}, //Only min filter
@@ -118,7 +120,17 @@ namespace NbCore.Platform.Graphics
             { NbTextureInternalFormat.RGBA8, InternalFormat.Rgba8},
             { NbTextureInternalFormat.BGRA8, InternalFormat.Rgba8},
             { NbTextureInternalFormat.RGBA16F, InternalFormat.Rgba16f},
+            { NbTextureInternalFormat.RGBA32F, InternalFormat.Rgba32f},
             { NbTextureInternalFormat.DEPTH, InternalFormat.DepthComponent},
+        };
+
+        public static readonly Dictionary<NbTextureInternalFormat, PixelType> PixelTypeMap = new()
+        {
+            { NbTextureInternalFormat.RGBA8, PixelType.UnsignedByte},
+            { NbTextureInternalFormat.BGRA8, PixelType.UnsignedByte},
+            { NbTextureInternalFormat.RGBA16F, PixelType.Float},
+            { NbTextureInternalFormat.RGBA32F, PixelType.Float},
+            { NbTextureInternalFormat.DEPTH, PixelType.Float},
         };
 
         public static readonly Dictionary<NbTextureInternalFormat, PixelFormat> PixelFormatMap = new()
@@ -398,19 +410,9 @@ namespace NbCore.Platform.Graphics
             cpfu.frameDim.X = gBuffer.Size.X;
             cpfu.frameDim.Y = gBuffer.Size.Y;
             cpfu.rotMat = rotMat._Value;
-            cpfu.rotMatInv = rotMat._Value.Inverted();
+            cpfu.rotMatInv = Matrix4.Transpose(rotMat._Value.Inverted());
             cpfu.gfTime = (float)time;
             cpfu.MSAA_SAMPLES = gBuffer.msaa_samples;
-        }
-
-        public void ResizeViewport(int w, int h)
-        {
-            
-        }
-
-        public void Viewport(int x, int y)
-        {
-            GL.Viewport(0, 0, x, y);
         }
 
         public void SetCullFace(bool status)
@@ -595,7 +597,7 @@ namespace NbCore.Platform.Graphics
             GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
 
             //Bind Mesh Buffer
-            uint offset = (uint)(mesh.InstanceIndexBuffer[0] * Marshal.SizeOf<MeshInstance>());
+            uint offset = (uint)(mesh.AtlasBufferOffset * Marshal.SizeOf<MeshInstance>());
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
@@ -613,7 +615,7 @@ namespace NbCore.Platform.Graphics
             GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
 
             //Bind Mesh Buffer
-            uint offset = (uint)(mesh.InstanceIndexBuffer[0] * Marshal.SizeOf<MeshInstance>());
+            uint offset = (uint)(mesh.AtlasBufferOffset * Marshal.SizeOf<MeshInstance>());
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
@@ -634,7 +636,7 @@ namespace NbCore.Platform.Graphics
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
             //Bind Mesh Buffer
-            uint offset = (uint)(mesh.InstanceIndexBuffer[0] * Marshal.SizeOf<MeshInstance>());
+            uint offset = (uint)(mesh.AtlasBufferOffset * Marshal.SizeOf<MeshInstance>());
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
@@ -655,7 +657,7 @@ namespace NbCore.Platform.Graphics
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
             //Bind Mesh Buffer
-            uint offset = (uint)(mesh.InstanceIndexBuffer[0] * Marshal.SizeOf<MeshInstance>());
+            uint offset = (uint)(mesh.AtlasBufferOffset * Marshal.SizeOf<MeshInstance>());
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
@@ -676,7 +678,7 @@ namespace NbCore.Platform.Graphics
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
             //Bind Mesh Buffer
-            uint offset = (uint)(mesh.InstanceIndexBuffer[0] * Marshal.SizeOf<MeshInstance>());
+            uint offset = (uint)(mesh.AtlasBufferOffset * Marshal.SizeOf<MeshInstance>());
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
@@ -704,7 +706,7 @@ namespace NbCore.Platform.Graphics
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
             //Bind Mesh Buffer
-            uint offset = (uint)(mesh.InstanceIndexBuffer[0] * Marshal.SizeOf<MeshInstance>());
+            uint offset = (uint)(mesh.AtlasBufferOffset * Marshal.SizeOf<MeshInstance>());
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
             //Bind Mesh Buffer
@@ -837,68 +839,67 @@ namespace NbCore.Platform.Graphics
 
         #region TextureMethods
 
-        public static NbTexture CreateTexture(PixelInternalFormat fmt, int w, int h, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
+        public static void queryTextureParameters(NbTexture tex)
         {
-            NbTexture tex = new();
-            tex.texID = GL.GenTexture();
-            tex.Data = new NbTextureData()
-            {
-                Width = w,
-                Height = h,
-                target = NbTextureTarget.Texture2D
-            };
-
-            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
-            GL.TexImage2D(TextureTargetMap[tex.Data.target], 0, fmt, w, h, 0, pix_fmt, pix_type, IntPtr.Zero);
-
-            if (generate_mipmaps)
-                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            return tex;
+            TextureTarget gl_target = TextureTargetMap[tex.Data.target];
+            GL.BindTexture(gl_target, tex.texID);
+            GL.GetTexParameter(gl_target, GetTextureParameter.TextureMagFilter, out int mag_filter);
+            GL.GetTexParameter(gl_target, GetTextureParameter.TextureMinFilter, out int min_filter);
+            GL.GetTexParameter(gl_target, GetTextureParameter.TextureWrapS, out int wrapmode);
+            GL.GetTexParameter(gl_target, GetTextureParameter.TextureBaseLevel, out int baselevel);
+            GL.GetTexParameter(gl_target, GetTextureParameter.TextureMaxLevel, out int maxlevel);
+            
+            Log($"{(TextureMagFilter) mag_filter} {(TextureMinFilter)min_filter} {(TextureWrapMode)wrapmode} {baselevel} {maxlevel}", LogVerbosityLevel.INFO);
         }
-
-        public static NbTexture CreateTexture(PixelInternalFormat fmt, int w, int h, int d, PixelFormat pix_fmt, PixelType pix_type, bool generate_mipmaps)
-        {
-            NbTexture tex = new();
-            tex.texID = GL.GenTexture();
-            tex.Data.target = NbTextureTarget.Texture2DArray;
-            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
-            GL.TexImage3D(TextureTargetMap[tex.Data.target], 0, fmt, w, h, d, 0, pix_fmt, pix_type, IntPtr.Zero);
-
-            if (generate_mipmaps)
-                GL.GenerateMipmap(GenerateMipmapTarget.Texture2DArray);
-
-            return tex;
-        }
-
+        
         public static void setupTextureParameters(NbTexture tex, NbTextureWrapMode wrapMode, NbTextureFilter magFilter, NbTextureFilter minFilter, float af_amount)
         {
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
             GL.BindTexture(gl_target, tex.texID);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, TextureWrapMap[wrapMode]);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, TextureWrapMap[wrapMode]);
+            tex.Data.WrapMode = wrapMode;
             
             if (magFilter == NbTextureFilter.NearestMipmapLinear || magFilter == NbTextureFilter.LinearMipmapNearest)
                 Log($"Non compatible mag filter {magFilter}. No Mag filter used", LogVerbosityLevel.WARNING);
             else
+            {
                 GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, TextureFilterMap[magFilter]);
+                tex.Data.MagFilter = magFilter;
+            }
             
             GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, TextureFilterMap[minFilter]);
-            
+            tex.Data.MinFilter = minFilter;
+
             //Use anisotropic filtering
-            af_amount = System.Math.Max(af_amount, GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy));
-            GL.TexParameter(gl_target, (TextureParameterName)0x84FE, af_amount);
+            //af_amount = System.Math.Max(af_amount, GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy));
+            GL.TexParameter(gl_target, (TextureParameterName)0x84FE, 4.0f);
         }
 
 
 
         public static void DumpTexture(NbTexture tex, string name)
         {
-            var pixels = new byte[4 * tex.Data.Width * tex.Data.Height];
-            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
-            GL.GetTexImage(TextureTargetMap[tex.Data.target], 0, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
+            PixelType pxtype;
+            int pix_size;
 
-            NbImagingAPI.ImageSave(tex.Data, "Temp//framebuffer_raw_" + name + ".png");
+            if (tex.Data.pif == NbTextureInternalFormat.RGBA16F)
+            {
+                pxtype = PixelType.Float;
+                pix_size = 16;
+            }
+            else
+            {
+                pxtype = PixelType.UnsignedByte;
+                pix_size = 4;
+            }
+                
+            var pixels = new byte[pix_size * tex.Data.Width * tex.Data.Height];
+            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
+            GL.GetTexImage(TextureTargetMap[tex.Data.target], 0, 
+                PixelFormat.Rgba, pxtype, pixels);
+            
+            NbImagingAPI.ImageSave(tex.Data, pixels, "Temp//framebuffer_raw_" + name + ".png");
         }
 
         public static void GenerateTexture(NbTexture tex)
@@ -907,7 +908,7 @@ namespace NbCore.Platform.Graphics
             tex.texID = GL.GenTexture();
 
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
-            InternalFormat gl_pif = InternalFormatMap[tex.Data.pif];
+            //InternalFormat gl_pif = InternalFormatMap[tex.Data.pif];
 
             int mm_count = System.Math.Max(tex.Data.MipMapCount, 1);
 
@@ -926,6 +927,7 @@ namespace NbCore.Platform.Graphics
             int maxsize = System.Math.Max(tex.Data.Height, tex.Data.Width);
             int p = (int)System.Math.Floor(System.Math.Log(maxsize, 2)) + base_level;
             int q = System.Math.Min(p, max_level);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMaxLevel, q);
 
 #if (DEBUGNONO)
             //Get all mipmaps
@@ -952,14 +954,13 @@ namespace NbCore.Platform.Graphics
         {
             TextureTarget gl_target = TextureTargetMap[tex_data.target];
             InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
+            PixelType gl_pxtype = PixelTypeMap[tex_data.pif];
             
             GL.BindTexture(gl_target, tex_id);
             GL.TexImage2D(gl_target, 0, (PixelInternalFormat)gl_pif, tex_data.Width, tex_data.Height, 0,
-                    PixelFormatMap[tex_data.pif], PixelType.UnsignedByte, tex_data.Data);
-            GL.GenerateTextureMipmap(tex_id);
-
-            //Cleanup
-            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, 0); //Unbind texture PBO
+                    PixelFormatMap[tex_data.pif], gl_pxtype, tex_data.Data);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            GL.BindTexture(gl_target, 0);
         }
 
 
@@ -1203,10 +1204,10 @@ namespace NbCore.Platform.Graphics
             multiBufferSyncStatuses[multiBufferActiveId] = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
         }
 
-        public void ClearDrawBuffer(NbBufferMask mask)
+        public static void ClearDrawBuffer(NbBufferMask mask)
         {
             ClearBufferMask glmask = ClearBufferMask.None;
-
+            
             if (mask.HasFlag(NbBufferMask.Color))
                 glmask |= ClearBufferMask.ColorBufferBit;
             
@@ -1236,17 +1237,16 @@ namespace NbCore.Platform.Graphics
         }
 
         
-        public void BindFrameBuffer(int fbo_id)
+        public static void BindFrameBuffer(int fbo_id)
         {
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo_id);
         }
 
-        public void SetViewPort(int x, int y, int w, int h)
+        public static void SetViewPort(int x, int y, int w, int h)
         {
             GL.Viewport(x, y, w, h);
         }
-
-
+        
         public FBO CreateFrameBuffer(int w, int h)
         {
             FBO fbo = new(w,h);
@@ -1412,7 +1412,7 @@ namespace NbCore.Platform.Graphics
                 Callbacks.Assert(false, "Shader Compilation Error");
             }
 
-            ShaderCompilationLog(shader);
+            //ShaderCompilationLog(shader);
             loadActiveUniforms(shader);
 
             //Attach UBO binding Points
@@ -1451,7 +1451,6 @@ namespace NbCore.Platform.Graphics
             for (int i = 0; i < active_uniforms_count; i++)
             {
                 int bufSize = 64;
-                int loc;
 
                 GL.GetActiveUniform(shader.ProgramID, i, bufSize, out int size, out int length, out ActiveUniformType type, out string name);
                 string basename = name.Split("[0]")[0];

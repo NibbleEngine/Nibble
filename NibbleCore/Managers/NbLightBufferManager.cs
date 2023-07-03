@@ -22,8 +22,7 @@ namespace NbCore
             }
 
             lc.InstanceID = GetNextMeshInstanceID(ref mesh);
-            mesh.InstanceIndexBuffer[lc.InstanceID] = mesh.InstanceCount;
-
+            
             //Uplod worldMat to the meshVao
             NbMatrix4 actualWorldMat = td.WorldTransformMat;
             NbMatrix4 actualWorldMatInv = (actualWorldMat).Inverted();

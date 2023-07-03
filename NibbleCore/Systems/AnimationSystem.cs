@@ -72,12 +72,12 @@ namespace NbCore.Systems
                 group.RefMeshGroup.PrevFrameJointData = group.RefMeshGroup.NextFrameJointData;
                 group.RefMeshGroup.NextFrameJointData = temp;
 
-                SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
+                SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>();
                 
                 foreach (SceneGraphNode joint in sc.JointNodes)
                 {
-                    JointComponent jc = joint.GetComponent<JointComponent>() as JointComponent;
-                    TransformComponent tc = joint.GetComponent<TransformComponent>() as TransformComponent;
+                    JointComponent jc = joint.GetComponent<JointComponent>();
+                    TransformComponent tc = joint.GetComponent<TransformComponent>();
 
                     int actualJointIndex = jc.JointIndex;
 
@@ -101,7 +101,7 @@ namespace NbCore.Systems
                 {
                     group.ActiveAnimation.Progress();
 
-                    SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>() as SceneComponent;
+                    SceneComponent sc = group.AnimationRoot.GetComponent<SceneComponent>();
                     
 
                     foreach (string anim_node in group.ActiveAnimation.animData.Nodes)
@@ -115,7 +115,7 @@ namespace NbCore.Systems
                         if (node.Type == SceneNodeType.LOCATOR)
                             continue;
                         
-                        TransformComponent tc = node.GetComponent<TransformComponent>() as TransformComponent;
+                        TransformComponent tc = node.GetComponent<TransformComponent>();
 
                         NbVector3 nodePosition = group.ActiveAnimation.GetNodeTranslation(anim_node);
                         NbQuaternion nodeRotation = group.ActiveAnimation.GetNodeRotation(anim_node);
@@ -148,7 +148,7 @@ namespace NbCore.Systems
 
         public static void StopActiveAnimations(SceneGraphNode anim_model)
         {
-            AnimComponent ac = anim_model.GetComponent<AnimComponent>() as AnimComponent;
+            AnimComponent ac = anim_model.GetComponent<AnimComponent>();
             List<Animation> ad_list = ac.getActiveAnimations();
           
             foreach (Animation ad in ad_list)
@@ -157,7 +157,7 @@ namespace NbCore.Systems
 
         public static void StopActiveLoopAnimations(Entity anim_model)
         {
-            AnimComponent ac = anim_model.GetComponent<AnimComponent>() as AnimComponent;
+            AnimComponent ac = anim_model.GetComponent<AnimComponent>();
             List<Animation> ad_list = ac.getActiveAnimations();
 
             foreach (Animation ad in ad_list)
@@ -170,7 +170,7 @@ namespace NbCore.Systems
 
         public static int queryAnimationFrame(Entity anim_model, string Anim)
         {
-            AnimComponent ac = anim_model.GetComponent<AnimComponent>() as AnimComponent;
+            AnimComponent ac = anim_model.GetComponent<AnimComponent>();
             Animation ad = ac.getAnimation(Anim);
 
             if (ad != null)

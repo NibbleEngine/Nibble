@@ -24,6 +24,8 @@ namespace NbCore
     {
         public NbTextureTarget target;
         public NbTextureInternalFormat format;
+        public NbTextureFilter magFilter;
+        public NbTextureFilter minFilter;
     }
 
     [Flags]
@@ -65,21 +67,22 @@ namespace NbCore
         public void setup()
         {
             //Init the main FBO
+            GraphicsAPI.SetViewPort(0, 0, Size.X, Size.Y);
             fbo = GL.GenFramebuffer();
-
+            
             //Main flags
             if (options.HasFlag(FBOOptions.MultiSample))
                 GL.Enable(EnableCap.Multisample);
             
             //Check
             if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) != FramebufferErrorCode.FramebufferComplete)
-                Console.WriteLine("MALAKIES STO FRAMEBUFFER tou GBuffer" + GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt));
+                Console.WriteLine("MALAKIES STO FRAMEBUFFER tou GBuffer " + GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt));
 
             //Revert Back the default fbo
             GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
         }
 
-        public void AddAttachment(NbTextureTarget target, NbTextureInternalFormat format, bool isDepth)
+        public void AddAttachment(NbTextureTarget target, NbTextureInternalFormat format, NbTextureFilter mag_filter, NbTextureFilter min_filter)
         {
             FBOAttachmentDescription attachment = new()
             {
@@ -91,30 +94,32 @@ namespace NbCore
 
             int attachment_id = ColorAttachments.Count;
             
-            if (!isDepth)
+            if (format != NbTextureInternalFormat.DEPTH)
             {
-                NbTexture tex = setup_texture(target, fbo, FramebufferAttachment.ColorAttachment0 + attachment_id, format);
+                NbTexture tex = setup_texture(target, fbo, FramebufferAttachment.ColorAttachment0 + attachment_id, format, mag_filter, min_filter);
                 textures[NbFBOAttachment.Attachment0 + attachment_id] = tex;
                 ColorAttachments.Add(attachment);
             } else
             {
-                NbTexture tex = setup_texture(target, fbo, FramebufferAttachment.DepthAttachment, NbTextureInternalFormat.DEPTH);
+                NbTexture tex = setup_texture(target, fbo, FramebufferAttachment.DepthAttachment, NbTextureInternalFormat.DEPTH, mag_filter, min_filter);
                 DepthAttachment = attachment;
                 textures[NbFBOAttachment.Depth] = tex;
             }
         }
 
-        public NbTexture setup_texture(NbTextureTarget target, int attach_to_fbo, FramebufferAttachment attachment_id, NbTextureInternalFormat format)
+        public NbTexture setup_texture(NbTextureTarget target, int attach_to_fbo, FramebufferAttachment attachment_id, NbTextureInternalFormat format,
+            NbTextureFilter mag_filter, NbTextureFilter min_filter)
         {
             int handle = GL.GenTexture();
             PixelInternalFormat pif = (PixelInternalFormat) GraphicsAPI.InternalFormatMap[format];
+            PixelType pixel_type = GraphicsAPI.PixelTypeMap[format];
             TextureTarget textarget = GraphicsAPI.TextureTargetMap[target];
 
-            PixelType pixel_type = PixelType.Float;
-            if (pif == PixelInternalFormat.Rgba8)
-                pixel_type = PixelType.UnsignedByte;
-
-
+            PixelFormat fmt = PixelFormat.Rgba;
+            
+            if (format == NbTextureInternalFormat.DEPTH)
+                fmt = PixelFormat.DepthComponent;
+            
             if (textarget == TextureTarget.Texture2DMultisample)
             {
                 GL.BindTexture(TextureTarget.Texture2DMultisample, handle);
@@ -126,35 +131,22 @@ namespace NbCore
                 //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
                 //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 
-                GL.BindFramebuffer(FramebufferTarget.FramebufferExt, attach_to_fbo);
-                GL.FramebufferTexture2D(FramebufferTarget.FramebufferExt, attachment_id, TextureTarget.Texture2DMultisample, handle, 0);
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, attach_to_fbo);
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, attachment_id, TextureTarget.Texture2DMultisample, handle, 0);
 
                 
             }
             else if (textarget == TextureTarget.Texture2D)
             {
                 GL.BindTexture(TextureTarget.Texture2D, handle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, pif, Size.X, Size.Y, 0, fmt, pixel_type, IntPtr.Zero);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, GraphicsAPI.TextureFilterMap[mag_filter]);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, GraphicsAPI.TextureFilterMap[min_filter]);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.Repeat);
 
-                //GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, size[0], size[1], 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
-                //GL.TexImage2DMultisample(TextureTargetMultisample.Texture2DMultisample, msaa_samples, format, size[0], size[1], true);
-
-                switch (format)
-                {
-                    case NbTextureInternalFormat.DEPTH:
-                        GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, Size.X, Size.Y, 0, PixelFormat.DepthComponent, pixel_type, IntPtr.Zero);
-                        break;
-                    default:
-                        GL.TexImage2D(TextureTarget.Texture2D, 0, pif, Size.X, Size.Y, 0, PixelFormat.Rgba, pixel_type, IntPtr.Zero);
-                        break;
-                }
-
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int) TextureMagFilter.Nearest);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int) TextureMinFilter.Nearest);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.ClampToEdge);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.ClampToEdge);
-
-                GL.BindFramebuffer(FramebufferTarget.FramebufferExt, attach_to_fbo);
-                GL.FramebufferTexture2D(FramebufferTarget.FramebufferExt, attachment_id, TextureTarget.Texture2D, handle, 0);
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, attach_to_fbo);
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, attachment_id, TextureTarget.Texture2D, handle, 0);
 
             }
             else
@@ -164,7 +156,7 @@ namespace NbCore
 
             //Check
             if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) != FramebufferErrorCode.FramebufferComplete)
-                Console.WriteLine("MALAKIES STO FRAMEBUFFER tou GBuffer" + GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt));
+                Console.WriteLine("MALAKIES STO FRAMEBUFFER tou GBuffer during texture setup " + GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt));
 
 
             //Create Texture
@@ -196,16 +188,17 @@ namespace NbCore
             NbTexture tex;
             for (int i = 0; i < ColorAttachments.Count; i++)
             {
-                tex = setup_texture(ColorAttachments[i].target,
+                FBOAttachmentDescription desc = ColorAttachments[i];
+                tex = setup_texture(desc.target,
                                            fbo,
                                            FramebufferAttachment.ColorAttachment0 + i,
-                                           ColorAttachments[i].format);
+                                           desc.format, desc.magFilter, desc.minFilter);
                 textures[NbFBOAttachment.Attachment0 + i] = tex;
             }
 
             tex = setup_texture(DepthAttachment.target,
                                            fbo, FramebufferAttachment.DepthAttachment,
-                                           DepthAttachment.format);
+                                           DepthAttachment.format, DepthAttachment.magFilter, DepthAttachment.minFilter);
             textures[NbFBOAttachment.Depth] = tex;
         }
 

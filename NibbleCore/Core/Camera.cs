@@ -126,6 +126,24 @@ namespace NbCore
 
         }
 
+        public void Reset()
+        {
+            yaw = -90f; pitch = 0;
+            NbVector3 newPosition = new NbVector3(0.0f);
+            NbQuaternion yaw_q = NbQuaternion.FromAxis(BaseUp, MathUtils.radians(yaw));
+            NbQuaternion pitch_q = NbQuaternion.FromAxis(BaseRight, MathUtils.radians(pitch));
+            NbQuaternion new_rot = pitch_q * yaw_q;
+
+            //Move Camera based on the impulse
+
+            //Calculate Next State 
+            NbQuaternion currentRotation = new_rot;
+            NbVector3 currentScale = new(1.0f);
+
+            TransformController t_controller = RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(this);
+            t_controller.AddFutureState(newPosition, currentRotation, currentScale);
+        }
+
         public static void CalculateNextCameraState(Camera cam, CameraPos target)
         {
             TransformController t_controller = RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
@@ -158,8 +176,8 @@ namespace NbCore
 
             NbVector3 offset = new();
             offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.X * cam.Right;
-            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.Y * cam.Front;
-            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.Z * cam.Up;
+            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.Z * cam.Front;
+            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.Y * cam.Up;
 
             //Console.WriteLine(string.Format("Camera offset {0} {1} {2}",
             //                    offset.X, offset.Y, offset.Z));

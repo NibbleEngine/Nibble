@@ -48,6 +48,8 @@ namespace NbCore
         BGRA8,
         RGBA16F,
         BGRA16F,
+        RGBA32F,
+        BGRA32F,
         DEPTH
     }
 
@@ -56,7 +58,7 @@ namespace NbCore
     {
         public int texID = -1;
         private bool disposed = false;
-        public string Path = "";
+        public new string Path = "";
         public NbTextureData Data;
         public int Refs = 0;
         

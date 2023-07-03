@@ -10,7 +10,7 @@ namespace NbCore
         public int InstanceID;
         public NbUniform[] InstanceUniforms;
         public bool IsUpdated = true;
-
+        
         public MeshComponent()
         {
             InstanceID = -1;

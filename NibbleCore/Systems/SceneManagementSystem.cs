@@ -16,17 +16,15 @@ namespace NbCore.Systems
             
         }
 
-        public void CreateSceneGraph()
+        public SceneGraph CreateSceneGraph()
         {
             SceneGraph sceneGraph = new();
             sceneGraph.ID = SceneGraphs.Count;
-            //Create Root
-            SceneGraphNode root = EngineRef.CreateSceneNode("SceneRoot");
-            EngineRef.RegisterEntity(root);
             
-            sceneGraph.Root = root;
             SceneGraphs.Add(sceneGraph);
             _SceneGraphMap[sceneGraph.ID] = sceneGraph;
+            
+            return sceneGraph;
         }
 
         public void SetActiveScene(SceneGraph s)
@@ -56,10 +54,10 @@ namespace NbCore.Systems
             foreach (SceneGraphNode n in graph.MeshNodes)
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
-                MeshComponent mc = n.GetComponent<MeshComponent>() as MeshComponent;
+                MeshComponent mc = n.GetComponent<MeshComponent>();
                 bool mesh_instance_updated = false;
                 
-                if (td.IsUpdated)
+                if (td.IsUpdated || mc.IsUpdated)
                 {
                     if (td.IsOccluded && !td.WasOccluded)
                     {
@@ -73,7 +71,7 @@ namespace NbCore.Systems
                     }
                     else if (!td.IsOccluded && td.WasOccluded)
                     {
-                        Log($"Adding Instance {n.Name}", LogVerbosityLevel.DEBUG);
+                        Log($"Adding Instance UpdateMesh {n.Name}", LogVerbosityLevel.DEBUG);
                         GraphicsAPI.AddRenderInstance(ref mc, td);
                     }
                     else if (!td.IsOccluded)
@@ -121,7 +119,7 @@ namespace NbCore.Systems
                     }
                     else if (!td.IsOccluded && td.WasOccluded)
                     {
-                        Log($"Adding Instance {n.Name}", LogVerbosityLevel.DEBUG);
+                        Log($"Adding Imposter Instance {n.Name}", LogVerbosityLevel.DEBUG);
                         GraphicsAPI.AddRenderInstance(ref ic, td);
                     }
                     else if (!td.IsOccluded)
@@ -151,14 +149,14 @@ namespace NbCore.Systems
             foreach (SceneGraphNode n in graph.LightNodes)
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
-                LightComponent lc = n.GetComponent<LightComponent>() as LightComponent;
+                LightComponent lc = n.GetComponent<LightComponent>();
                 bool light_instance_updated = false;
 
 
                 if (!lc.Data.IsRenderable && lc.InstanceID != -1)
                 {
                     //Remove Instance
-                    Log($"Removing Instance {n.Name}", LogVerbosityLevel.DEBUG);
+                    Log($"Removing LightVolume Instance {n.Name}", LogVerbosityLevel.DEBUG);
                     //TODO: Maybe it is  a good idea to keep queues for 
                     //instances that will be removed and instance that will be added
                     //which will be passed per frame update to the rendering system
@@ -232,11 +230,6 @@ namespace NbCore.Systems
             for (int i = 0; i< nodes.Length; i++) 
                 EngineRef.DisposeSceneGraphNode(nodes[i]);
             graph.Clear();
-        }
-
-        public void AddNode(SceneGraphNode node)
-        {
-            ActiveSceneGraph?.AddNode(node);
         }
 
         public override void CleanUp()

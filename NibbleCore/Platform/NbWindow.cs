@@ -30,10 +30,11 @@ namespace NbCore.Platform.Windowing
         public NbTextInputEventHandler OnTextInput;
 
         public virtual NbVector2i Size { get; set; }
-        public virtual NbVector2 MousePosition { get; }
         public virtual NbVector2 MouseDelta { get; }
         public NbVector2 MouseScroll;
         public NbVector2 MouseScrollPrevious;
+        public NbVector2 MousePosition;
+        public NbVector2 MousePositionPrevious;
         public virtual NbVector2 MouseScrollDelta { get; }
         public virtual NbVector2i ClientSize { get; }
 

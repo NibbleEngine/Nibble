@@ -230,19 +230,32 @@ namespace NbCore
             return f;
         }
 
+        public void ImportSceneGraph(SceneGraph graph)
+        {
+            RegisterSceneGraphTree(graph, graph.Root, true);
+            RequestEntityTransformUpdate(graph.Root);
+
+            //Post Import procedures
+            GetSystem<RenderingSystem>().SubmitOpenMeshGroups();
+            
+            //Invoke Event
+            NewSceneEvent?.Invoke(graph);
+        }
+
         public void ImportScene(SceneGraphNode scene)
         {
-            RegisterSceneGraphTree(scene, true);
+            SceneGraph activeGraph = GetActiveSceneGraph();
+            RegisterSceneGraphTree(activeGraph, scene, true);
             RequestEntityTransformUpdate(scene);
 
-            scene.SetParent(GetActiveSceneGraph().Root);
+            scene.SetParent(activeGraph.Root);
             scene.Root = scene.Parent;
 
             //Post Import procedures
             GetSystem<RenderingSystem>().SubmitOpenMeshGroups();
             
             //Invoke Event
-            NewSceneEvent?.Invoke(GetActiveSceneGraph());
+            NewSceneEvent?.Invoke(activeGraph);
         }
 
         //Entity Registration Methods
@@ -322,17 +335,17 @@ namespace NbCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RegisterSceneGraphTree(SceneGraphNode e, bool recurse = true)
+        public void RegisterSceneGraphTree(SceneGraph graph, SceneGraphNode e, bool recurse = true)
         {
             //Add Entity to main registry
             if (RegisterEntity(e))
             {
-                GetSystem<SceneManagementSystem>().AddNode(e);
-
+                graph.AddNode(e);
+                
                 if (recurse)
                 {
                     foreach (SceneGraphNode child in e.Children)
-                        RegisterSceneGraphTree(child, recurse);
+                        RegisterSceneGraphTree(graph, child, recurse);
                 }
             }
         }
@@ -352,7 +365,7 @@ namespace NbCore
                     //Register mesh, material and the corresponding shader if necessary
                     MeshComponent mc = e.GetComponent<MeshComponent>();
 
-                    GetSystem<RenderingSystem>().RegisterEntity(mc); //Check the mesh group
+                    //GetSystem<RenderingSystem>().RegisterEntity(mc); //Check the mesh group
                     RegisterEntity(mc.Mesh.Material); //Register Material
                     RegisterEntity(mc.Mesh); //Register Mesh
                 }
@@ -770,7 +783,6 @@ namespace NbCore
             //Sphere Material
             NbMaterial mat = new();
             mat.Name = "default_scn";
-            NbVector4 vec;
 
             NbUniform uf = new(NbUniformType.Vector4, "gMaterialColourVec4", 1.0f, 0.0f, 0.0f, 1.0f);
             mat.Uniforms.Add(uf);
@@ -1029,8 +1041,10 @@ namespace NbCore
             //TODO: Possibly move that to a separate rendering thread
             NbTexture tex = new(name, data);
             GraphicsAPI.GenerateTexture(tex);
-            GraphicsAPI.setupTextureParameters(tex, wrapmode, magFilter, minFilter, 8.0f);
             GraphicsAPI.UploadTexture(tex);
+            GraphicsAPI.setupTextureParameters(tex, wrapmode, magFilter, minFilter, 8.0f);
+            
+
             if (!keepData)
                 tex.Data.Data = null;
             //renderSys.TextureMgr.AddTexture(tex);
@@ -1061,7 +1075,9 @@ namespace NbCore
                 includes.Add("_D_SKINNED");
             if (mode.HasFlag(NbShaderMode.LIT))
                 includes.Add("_D_LIGHTING");
-
+            if (mode.HasFlag(NbShaderMode.FORWARD))
+                includes.Add("_D_FORWARD_RENDERING");
+            
             return includes;
         }
 
@@ -1285,12 +1301,12 @@ namespace NbCore
             writer.WritePropertyName("MESHES");
             writer.WriteStartArray();
             foreach (NbMesh mesh in meshes)
-                IO.NbSerializer.Serialize(mesh, writer);
+                NbSerializer.Serialize(mesh, writer);
             writer.WriteEndArray();
 
             
             writer.WritePropertyName("SCENEGRAPH");
-            IO.NbSerializer.Serialize(g.Root, writer);
+            NbSerializer.Serialize(g.Root, writer);
             
             writer.WriteEndObject();
             writer.Close();
@@ -1309,7 +1325,7 @@ namespace NbCore
 
             foreach (var s in ob["SHADER_CONFIGS"])
             {
-                NbShaderConfig conf = (NbShaderConfig)IO.NbDeserializer.Deserialize(s);
+                NbShaderConfig conf = (NbShaderConfig) NbDeserializer.Deserialize(s);
                 
                 if (GetShaderConfigByHash(conf.Hash) == null)
                     RegisterEntity(conf);
@@ -1317,40 +1333,42 @@ namespace NbCore
                 
             foreach (var s in ob["TEXTURES"])
             {
-                NbTexture tex = (NbTexture)IO.NbDeserializer.Deserialize(s);
+                NbTexture tex = (NbTexture) NbDeserializer.Deserialize(s);
                 RegisterEntity(tex);
             }
 
             foreach (var s in ob["MESH_DATA"])
             {
-                NbMeshData meshdata = (NbMeshData) IO.NbDeserializer.Deserialize(s);
+                NbMeshData meshdata = (NbMeshData) NbDeserializer.Deserialize(s);
                 GetSystem<RenderingSystem>().MeshDataMgr.Add(meshdata.Hash, meshdata);
             }
 
             foreach (var s in ob["MATERIALS"])
             {
-                NbMaterial mat = (NbMaterial)IO.NbDeserializer.Deserialize(s);
+                NbMaterial mat = (NbMaterial) NbDeserializer.Deserialize(s);
                 RegisterEntity(mat);
             }
 
             foreach (var s in ob["MESHES"])
             {
-                NbMesh mesh = (NbMesh) IO.NbDeserializer.Deserialize(s);
+                NbMesh mesh = (NbMesh) NbDeserializer.Deserialize(s);
                 RegisterEntity(mesh);
             }
 
-            
-            SceneGraphNode root = (SceneGraphNode) IO.NbDeserializer.Deserialize(ob["SCENEGRAPH"]);
 
-            //Register shit and add to shit
-            
-            foreach (SceneGraphNode child in root.Children)
-                ImportScene(child);
+            SceneGraphNode root = (SceneGraphNode) NbDeserializer.Deserialize(ob["SCENEGRAPH"]);
 
-            root.Dispose(); //Root is not imported
-            //SceneGraphNode root = null;
-            //ImportScene(root);
-            Console.WriteLine("DESERIALIZATION FINISHED!");
+            //Create new Scenegraph
+            SceneGraph graph = GetSystem<SceneManagementSystem>().CreateSceneGraph();
+            graph.Root = root;
+
+            ImportSceneGraph(graph);
+            GetSystem<SceneManagementSystem>().SetActiveScene(graph);
+            
+            //Invoke Event
+            NewSceneEvent?.Invoke(graph);
+            
+            Log("DESERIALIZATION FINISHED!", LogVerbosityLevel.INFO);
         }
 
 
@@ -1368,7 +1386,15 @@ namespace NbCore
             //Mesh Node Disposal
             if (node.HasComponent<MeshComponent>())
             {
-                MeshComponent mc = node.GetComponent<MeshComponent>() as MeshComponent;
+                MeshComponent mc = node.GetComponent<MeshComponent>();
+                if (mc.InstanceID >= 0)
+                    GraphicsAPI.RemoveRenderInstance(ref mc.Mesh, mc);
+            }
+
+            //Imposter Component Disposal
+            if (node.HasComponent<ImposterComponent>())
+            {
+                ImposterComponent mc = node.GetComponent<ImposterComponent>();
                 if (mc.InstanceID >= 0)
                     GraphicsAPI.RemoveRenderInstance(ref mc.Mesh, mc);
             }
@@ -1376,14 +1402,14 @@ namespace NbCore
             //Light Node Disposal
             if (node.HasComponent<LightComponent>())
             {
-                LightComponent lc = node.GetComponent<LightComponent>() as LightComponent;
+                LightComponent lc = node.GetComponent<LightComponent>();
                 if (lc.InstanceID >= 0)
                     GraphicsAPI.RemoveLightRenderInstance(ref lc.Mesh, lc);
             }
 
             if (node.HasComponent<AnimComponent>())
             {
-                AnimComponent ac = node.GetComponent<AnimComponent>() as AnimComponent;
+                AnimComponent ac = node.GetComponent<AnimComponent>();
                 ac.AnimationDict.Clear();
                 GetSystem<AnimationSystem>().AnimationGroups.Remove(ac.AnimGroup);
                 foreach (Animation anim in ac.AnimGroup.Animations)

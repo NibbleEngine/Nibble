@@ -21,8 +21,6 @@ namespace NbCore
 
     public static class NbImagingAPI
     {
-        private static bool Initialized = false;
-        
         private static Image ImageLoad(byte[] data)
         {
             return Image.Load(data);
@@ -34,12 +32,28 @@ namespace NbCore
             {
                 case NbTextureInternalFormat.RGBA8:
                     return Image.LoadPixelData<Rgba32>(tex.Data, tex.Width, tex.Height);
+                case NbTextureInternalFormat.RGBA16F:
+                    return Image.LoadPixelData<RgbaVector>(tex.Data, tex.Width, tex.Height);
                 case NbTextureInternalFormat.BGRA8:
                     return Image.LoadPixelData<Bgra32>(tex.Data, tex.Width, tex.Height);
             }
             return null;
         }
-        
+
+        private static Image GetImageFromTetureData(NbTextureData tex, byte[] data)
+        {
+            switch (tex.pif)
+            {
+                case NbTextureInternalFormat.RGBA8:
+                    return Image.LoadPixelData<Rgba32>(data, tex.Width, tex.Height);
+                case NbTextureInternalFormat.RGBA16F:
+                    return Image.LoadPixelData<RgbaVector>(data, tex.Width, tex.Height);
+                case NbTextureInternalFormat.BGRA8:
+                    return Image.LoadPixelData<Bgra32>(data, tex.Width, tex.Height);
+            }
+            return null;
+        }
+
         private static NbTextureData GetTextureDataFromImage(Image<Rgba32> image)
         {
             byte[] pixel_data = new byte[image.Width * image.Height * Marshal.SizeOf(image.GetType().GenericTypeArguments[0])];
@@ -91,6 +105,12 @@ namespace NbCore
         public static void ImageSave(NbTextureData tex, string filepath)
         {
             Image image = GetImageFromTetureData(tex);
+            image.Save(filepath);
+        }
+
+        public static void ImageSave(NbTextureData tex, byte[] data, string filepath)
+        {
+            Image image = GetImageFromTetureData(tex, data);
             image.Save(filepath);
         }
 

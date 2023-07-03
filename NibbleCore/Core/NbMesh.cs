@@ -45,7 +45,8 @@ namespace NbCore
         public NbMeshMetaData MetaData; //Each mesh has its own object instance
         public NbMeshData Data; //Reference that might be shared with other NbMeshes
         public MeshInstance[] InstanceDataBuffer = new MeshInstance[2];
-        public int[] InstanceIndexBuffer = new int[2];
+        public Dictionary<int, MeshComponent> ComponentDict = new();
+        public int AtlasBufferOffset = -1;
         public int InstanceCount = 0;
         public NbMeshGroup Group = null;
         public NbMaterial Material;

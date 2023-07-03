@@ -57,11 +57,6 @@ namespace NbCore
                 MeshInstance[] newBuffer = new MeshInstance[mesh.InstanceDataBuffer.Length + 5];//Extend by 5 instances
                 Array.Copy(mesh.InstanceDataBuffer, newBuffer, mesh.InstanceDataBuffer.Length);
                 mesh.InstanceDataBuffer = newBuffer;
-
-                //Also expand the Instance Index Array
-                int[] newIndexBuffer = new int[mesh.InstanceIndexBuffer.Length + 5];
-                Array.Copy(mesh.InstanceIndexBuffer, newIndexBuffer, mesh.InstanceIndexBuffer.Length);
-                mesh.InstanceIndexBuffer = newIndexBuffer;
             }
 
             return render_instance_id;
@@ -78,6 +73,9 @@ namespace NbCore
             }
 
             mc.InstanceID = GetNextMeshInstanceID(ref mesh);
+
+            //Store Component
+            mesh.ComponentDict[mc.InstanceID] = mc;
             
             //Uplod worldMat to the meshVao
             NbMatrix4 actualWorldMat = td.WorldTransformMat;
@@ -97,12 +95,17 @@ namespace NbCore
 
             if (mc.InstanceID != mesh.InstanceCount - 1)
             {
-                mesh.InstanceIndexBuffer[mesh.InstanceCount - 1] = mesh.InstanceIndexBuffer[mc.InstanceID];
+                mesh.ComponentDict[mc.InstanceID] = mesh.ComponentDict[mesh.InstanceCount - 1];
+                mesh.ComponentDict.Remove(mesh.ComponentDict[mesh.InstanceCount - 1].InstanceID);
+                mesh.ComponentDict[mc.InstanceID].InstanceID = mc.InstanceID;
+                mesh.ComponentDict[mc.InstanceID].IsUpdated = true;
+                
+            } else
+            {
+                mesh.ComponentDict.Remove(mc.InstanceID);
             }
-
-            mesh.InstanceIndexBuffer[mc.InstanceID] = -1;
+            
             mesh.InstanceCount--;
-
         }
         
         //Overload with transform overrides

@@ -9,50 +9,41 @@ namespace NbCore
         public static MeshInstance[] atlas_cpmu = new MeshInstance[1024];
         private static Dictionary<int, NbMesh> atlas_position_mesh_map = new();
         private static int instance_counter;
-        private static List<int> free_slots = new();
+        private static List<int> free_slots = new() { 0 };
 
         public static void AddMeshInstance(ref NbMesh mesh, int instanceID)
         {
-            //Find Insertion Index
-            int insertionIndex = instance_counter;
-            if (free_slots.Count > 0)
+            //At first check if the mesh is already in the atlas
+            if (mesh.AtlasBufferOffset != -1)
             {
-                insertionIndex = free_slots[0];
-                free_slots.RemoveAt(0);
-            }
-
-            //Make sure that new instances of instanced meshes are positioned together
-            if (mesh.InstanceCount > 1 && insertionIndex != mesh.InstanceIndexBuffer[mesh.InstanceCount - 2] + 1)
-            {
-                insertionIndex = mesh.InstanceIndexBuffer[mesh.InstanceCount - 2] + 1;
-
-                //Check if a mesh occupies the insertion position
-                if (atlas_position_mesh_map.ContainsKey(insertionIndex)) 
+                //Check if a new instance fits
+                if (atlas_position_mesh_map.ContainsKey(mesh.AtlasBufferOffset + instanceID))
                 {
-                    //Old mesh has to be moved along with all its instances to the end of the buffer
-                    ExtendAtlasArray(instance_counter + 2); //Extend if required
-                    
-                    NbMesh oldMesh = atlas_position_mesh_map[insertionIndex];
-                    
-                    for (int i = 0; i < oldMesh.InstanceCount; i++)
-                    {
-                        oldMesh.InstanceIndexBuffer[i] = instance_counter + i;
-                        UpdateMeshInstance(ref oldMesh, i);
-                    }
+                    //Does not fit do relocates
+                    throw new NotImplementedException();
+                } else
+                {
+                    //Fits
+                    //Remove index from the free slots
+                    int index = free_slots.IndexOf(mesh.AtlasBufferOffset + instanceID);
+                    free_slots.RemoveAt(index);
+                    if (!atlas_position_mesh_map.ContainsKey(mesh.AtlasBufferOffset + mesh.InstanceCount) && 
+                        !free_slots.Contains(mesh.AtlasBufferOffset + mesh.InstanceCount))
+                        free_slots.Insert(index, mesh.AtlasBufferOffset + mesh.InstanceCount);
                 }
-            } else if (mesh.InstanceCount == 1)
+                
+            } else
             {
-                atlas_position_mesh_map[insertionIndex] = mesh; //Keep reference of the mesh and its insertion index
+                //Insert mesh for the first time
+                //pop first free slot
+                int insertionIndex = free_slots[0];
+                free_slots.RemoveAt(0);
+                
+                mesh.AtlasBufferOffset = insertionIndex;
+                atlas_position_mesh_map[insertionIndex] = mesh;
+                if (!free_slots.Contains(insertionIndex + 1))
+                    free_slots.Insert(0, insertionIndex + 1);
             }
-
-            //Normal Insertion
-            mesh.InstanceIndexBuffer[instanceID] = insertionIndex;
-            if (insertionIndex == instance_counter)
-            {
-                instance_counter++;
-                ExtendAtlasArray(instance_counter);
-            }
-        
         }
 
         public static void RemoveMeshInstance(ref NbMesh mesh, int instanceID) 
@@ -61,19 +52,25 @@ namespace NbCore
             //TODO: Remove the next 2 lines I think they are not needed
             //MeshInstance last = mesh.InstanceDataBuffer[mesh.InstanceCount - 1];
             //atlas_cpmu[mesh.InstanceIndexBuffer[instanceID]] = last;
-            free_slots.Add(mesh.InstanceIndexBuffer[instanceID]);
-
+           
+            if (!free_slots.Contains(mesh.AtlasBufferOffset + instanceID))
+            {
+                free_slots.Add(mesh.AtlasBufferOffset + instanceID);
+                free_slots.Sort(); //TODO: THIS HAS TO BE CHANGED AT SOME POINT WITH A SMARTER DATA STRUCTURE
+            }
+            
             //Remove mesh from the index mesh map
             if (mesh.InstanceCount == 1)
             {
-                atlas_position_mesh_map.Remove(mesh.InstanceIndexBuffer[instanceID]);
+                atlas_position_mesh_map.Remove(mesh.AtlasBufferOffset);
+                mesh.AtlasBufferOffset = -1;
             }
 
         }
 
         public static void UpdateMeshInstance(ref NbMesh mesh, int instanceID)
         {
-            atlas_cpmu[mesh.InstanceIndexBuffer[instanceID]] = mesh.InstanceDataBuffer[instanceID];
+            atlas_cpmu[mesh.AtlasBufferOffset + instanceID] = mesh.InstanceDataBuffer[instanceID];
         }
 
         private static void ExtendAtlasArray(int threshold)

@@ -28,6 +28,19 @@ namespace NbCore.Math
             _Value = new Vector2(a,b);
         }
 
+        public void Normalize()
+        {
+            _Value.Normalize();
+        }
+
+        public NbVector2 Normalized()
+        {
+            return new NbVector2()
+            {
+                _Value = _Value.Normalized()
+            };
+        }
+
         public static NbVector2 operator *(NbVector2 a, float b)
         {
             return new NbVector2()

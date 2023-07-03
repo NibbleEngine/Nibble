@@ -162,7 +162,7 @@ void pbr_lighting(){
             vec3 lNormalTexVec3 = DecodeNormalMap( lTexColour );
         #else
             //vec3 lNormalTexVec3 = DecodeNormalMap( lTexColour );
-            vec3 lNormalTexVec3 = 2.0 * lTexColour.rgb - 1.0;    
+            vec3 lNormalTexVec3 = 2.0 * lTexColour.rgb - vec3(1.0);    
         #endif
         lNormalVec3 = normalize(TBN * lNormalTexVec3);        
     #else

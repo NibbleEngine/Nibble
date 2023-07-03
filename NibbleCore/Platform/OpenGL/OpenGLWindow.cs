@@ -8,13 +8,16 @@ using ImGuiNET;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NbCore.Common;
+using System.Timers;
+using System.Diagnostics;
 
 namespace NbCore.Platform.Windowing
 {
     public class NbOpenGLWindow : NbWindow
     {
         private GameWindow _win;
-        
+        private Stopwatch _resizeWatch;
+
         //Properties
         public string Title
         {
@@ -50,14 +53,6 @@ namespace NbCore.Platform.Windowing
             }
         }
 
-        public override NbVector2 MousePosition
-        {
-            get
-            {
-                return new NbVector2(_win.MousePosition.X, _win.MousePosition.Y);
-            }
-        }
-
         public override NbVector2 MouseScrollDelta
         {
             get
@@ -70,7 +65,7 @@ namespace NbCore.Platform.Windowing
         {
             get
             {
-                return new NbVector2(_win.MouseState.Delta.X, _win.MouseState.Delta.Y);
+                return MousePosition - MousePositionPrevious;
             }
         }
 
@@ -78,6 +73,7 @@ namespace NbCore.Platform.Windowing
         public NbOpenGLWindow(NbVector2i WindowSize, Engine e, int opengl_major = 4, int opengl_minor = 5)
         {
             Engine = e; //Set Engine Reference
+            _resizeWatch = new Stopwatch();
             _win = new GameWindow(GameWindowSettings.Default,
             new()
             {
@@ -85,6 +81,7 @@ namespace NbCore.Platform.Windowing
                 WindowBorder = WindowBorder.Resizable,
                 StartFocused = true,
                 WindowState = WindowState.Normal,
+                Title = "Test",
                 Size = new Vector2i(WindowSize.X, WindowSize.Y),
                 APIVersion = new System.Version(opengl_major, opengl_minor),
                 API = ContextAPI.OpenGL,
@@ -94,7 +91,7 @@ namespace NbCore.Platform.Windowing
 #else
                 Flags = ContextFlags.Default
 #endif
-            });
+            }); ;
             SetWindowCallbacks();
         }
 
@@ -109,13 +106,14 @@ namespace NbCore.Platform.Windowing
             //OnResize
             _win.Resize += (ResizeEventArgs a) =>
             {
-                InvokeResizeEvent(new NbResizeArgs(a));
+                _resizeWatch.Restart();
             };
-
+            
             //OnRender
             _win.RenderFrame += RenderFrameDelegate;
             _win.UpdateFrame += FrameUpdateDelegate;
-
+            _win.Minimized += MinimizedDelegate;
+            
             _win.TextInput += (TextInputEventArgs a) =>
             {
                 InvokeTextInput(new NbTextInputArgs(a));
@@ -125,11 +123,23 @@ namespace NbCore.Platform.Windowing
         //Delegates
         private void RenderFrameDelegate(FrameEventArgs args)
         {
+            //Check if we need to invoke the resize event
+            if (_resizeWatch.ElapsedMilliseconds > 60)
+            {
+                NbResizeArgs new_args = new(new ResizeEventArgs(Size.X, Size.Y));
+                InvokeResizeEvent(new_args);
+                _resizeWatch.Stop();
+                _resizeWatch.Reset();
+            }
+            
             OnRenderUpdate(args.Time);
-            //Explicitly Handle Mouse Scroll
+            //Explicitly Handle Mouse Scroll and Pose
             MouseScrollPrevious = MouseScroll;
             MouseScroll.X = _win.MouseState.Scroll.X;
             MouseScroll.Y = _win.MouseState.Scroll.Y;
+            MousePositionPrevious = MousePosition;
+            MousePosition.X = _win.MousePosition.X;
+            MousePosition.Y = _win.MousePosition.Y;
 
             _win.SwapBuffers();
         }
@@ -137,6 +147,14 @@ namespace NbCore.Platform.Windowing
         private void FrameUpdateDelegate(FrameEventArgs args)
         {
             OnFrameUpdate(args.Time);
+        }
+
+        private void MinimizedDelegate(MinimizedEventArgs args)
+        {
+            if (args.IsMinimized)
+                _win.RenderFrame -= RenderFrameDelegate;
+            else
+                _win.RenderFrame += RenderFrameDelegate;
         }
 
         public override bool IsKeyDown(NbKey key)

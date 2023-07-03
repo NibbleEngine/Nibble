@@ -86,8 +86,6 @@ namespace NbCore.Utils
         public static AssemblyName GetAssemblyName(string name, string[] searchpaths)
         {
             //Fetch AssemblyName
-            AssemblyName aName = null;
-
             foreach (string searchpath in searchpaths)
             {
                 var path = Path.Join(searchpath, name);
@@ -98,7 +96,7 @@ namespace NbCore.Utils
                 }
                 else
                 {
-                    Common.Callbacks.Log(Assembly.GetExecutingAssembly().GetName().Name, $"Unable to find assembly {path}", LogVerbosityLevel.WARNING);
+                    Callbacks.Log(Assembly.GetExecutingAssembly().GetName().Name, $"Unable to find assembly {path}", LogVerbosityLevel.WARNING);
                 }
             }
 
