@@ -10,6 +10,7 @@ using NbCore.Common;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp.PixelFormats;
+using Microsoft.CodeAnalysis;
 
 namespace NbCore.Platform.Graphics
 {
@@ -82,6 +83,18 @@ namespace NbCore.Platform.Graphics
         private int multiBufferActiveId;
         private readonly List<int> multiBufferSSBOs = new(4);
         private readonly List<IntPtr> multiBufferSyncStatuses = new(4);
+
+
+        public static readonly Dictionary<NbFBOAttachment, FramebufferAttachment> FramebufferAttachmentMap = new()
+        {
+            { NbFBOAttachment.Attachment0 , FramebufferAttachment.ColorAttachment0},
+            { NbFBOAttachment.Attachment1 , FramebufferAttachment.ColorAttachment1},
+            { NbFBOAttachment.Attachment2 , FramebufferAttachment.ColorAttachment2},
+            { NbFBOAttachment.Attachment3 , FramebufferAttachment.ColorAttachment3},
+            { NbFBOAttachment.Attachment4 , FramebufferAttachment.ColorAttachment4},
+            { NbFBOAttachment.Attachment5 , FramebufferAttachment.ColorAttachment5},
+            { NbFBOAttachment.Depth , FramebufferAttachment.DepthAttachment}
+        };
 
         public static readonly Dictionary<NbTextureTarget, TextureTarget> TextureTargetMap = new()
         {
@@ -852,6 +865,29 @@ namespace NbCore.Platform.Graphics
             Log($"{(TextureMagFilter) mag_filter} {(TextureMinFilter)min_filter} {(TextureWrapMode)wrapmode} {baselevel} {maxlevel}", LogVerbosityLevel.INFO);
         }
         
+        public static void setupTextureMagFilter(NbTexture tex, NbTextureFilter magFilter)
+        {
+            TextureTarget gl_target = TextureTargetMap[tex.Data.target];
+            GL.BindTexture(gl_target, tex.texID);
+            if (magFilter == NbTextureFilter.NearestMipmapLinear || magFilter == NbTextureFilter.LinearMipmapNearest)
+                Log($"Non compatible mag filter {magFilter}. No Mag filter used", LogVerbosityLevel.WARNING);
+            else
+            {
+                GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, TextureFilterMap[magFilter]);
+                tex.Data.MagFilter = magFilter;
+            }
+            GL.BindTexture(gl_target, 0); //Unbind
+        }
+
+        public static void setupTextureMinFilter(NbTexture tex, NbTextureFilter minFilter)
+        {
+            TextureTarget gl_target = TextureTargetMap[tex.Data.target];
+            GL.BindTexture(gl_target, tex.texID);
+            GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, TextureFilterMap[minFilter]);
+            tex.Data.MinFilter = minFilter;
+            GL.BindTexture(gl_target, 0); //Unbind
+        }
+
         public static void setupTextureParameters(NbTexture tex, NbTextureWrapMode wrapMode, NbTextureFilter magFilter, NbTextureFilter minFilter, float af_amount)
         {
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
@@ -900,6 +936,13 @@ namespace NbCore.Platform.Graphics
                 PixelFormat.Rgba, pxtype, pixels);
             
             NbImagingAPI.ImageSave(tex.Data, pixels, "Temp//framebuffer_raw_" + name + ".png");
+        }
+
+
+        public void DeleteTexture(NbTexture tex)
+        {
+            if (tex.texID > 0)
+                GL.DeleteTexture(tex.texID);
         }
 
         public static void GenerateTexture(NbTexture tex)
@@ -1217,6 +1260,131 @@ namespace NbCore.Platform.Graphics
             GL.Clear(glmask);
         }
 
+        
+
+        public FBO CreateFrameBuffer(int w, int h, FBOOptions options)
+        {
+            GL.CreateFramebuffers(1, out int fbo_id);
+
+            //Main flags
+            if (options.HasFlag(FBOOptions.MultiSample))
+                GL.Enable(EnableCap.Multisample);
+
+            //Check
+            if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) != FramebufferErrorCode.FramebufferComplete)
+                Console.WriteLine("MALAKIES STO FRAMEBUFFER tou GBuffer " + GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt));
+
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0); //Bind default framebuffer
+            
+            return new FBO(w, h)
+            {
+                fbo = fbo_id
+            };
+        }
+
+        public void ActivateFrameBuffer(FBO fbo)
+        {
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo.fbo);
+            GL.Viewport(0, 0, fbo.Size.X, fbo.Size.Y);
+        }
+
+        public void CreateFrameBuffer(FBO fbo, FBOOptions options)
+        {
+            GL.CreateFramebuffers(1, out int fbo_id);
+            fbo.fbo = fbo_id;
+
+            //Main flags
+            if (options.HasFlag(FBOOptions.MultiSample))
+                GL.Enable(EnableCap.Multisample);
+
+            //Check
+            if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) != FramebufferErrorCode.FramebufferComplete)
+                Console.WriteLine("MALAKIES STO FRAMEBUFFER tou GBuffer " + GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt));
+
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0); //Bind default framebuffer
+        }
+
+        public void DeleteFrameBuffer(FBO fbo)
+        {
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            GL.DeleteFramebuffer(fbo.fbo);
+            fbo.fbo = -1;
+        }
+
+        public void CopyDepthChannel(FBO from, FBO to)
+        {
+            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, from.fbo);
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, to.fbo);
+
+            GL.BlitFramebuffer(0, 0, from.Size.X, from.Size.Y, 0, 0, to.Size.X, to.Size.Y,
+            ClearBufferMask.DepthBufferBit, BlitFramebufferFilter.Nearest);
+        }
+
+        public void CopyFrameBufferChannelToTexture(NbFBOAttachment fbo_attachment, NbTexture tex)
+        {
+            //Copies the attachment of the currently bound framebuffer to the texture
+            
+            //Copy the read buffers to the  
+            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
+            GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
+            Callbacks.Assert(tex.Data.target == NbTextureTarget.Texture2D,
+                            "fbo texture target is not correct");
+            GL.CopyTexSubImage2D(TextureTargetMap[tex.Data.target], 0, 0, 0, 0, 0, tex.Data.Width, tex.Data.Height);
+            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+        }
+
+
+        public void AddFrameBufferAttachment(FBO fbo, NbTexture tex, NbFBOAttachment attachment_id)
+        {
+            int handle = GL.GenTexture();
+            tex.texID = handle;
+            PixelInternalFormat pif = (PixelInternalFormat)InternalFormatMap[tex.Data.pif];
+            PixelType pixel_type = PixelTypeMap[tex.Data.pif];
+            TextureTarget textarget = TextureTargetMap[tex.Data.target];
+
+            PixelFormat fmt = PixelFormat.Rgba;
+
+            if (tex.Data.pif == NbTextureInternalFormat.DEPTH)
+                fmt = PixelFormat.DepthComponent;
+
+            if (textarget == TextureTarget.Texture2DMultisample)
+            {
+                GL.BindTexture(TextureTarget.Texture2DMultisample, handle);
+
+                //GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, size[0], size[1], 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
+                GL.TexImage2DMultisample(TextureTargetMultisample.Texture2DMultisample, fbo.msaa_samples, pif, fbo.Size.X, fbo.Size.Y, true);
+                //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
+                //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+                //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo.fbo);
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachmentMap[attachment_id], TextureTarget.Texture2DMultisample, handle, 0);
+            }
+            else if (textarget == TextureTarget.Texture2D)
+            {
+                GL.BindTexture(TextureTarget.Texture2D, handle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, pif, fbo.Size.X, fbo.Size.Y, 0, fmt, pixel_type, IntPtr.Zero);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, TextureFilterMap[tex.Data.MagFilter]);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, TextureFilterMap[tex.Data.MinFilter]);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo.fbo);
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachmentMap[attachment_id], TextureTarget.Texture2D, handle, 0);
+
+            }
+            else
+            {
+                throw new Exception("Unsupported texture target " + textarget);
+            }
+
+            //Check
+            if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) != FramebufferErrorCode.FramebufferComplete)
+                Log("MALAKIES STO FRAMEBUFFER tou GBuffer during texture setup " + GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer), LogVerbosityLevel.ERROR);
+            
+        }
+
         public void BindDrawFrameBuffer(FBO fbo, int[] drawBuffers)
         {
             BindDrawFrameBuffer(fbo.fbo, fbo.Size.X, fbo.Size.Y, drawBuffers);
@@ -1236,24 +1404,34 @@ namespace NbCore.Platform.Graphics
             GL.DrawBuffers(bufferEnums.Length, bufferEnums);
         }
 
-        
-        public static void BindFrameBuffer(int fbo_id)
+        public static void BindFrameBuffer(FBO fbo)
+        {
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo.fbo);
+        }
+
+        public void BindFrameBuffer(int fbo_id)
         {
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo_id);
         }
 
-        public static void SetViewPort(int x, int y, int w, int h)
+        public static void BindDefaultFrameBuffer()
+        {
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        }
+
+        public static void SetViewPortSize(int x, int y, int w, int h)
         {
             GL.Viewport(x, y, w, h);
         }
-        
-        public FBO CreateFrameBuffer(int w, int h)
+
+        public static void GetViewPortSize(ref int X, ref int Y)
         {
-            FBO fbo = new(w,h);
-
-            return fbo;
+            int[] size = new int[2];
+            GL.GetInteger(GetPName.Viewport, size);
+            X = size[0];
+            Y = size[1];
         }
-
+        
         #region ShaderMethods
 
         public static Dictionary<NbShaderSourceType, ShaderType> ShaderTypeMap = new()
@@ -1573,18 +1751,18 @@ namespace NbCore.Platform.Graphics
         public static void AddRenderInstance(ref MeshComponent mc, TransformData td)
         {
             NbMeshBufferManager.AddRenderInstance(ref mc, td);
-            NbMeshInstanceManager.AddMeshInstance(ref mc.Mesh, mc.InstanceID);
+            NbMeshInstanceManager.AddMeshInstance(ref mc.Mesh);
         }
 
         public static void AddRenderInstance(ref ImposterComponent ic, TransformData td)
         {
             NbImposterBufferManager.AddRenderInstance(ref ic, td);
-            NbMeshInstanceManager.AddMeshInstance(ref ic.Mesh, ic.InstanceID);
+            NbMeshInstanceManager.AddMeshInstance(ref ic.Mesh);
         }
 
         public static void RemoveRenderInstance(ref NbMesh mesh, MeshComponent mc)
         {
-            NbMeshInstanceManager.RemoveMeshInstance(ref mesh, mc.InstanceID);
+            NbMeshInstanceManager.RemoveMeshInstance(ref mesh);
             NbMeshBufferManager.RemoveRenderInstance(ref mesh, mc);
             mc.InstanceID = -1;
         }
@@ -1597,7 +1775,7 @@ namespace NbCore.Platform.Graphics
         public static void AddLightRenderInstance(ref LightComponent lc, TransformData td)
         {
             NbLightBufferManager.AddRenderInstance(ref lc, td);
-            NbMeshInstanceManager.AddMeshInstance(ref lc.Mesh, lc.InstanceID);
+            NbMeshInstanceManager.AddMeshInstance(ref lc.Mesh);
         }
 
         public static void SetLightInstanceData(LightComponent lc)
@@ -1612,7 +1790,7 @@ namespace NbCore.Platform.Graphics
 
         public static void RemoveLightRenderInstance(ref NbMesh mesh, LightComponent lc)
         {
-            NbMeshInstanceManager.RemoveMeshInstance(ref mesh, lc.InstanceID);
+            NbMeshInstanceManager.RemoveMeshInstance(ref mesh);
             NbLightBufferManager.RemoveRenderInstance(ref mesh, lc);
             lc.InstanceID = -1;
         }

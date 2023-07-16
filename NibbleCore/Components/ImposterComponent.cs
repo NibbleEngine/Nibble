@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using NbCore;
 using NbCore.Math;
+using NbCore.Platform.Graphics;
 using Newtonsoft.Json;
 
 namespace NbCore
@@ -97,6 +98,18 @@ namespace NbCore
             };
 
             return lc;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (InstanceID >= 0)
+                    GraphicsAPI.RemoveRenderInstance(ref Mesh, this);
+
+                //Free other resources here
+                base.Dispose(disposing);
+            }
         }
 
     }

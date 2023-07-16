@@ -21,7 +21,7 @@ namespace NbCore
         
         public SceneComponent()
         {
-            
+
         }
         
         public override Component Clone()

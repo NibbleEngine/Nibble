@@ -55,6 +55,7 @@ namespace NbCore.UI.ImGui
             io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 16.0f);
             io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 11.0f);
             
+
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
             io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; //Enable Docking
             io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; //Enable MultipleViewport
@@ -218,12 +219,10 @@ void main()
             io.MouseDown[2] = WindowRef.IsMouseButtonDown(NbMouseButton.MIDDLE);
             io.MouseWheel = _scrollFactor * WindowRef.MouseScrollDelta.Y;
             io.MouseWheelH = _scrollFactor * WindowRef.MouseScrollDelta.X; 
-            //Console.WriteLine($"{WindowRef.MouseScroll.X} {WindowRef.MouseScroll.Y} {WindowRef.MouseScrollDelta.X} {WindowRef.MouseScrollDelta.Y}");
-            var screenPoint = new Vector2i((int) WindowRef.MousePosition.X, (int)WindowRef.MousePosition.Y);
-            var point = screenPoint;//wnd.PointToClient(screenPoint);
-            io.MousePos = new System.Numerics.Vector2(point.X, point.Y);
-
             
+            io.MousePosPrev = new System.Numerics.Vector2(WindowRef.MousePositionPrevious.X, WindowRef.MousePositionPrevious.Y);
+            io.MousePos = new System.Numerics.Vector2(WindowRef.MousePosition.X, WindowRef.MousePosition.Y);
+
             foreach (NbKey key in Enum.GetValues(typeof(NbKey)))
             {
                 io.KeysDown[(int) key] = WindowRef.IsKeyDown(key);

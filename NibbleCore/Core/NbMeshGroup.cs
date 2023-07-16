@@ -30,6 +30,14 @@ namespace NbCore
                 JointBindingDataList.Add(new JointBindingData());
         }
 
+        public void AddMesh(NbMesh mesh)
+        {
+            if (mesh.Material?.Class == NbMaterialClass.Transluscent)
+                AddTransparentMesh(mesh);
+            else
+                AddOpaqueMesh(mesh);
+        }
+        
         public void AddOpaqueMesh(NbMesh mesh)
         {
             if (Meshes.Contains(mesh))

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NbCore.Platform.Graphics;
+using System;
 using System.Collections.Generic;
 using System.Text;
 

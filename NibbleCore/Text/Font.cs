@@ -4,6 +4,7 @@ using System.IO;
 using OpenTK.Graphics.OpenGL4;
 using Newtonsoft.Json.Linq;
 using NbCore.Common;
+using OpenTK.Core.Native;
 
 namespace NbCore.Text
 {
@@ -28,16 +29,23 @@ namespace NbCore.Text
         public int texWidth; //Texture width in pixels
         public int texHeight; //Texture height in pixels
         public int texID;
-        public NbMaterial material;
         public Dictionary<string, Symbol> symbols = new Dictionary<string, Symbol>();
         private bool disposedValue;
 
         public Font(string fnt_path, string img_path, int format)
         {
+            //TODO:
+            //Use this generator for SDF fonts
+            // https://evanw.github.io/font-texture-generator/
+            // Hiero and Json that I use for now may work but they are not clean solutions
+            // Imgui uses TTFs directly, so this class should be merged with NbFont
+            // and manage Font details and character atlalses for text rendering during rendering
+
             if (format == 1)
                 loadHieroFont(fnt_path, img_path);
             else
                 loadJsonFont(fnt_path, img_path);
+
         }
 
 
@@ -118,8 +126,6 @@ namespace NbCore.Text
             sampl.ShaderBinding = "mpCustomPerMaterial.gDiffuseMap";
             sampl.Texture = tex;
 
-            //Generate Font Material
-            material = new NbMaterial();
         }
 
         private void loadJsonFont(string fnt_path, string img_path)
@@ -165,43 +171,9 @@ namespace NbCore.Text
             sampl.ShaderBinding = "mpCustomPerMaterial.gDiffuseMap";
             sampl.Texture = tex;
 
-            //Generate Font Material
-            material = new NbMaterial();
         }
 
-        private unsafe int genGLTexture(byte[] img_data)
-        {
-            //img_data is expected to be a complete png image
-            NbTextureData tex_data = NbImagingAPI.Load(img_data);
-            
-            int texID = GL.GenTexture();
-            Console.WriteLine(GL.GetError());
-            GL.BindTexture(TextureTarget.Texture2DArray, texID);
-
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureBaseLevel, 0);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMaxLevel, 0);
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, tex_data.Width, tex_data.Height,
-                0, PixelFormat.Rgba, PixelType.UnsignedByte, tex_data.Data);
-
-            Console.WriteLine(GL.GetError());
-            //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureLodBias, -0.2f);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2DArray, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.LinearMipmapLinear);
-
-            GL.BindTexture(TextureTarget.Texture2DArray, 0);
-
-            return texID;
-        }
-
-
-        public void clearTextures()
-        {
-            GL.DeleteTexture(texID);
-        }
-
+        
         ~Font()
         {
             symbols.Clear();

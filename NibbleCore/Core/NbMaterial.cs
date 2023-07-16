@@ -10,6 +10,7 @@ namespace NbCore
     {
         Default,
         Transluscent,
+        Opaque
     }
 
     //Stolen from NMS sorry HG ^.^

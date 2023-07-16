@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using NbCore;
 using NbCore.Math;
+using NbCore.Platform.Graphics;
 using Newtonsoft.Json;
 
 namespace NbCore
@@ -107,6 +108,17 @@ namespace NbCore
             throw new NotImplementedException();
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (InstanceID >= 0)
+                    GraphicsAPI.RemoveLightRenderInstance(ref Mesh, this);
+
+                base.Dispose(disposing);
+            }
+        }
+
         public new void Serialize(JsonTextWriter writer)
         {
             writer.WriteStartObject();
@@ -135,6 +147,7 @@ namespace NbCore
 
             return lc;
         }
+
 
     }
 }

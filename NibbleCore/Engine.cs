@@ -133,9 +133,13 @@ namespace NbCore
             return (T) _engineSystemMap[typeof(T)];
         }
 
+        public GraphicsAPI GetRenderer()
+        {
+            return GetSystem<RenderingSystem>().Renderer;
+        }
+
         #region plugin_loader
 
-        
         /// 
         /// Include externals dlls
         /// 
@@ -223,13 +227,6 @@ namespace NbCore
         
         #endregion
 
-        public Font AddFont(string fontPath, string fontAtlas)
-        {
-            Font f = new Font(fontPath, fontAtlas, 1);
-            GetSystem<RenderingSystem>().FontMgr.addFont(f);
-            return f;
-        }
-
         public void ImportSceneGraph(SceneGraph graph)
         {
             RegisterSceneGraphTree(graph, graph.Root, true);
@@ -284,8 +281,10 @@ namespace NbCore
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RegisterEntity(NbFont font)
         {
-            //TODO: Make sure to register the font as an entity
-            AddFont(font.fontPath, font.atlasPath);
+            if (GetSystem<EntityRegistrySystem>().RegisterEntity(font))
+            {
+                //GetSystem<RenderingSystem>().FontMgr.addFont(font);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -355,38 +354,44 @@ namespace NbCore
             //Add Entity to main registry
             if (GetSystem<EntityRegistrySystem>().RegisterEntity(e))
             {
-                //Register to transformation System
-                if (e.HasComponent<TransformComponent>())
-                    GetSystem<TransformationSystem>().RegisterEntity(e);
-
-                //Register to rendering System
-                if (e.HasComponent<MeshComponent>())
+                foreach (Component c in e.Components)
                 {
-                    //Register mesh, material and the corresponding shader if necessary
-                    MeshComponent mc = e.GetComponent<MeshComponent>();
-
-                    //GetSystem<RenderingSystem>().RegisterEntity(mc); //Check the mesh group
-                    RegisterEntity(mc.Mesh.Material); //Register Material
-                    RegisterEntity(mc.Mesh); //Register Mesh
-                }
-
-                if (e.HasComponent<AnimComponent>())
-                {
-                    AnimComponent ac = e.GetComponent<AnimComponent>();
-                    //Iterate to all Animations
-                    foreach (Animation anim in ac.AnimGroup.Animations)
+                    //Register to transformation System
+                    if (c.GetType() == typeof(TransformComponent))
                     {
-                        RegisterEntity(anim);
+                        GetSystem<TransformationSystem>().RegisterEntity(e);
                     }
 
-                    GetSystem<AnimationSystem>().RegisterEntity(ac);
-                }
+                    //Register to rendering System
+                    if (c.GetType() == typeof(MeshComponent))
+                    {
+                        MeshComponent mc = (MeshComponent) c;
+                        //GetSystem<RenderingSystem>().RegisterEntity(mc); //Check the mesh group
+                        RegisterEntity(mc.Mesh.Material); //Register Material
+                        RegisterEntity(mc.Mesh); //Register Mesh
+                    }
 
-                if (e.HasComponent<ScriptComponent>())
-                {
-                    GetSystem<ScriptingSystem>().RegisterEntity(e);
-                }
+                    //Register to animation system
+                    if (c.GetType() == typeof(AnimComponent))
+                    {
+                        AnimComponent ac = (AnimComponent) c;
+                        //Iterate to all Animations
+                        foreach (Animation anim in ac.AnimGroup.Animations)
+                        {
+                            RegisterEntity(anim);
+                        }
 
+                        GetSystem<AnimationSystem>().RegisterEntity(ac);
+                    }
+
+                    //Register to Scripting System
+                    if (c.GetType() == typeof(ScriptComponent))
+                    {
+                        GetSystem<ScriptingSystem>().RegisterEntity(e);
+                    }
+
+                }
+                
                 return true;
             }
             return false;
@@ -447,13 +452,17 @@ namespace NbCore
         public void DestroyEntity(Entity e)
         {
             //Remove from main registry
-            if (GetSystem<EntityRegistrySystem>().DeleteEntity(e))
+            if (!GetSystem<EntityRegistrySystem>().DeleteEntity(e))
             {
-                //Register to transformation System
-                if (e.HasComponent<TransformComponent>())
-                    GetSystem<TransformationSystem>().DeleteEntity(e);
+                Log("Unable to remove entity from registry", LogVerbosityLevel.ERROR);
             }
 
+            //Dispose Components
+            foreach (Component c in e.Components)
+                c.Dispose();
+            e.Components.Clear();
+            
+            //Dispoe Entity
             e.Dispose();
         }
 
@@ -721,28 +730,28 @@ namespace NbCore
             };
 
             //Add Lights
-            SceneGraphNode l = CreateLightNode("Light 1", 100.0f,
+            SceneGraphNode l = CreateLightNode("Light 1", new NbVector3(1.0f), 100.0f,
                 ATTENUATION_TYPE.QUADRATIC, LIGHT_TYPE.POINT);
 
             TransformationSystem.SetEntityLocation(l, new NbVector3(0.2f, 0.2f, -2.0f));
             RegisterEntity(l);
             scene.Children.Add(l);
 
-            SceneGraphNode l1 = CreateLightNode("Light 2", 100.0f,
+            SceneGraphNode l1 = CreateLightNode("Light 2", new NbVector3(1.0f), 100.0f,
                 ATTENUATION_TYPE.QUADRATIC, LIGHT_TYPE.POINT);
 
             TransformationSystem.SetEntityLocation(l1, new NbVector3(0.2f, -0.2f, -2.0f));
             RegisterEntity(l1);
             scene.Children.Add(l1);
 
-            SceneGraphNode l2 = CreateLightNode("Light 3", 100.0f,
+            SceneGraphNode l2 = CreateLightNode("Light 3", new NbVector3(1.0f), 100.0f,
                 ATTENUATION_TYPE.QUADRATIC, LIGHT_TYPE.POINT);
 
             TransformationSystem.SetEntityLocation(l2, new NbVector3(-0.2f, 0.2f, -2.0f));
             RegisterEntity(l2);
             scene.Children.Add(l2);
 
-            SceneGraphNode l3 = CreateLightNode("Light 4", 100.0f,
+            SceneGraphNode l3 = CreateLightNode("Light 4", new NbVector3(1.0f), 100.0f,
                 ATTENUATION_TYPE.QUADRATIC, LIGHT_TYPE.POINT);
 
             TransformationSystem.SetEntityLocation(l3, new NbVector3(-0.2f, -0.2f, -2.0f));
@@ -959,7 +968,7 @@ namespace NbCore
         }
 
         
-        public SceneGraphNode CreateLightNode(string name="default light", float intensity=1.0f, 
+        public SceneGraphNode CreateLightNode(string name, NbVector3 color, float intensity,
                                                 ATTENUATION_TYPE attenuation=ATTENUATION_TYPE.QUADRATIC,
                                                 LIGHT_TYPE lighttype = LIGHT_TYPE.POINT)
         {
@@ -996,6 +1005,7 @@ namespace NbCore
                 Mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere")),
                 Data = new()
                 {
+                    Color = color,
                     FOV = 360.0f,
                     Intensity = intensity,
                     Falloff = attenuation,
@@ -1004,8 +1014,12 @@ namespace NbCore
                     IsUpdated = true
                 }
             };
+
             n.AddComponent<LightComponent>(lc);
 
+
+            //TODO: The imposter mesh is created from the nibble editor. This is wrong, this should be a default asset
+            
             //Add Imposter Component
             ImposterComponent ic = new()
             {
@@ -1013,8 +1027,8 @@ namespace NbCore
                 Data = new()
                 {
                     Color = new(1.0f, 0.0f, 0.0f),
-                    Width = 1.0f,
-                    Height = 1.0f,
+                    Width = 0.1f,
+                    Height = 0.1f,
                     ImageID = 0
                 }
             };
@@ -1195,7 +1209,7 @@ namespace NbCore
                 
                 if (node.HasComponent<MeshComponent>())
                 {
-                    MeshComponent mc = node.GetComponent<MeshComponent>() as MeshComponent;
+                    MeshComponent mc = node.GetComponent<MeshComponent>();
 
                     if (mc.Mesh == null)
                         continue;
@@ -1382,35 +1396,18 @@ namespace NbCore
         {
             //Remove from SceneGraph
             GetSystem<SceneManagementSystem>().ActiveSceneGraph.RemoveNode(node);
+
+            //Tranformation component disposal
+            //Remove from transformation System
+            if (node.HasComponent<TransformComponent>())
+            {
+                GetSystem<TransformationSystem>().DeleteEntity(node);
+            }
             
-            //Mesh Node Disposal
-            if (node.HasComponent<MeshComponent>())
-            {
-                MeshComponent mc = node.GetComponent<MeshComponent>();
-                if (mc.InstanceID >= 0)
-                    GraphicsAPI.RemoveRenderInstance(ref mc.Mesh, mc);
-            }
-
-            //Imposter Component Disposal
-            if (node.HasComponent<ImposterComponent>())
-            {
-                ImposterComponent mc = node.GetComponent<ImposterComponent>();
-                if (mc.InstanceID >= 0)
-                    GraphicsAPI.RemoveRenderInstance(ref mc.Mesh, mc);
-            }
-
-            //Light Node Disposal
-            if (node.HasComponent<LightComponent>())
-            {
-                LightComponent lc = node.GetComponent<LightComponent>();
-                if (lc.InstanceID >= 0)
-                    GraphicsAPI.RemoveLightRenderInstance(ref lc.Mesh, lc);
-            }
-
+            //Anim Component Disposal
             if (node.HasComponent<AnimComponent>())
             {
                 AnimComponent ac = node.GetComponent<AnimComponent>();
-                ac.AnimationDict.Clear();
                 GetSystem<AnimationSystem>().AnimationGroups.Remove(ac.AnimGroup);
                 foreach (Animation anim in ac.AnimGroup.Animations)
                 {

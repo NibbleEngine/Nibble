@@ -33,8 +33,8 @@ namespace NbCore.Platform.Windowing
         public virtual NbVector2 MouseDelta { get; }
         public NbVector2 MouseScroll;
         public NbVector2 MouseScrollPrevious;
-        public NbVector2 MousePosition;
-        public NbVector2 MousePositionPrevious;
+        public NbVector2 MousePosition = new NbVector2(0);
+        public NbVector2 MousePositionPrevious = new NbVector2(0);
         public virtual NbVector2 MouseScrollDelta { get; }
         public virtual NbVector2i ClientSize { get; }
 

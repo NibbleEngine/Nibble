@@ -63,7 +63,7 @@ namespace NbCore
         
         public NbMesh() : base(EntityType.Mesh)
         {
-            
+        
         }
 
         public override NbMesh Clone()

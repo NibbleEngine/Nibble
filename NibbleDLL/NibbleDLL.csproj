@@ -69,6 +69,7 @@
 		<Message Text="Hooya $(TargetPath)" Importance="high" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleNMSPlugin\lib" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleAssimpPlugin\lib" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleNMSPLugin\lib" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleEditor\lib" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NIbbleExamples\NibbleOpenGL\deps" />
 		<Copy SourceFiles="@(ShaderFiles)" DestinationFolder="..\..\NIbbleExamples\NibbleOpenGL\deps\Shaders" />

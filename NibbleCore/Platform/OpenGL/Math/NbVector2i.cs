@@ -43,6 +43,22 @@ namespace NbCore.Math
             return !(a == b);
         }
 
+        public static NbVector2i operator +(NbVector2i a, NbVector2i b)
+        {
+            return new NbVector2i()
+            {
+                _Value = a._Value + b._Value
+            };
+        }
+
+        public static NbVector2i operator -(NbVector2i a, NbVector2i b)
+        {
+            return new NbVector2i()
+            {
+                _Value = a._Value - b._Value
+            };
+        }
+
         public override bool Equals(object obj)
         {
             return (this == (NbVector2i) obj);

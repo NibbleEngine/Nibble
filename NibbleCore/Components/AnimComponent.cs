@@ -69,5 +69,16 @@ namespace NbCore
             throw new NotImplementedException();
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                //TODO: Should we do something with the animgroup here?
+                AnimationDict.Clear();
+                base.Dispose(disposing);
+            }
+            
+        }
+
     }
 }

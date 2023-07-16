@@ -119,15 +119,15 @@ namespace NbCore.Systems
         public void setupGBuffer()
         {
             //Create gbuffer
-            gBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y);
+            gBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y, FBOOptions.None);
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //albedo
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //normals
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //info1
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //info2
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //depth
             
-            renderBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y);
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Linear, NbTextureFilter.LinearMipmapLinear); //final pass
+            renderBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y, FBOOptions.None);
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //final pass
             renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //color 0 - blur 0
             renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //color 1 - blur 1
             renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //composite
@@ -136,6 +136,12 @@ namespace NbCore.Systems
             //Rebind the default framebuffer
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             Log("FBOs Initialized", LogVerbosityLevel.INFO);
+        }
+
+        public void deleteGBuffer()
+        {
+            gBuffer.Dispose();
+            renderBuffer.Dispose();
         }
 
         public FBO getRenderFBO()
@@ -203,6 +209,9 @@ namespace NbCore.Systems
             if (mesh == null)
                 return;
 
+            if (mesh.Group != null)
+                AddNewMeshGroup(mesh.Group);
+
             Renderer.AddMesh(mesh);
             //Store Mesh Data Here
             MeshDataMgr.Add(mesh.Data.Hash, mesh.Data);
@@ -236,6 +245,7 @@ namespace NbCore.Systems
                         //Do nothing
                         break;
                     }
+
             }
 
             //Add all meshes to the global meshlist
@@ -248,13 +258,10 @@ namespace NbCore.Systems
                 if (mesh.Group == null)
                 {
                     //Add to default mesh group
-                    if (mesh.Material?.Class == NbMaterialClass.Transluscent)
-                        MeshGroupDict[0].AddTransparentMesh(mesh);
-                    else
-                        MeshGroupDict[0].AddOpaqueMesh(mesh);
+                    MeshGroupDict[0].AddMesh(mesh);
                 } else
                 {
-                    AddMeshToOpenGroup(mesh.Group.ID, mesh);
+                    //No Need to do anything mesh already has a group
                 }
             }
         }
@@ -285,8 +292,8 @@ namespace NbCore.Systems
             ViewportSize.X = x;
             ViewportSize.Y = y;
             //Renderer.ResizeViewport(x, y);
-            gBuffer?.resize(x, y);
-            renderBuffer?.resize(x, y);
+            deleteGBuffer();
+            setupGBuffer();
         }
 
         #region MeshGroupActions
@@ -300,11 +307,9 @@ namespace NbCore.Systems
             }
             
             Log($"Opening MeshGroup with ID {mg.ID}", LogVerbosityLevel.DEBUG);
-            
             OpenMeshGroups[mg.ID] = mg;
         }
 
-        
         public void DeleteOpenMeshGroup(int id)
         {
             if (!OpenMeshGroups.ContainsKey(id))
@@ -354,16 +359,7 @@ namespace NbCore.Systems
             MeshGroupDict[mg.ID] = mg;
         }
 
-        public void AddMeshToOpenGroup(int id, NbMesh mesh)
-        {
-            if (!OpenMeshGroups.ContainsKey(id))
-            {
-                AddNewMeshGroup(mesh.Group);
-            }
-
-            NbMeshGroup mg = OpenMeshGroups[id];
-            mg.Meshes.Add(mesh);
-        }
+        
 
         public void SubmitOpenMeshGroups()
         {
@@ -737,9 +733,7 @@ namespace NbCore.Systems
         private void renderTransparent()
         {
             //Copy depth channel from gbuf to pbuf
-            FBO.copyDepthChannel(gBuffer.fbo, renderBuffer.fbo, 
-                                 gBuffer.Size.X, gBuffer.Size.Y,
-                                 renderBuffer.Size.X, renderBuffer.Size.Y);
+            Renderer.CopyDepthChannel(gBuffer, renderBuffer);
             
             //Render the first pass in the first channel of the pbuf
             GL.ClearTexImage(renderBuffer.GetTexture(NbFBOAttachment.Attachment1).texID, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
@@ -865,12 +859,11 @@ namespace NbCore.Systems
             
             
             //Deferred Shading
-            //defferedShading();
+            defferedShading();
 
             //Forward Shading
-            forwardShading();
+            //forwardShading();
 
-            
             Renderer.PostRendering();
 
             //POST-PROCESSING
@@ -1170,7 +1163,6 @@ namespace NbCore.Systems
             GL.DrawBuffer(DrawBufferMode.ColorAttachment0); //Draw to the color channel only
 
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
-
 
             //Enable Blend
             //At first render the static meshes

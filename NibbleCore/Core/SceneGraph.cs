@@ -48,7 +48,7 @@ namespace NbCore
         {
             foreach (SceneGraphNode node in JointNodes)
             {
-                JointComponent jc = (JointComponent)node.GetComponent<JointComponent>();
+                JointComponent jc = node.GetComponent<JointComponent>();
                 if (jc.JointIndex == jointID)
                     return node;
             }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using NbCore.Common;
 using Newtonsoft.Json;
 
 namespace NbCore
@@ -31,7 +33,8 @@ namespace NbCore
         Mesh,
         Animation,
         InstancedMesh,
-        LightInstancedMesh
+        LightInstancedMesh,
+        Font
     }
 
     [NbSerializable]
@@ -47,7 +50,7 @@ namespace NbCore
         public static long test_counter = 1;
 
         //Private
-        private readonly Dictionary<Type, Component> _componentMap = new();
+        private readonly Dictionary<Type, List<Component>> _componentMap = new();
 
         [NbSerializable]
         public readonly List<Component> Components = new();
@@ -69,42 +72,70 @@ namespace NbCore
             Initialized = true;
         }
 
-        public bool HasComponent(Component comp)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool HasComponent(Component c)
         {
-            return Components.Contains(comp);
+            return Components.Contains(c);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool HasComponent<T>()
         {
             return _componentMap.ContainsKey(typeof(T));
         }
 
-        public bool HasComponent(Type t)
-        {
-            return _componentMap.ContainsKey(t);
-        }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetComponent<T>() where T: Component
         {
+            return GetComponent<T>(0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public List<Component> GetComponents<T>() where T : Component
+        {
+            return _componentMap[typeof(T)];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetComponentCount<T>() where T : Component
+        {
+            return _componentMap[typeof(T)].Count;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T GetComponent<T>(int index) where T : Component
+        {
             if (HasComponent<T>())
-                return (T) _componentMap[typeof(T)];
+                return (T)_componentMap[typeof(T)][index];
             return null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddComponent<T>(Component comp)
         {
             AddComponent(typeof(T), comp);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual void AddComponent(Type t, Component comp)
         {
-            if (HasComponent(t))
+            if (HasComponent(comp))
+            {
+                Callbacks.Log(this, "Entity already contains component", LogVerbosityLevel.WARNING);
                 return;
-            _componentMap[t] = comp;
+            }
+            
+            if (!_componentMap.ContainsKey(t))
+            {
+                _componentMap[t] = new();
+            }
+            
+            _componentMap[t].Add(comp);
             Components.Add(comp);
             comp.RefEntity = this;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveComponent<T>()
         {
             //Orphan Component will be collected from the GC
@@ -120,11 +151,10 @@ namespace NbCore
             Type = e.Type;
             
             //Clone components
-            
-            foreach (KeyValuePair<Type, Component> kp in _componentMap)
+            foreach (Component c in Components)
             {
-                Component c = kp.Value.Clone();
-                AddComponent(c.GetType(), c);
+                Component c_clone = c.Clone();
+                AddComponent(c.GetType(), c_clone);
             }
         }
 
@@ -134,10 +164,13 @@ namespace NbCore
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects)
-                    foreach (var kp in _componentMap){
-                        _componentMap[kp.Key].Dispose();
-                    }
+                    foreach (Component c in Components)
+                        c.Dispose();
+
+                    //Clear structures
+                    foreach (var kp in _componentMap)
+                        _componentMap[kp.Key].Clear();
+                    
                     Components.Clear();
                     _componentMap.Clear();
                 }
@@ -164,7 +197,7 @@ namespace NbCore
             // If this finalizer runs, someone somewhere failed to
             // call Dispose, which means we've failed to leave
             // a monitor!
-            Common.Callbacks.Log(this, $"Undisposed lock. Object Type {GetType()}, Entity ID: {ID}", LogVerbosityLevel.WARNING);
+            Callbacks.Log(this, $"Undisposed lock. Object Type {GetType()}, Entity ID: {ID}", LogVerbosityLevel.WARNING);
         }
 #endif
 

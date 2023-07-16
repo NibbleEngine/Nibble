@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using NbCore.Math;
-using OpenTK.Mathematics;
 using NbCore.Platform.Graphics;
-using OpenTK.Graphics.OpenGL4;
+using NbCore.Common;
+using NbCore.Systems;
+using System.Reflection.Metadata;
+using OpenTK.Graphics.ES11;
 
 namespace NbCore
 {
@@ -17,6 +19,12 @@ namespace NbCore
         Attachment2,
         Attachment3,
         Attachment4,
+        Attachment5,
+        Attachment6,
+        Attachment7,
+        Attachment8,
+        Attachment9,
+        Attachment10,
         Depth
     }
 
@@ -55,8 +63,6 @@ namespace NbCore
             ColorAttachments = new();
             textures = new();
             options = opts;
-
-            setup();
         }
 
         public NbTexture GetTexture(NbFBOAttachment attachment)
@@ -64,100 +70,17 @@ namespace NbCore
             return textures[attachment];
         }
 
-        public void setup()
-        {
-            //Init the main FBO
-            GraphicsAPI.SetViewPort(0, 0, Size.X, Size.Y);
-            fbo = GL.GenFramebuffer();
-            
-            //Main flags
-            if (options.HasFlag(FBOOptions.MultiSample))
-                GL.Enable(EnableCap.Multisample);
-            
-            //Check
-            if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) != FramebufferErrorCode.FramebufferComplete)
-                Console.WriteLine("MALAKIES STO FRAMEBUFFER tou GBuffer " + GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt));
-
-            //Revert Back the default fbo
-            GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
-        }
-
         public void AddAttachment(NbTextureTarget target, NbTextureInternalFormat format, NbTextureFilter mag_filter, NbTextureFilter min_filter)
         {
             FBOAttachmentDescription attachment = new()
             {
                 target = target,
-                format = format
+                format = format,
+                magFilter = mag_filter,
+                minFilter = min_filter
             };
 
-            //TODO: Add check so that depth attachment is not overriden
-
-            int attachment_id = ColorAttachments.Count;
-            
-            if (format != NbTextureInternalFormat.DEPTH)
-            {
-                NbTexture tex = setup_texture(target, fbo, FramebufferAttachment.ColorAttachment0 + attachment_id, format, mag_filter, min_filter);
-                textures[NbFBOAttachment.Attachment0 + attachment_id] = tex;
-                ColorAttachments.Add(attachment);
-            } else
-            {
-                NbTexture tex = setup_texture(target, fbo, FramebufferAttachment.DepthAttachment, NbTextureInternalFormat.DEPTH, mag_filter, min_filter);
-                DepthAttachment = attachment;
-                textures[NbFBOAttachment.Depth] = tex;
-            }
-        }
-
-        public NbTexture setup_texture(NbTextureTarget target, int attach_to_fbo, FramebufferAttachment attachment_id, NbTextureInternalFormat format,
-            NbTextureFilter mag_filter, NbTextureFilter min_filter)
-        {
-            int handle = GL.GenTexture();
-            PixelInternalFormat pif = (PixelInternalFormat) GraphicsAPI.InternalFormatMap[format];
-            PixelType pixel_type = GraphicsAPI.PixelTypeMap[format];
-            TextureTarget textarget = GraphicsAPI.TextureTargetMap[target];
-
-            PixelFormat fmt = PixelFormat.Rgba;
-            
-            if (format == NbTextureInternalFormat.DEPTH)
-                fmt = PixelFormat.DepthComponent;
-            
-            if (textarget == TextureTarget.Texture2DMultisample)
-            {
-                GL.BindTexture(TextureTarget.Texture2DMultisample, handle);
-
-                //GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, size[0], size[1], 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
-                GL.TexImage2DMultisample(TextureTargetMultisample.Texture2DMultisample, msaa_samples, pif, Size.X, Size.Y, true);
-                //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
-                //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
-                //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
-                //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
-
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, attach_to_fbo);
-                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, attachment_id, TextureTarget.Texture2DMultisample, handle, 0);
-
-                
-            }
-            else if (textarget == TextureTarget.Texture2D)
-            {
-                GL.BindTexture(TextureTarget.Texture2D, handle);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, pif, Size.X, Size.Y, 0, fmt, pixel_type, IntPtr.Zero);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, GraphicsAPI.TextureFilterMap[mag_filter]);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, GraphicsAPI.TextureFilterMap[min_filter]);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int) TextureWrapMode.Repeat);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int) TextureWrapMode.Repeat);
-
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, attach_to_fbo);
-                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, attachment_id, TextureTarget.Texture2D, handle, 0);
-
-            }
-            else
-            {
-                throw new Exception("Unsupported texture target " + textarget);
-            }
-
-            //Check
-            if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) != FramebufferErrorCode.FramebufferComplete)
-                Console.WriteLine("MALAKIES STO FRAMEBUFFER tou GBuffer during texture setup " + GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt));
-
+            GraphicsAPI renderer = RenderState.engineRef.GetRenderer();
 
             //Create Texture
             NbTexture tex = new NbTexture()
@@ -168,98 +91,33 @@ namespace NbCore
                     Height = Size.Y,
                     Depth = 1,
                     MipMapCount = 1,
-                    target = NbTextureTarget.Texture2D,
-                    pif = format
-                },
-                texID = handle
+                    target = target,
+                    pif = format,
+                    MagFilter = mag_filter,
+                    MinFilter = min_filter,
+                }
             };
-            
-            return tex;
-        }
 
-
-        public void resize(int w, int h)
-        {
-            Size = new(w, h);
-            Cleanup();
-            
-            setup();
-            //Add color attachments
-            NbTexture tex;
-            for (int i = 0; i < ColorAttachments.Count; i++)
+            if (format != NbTextureInternalFormat.DEPTH)
             {
-                FBOAttachmentDescription desc = ColorAttachments[i];
-                tex = setup_texture(desc.target,
-                                           fbo,
-                                           FramebufferAttachment.ColorAttachment0 + i,
-                                           desc.format, desc.magFilter, desc.minFilter);
-                textures[NbFBOAttachment.Attachment0 + i] = tex;
+                renderer.AddFrameBufferAttachment(this, tex, (NbFBOAttachment) ColorAttachments.Count);
+                textures[NbFBOAttachment.Attachment0 + ColorAttachments.Count] = tex;
+                ColorAttachments.Add(attachment);
+            } else
+            {
+                renderer.AddFrameBufferAttachment(this, tex, (NbFBOAttachment.Depth));
+                textures[NbFBOAttachment.Depth] = tex;
+                DepthAttachment = attachment;
             }
-
-            tex = setup_texture(DepthAttachment.target,
-                                           fbo, FramebufferAttachment.DepthAttachment,
-                                           DepthAttachment.format, DepthAttachment.magFilter, DepthAttachment.minFilter);
-            textures[NbFBOAttachment.Depth] = tex;
-        }
-
-        public void Cleanup()
-        {
-
-            GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
-            //Delete Buffer
-            GL.DeleteFramebuffer(fbo);
-
-            foreach (NbTexture tex in textures.Values)
-                tex.Dispose();
-            
-            textures.Clear();
         }
 
         //STATIC HELPER METHODS
 
-        public static void copyChannel(int from_fbo, int to_fbo, int sourceSizeX, int sourceSizeY, int destSizeX, int destSizeY,
-            ReadBufferMode from_channel, DrawBufferMode to_channel)
+        public static void copyDepthChannel(FBO from, FBO to)
         {
-            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, from_fbo);
-            GL.ReadBuffer(from_channel); //Read color
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, to_fbo);
-            GL.DrawBuffer(to_channel); //Write to blur1
 
-            GL.BlitFramebuffer(0, 0, sourceSizeX, sourceSizeY, 0, 0, destSizeX, destSizeY,
-            ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Linear);
-            
-        }
-
-        public static void copyDepthChannel(int from_fbo, int to_fbo, int sourceSizeX, int sourceSizeY, int destSizeX, int destSizeY)
-        {
-            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, from_fbo);
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, to_fbo);
-            
-            GL.BlitFramebuffer(0, 0, sourceSizeX, sourceSizeY, 0, 0, destSizeX, destSizeY,
-            ClearBufferMask.DepthBufferBit, BlitFramebufferFilter.Nearest);
-        }
-
-        public static void copyChannel(int fbo, int sourceSizeX, int sourceSizeY, ReadBufferMode from_channel, DrawBufferMode to_channel)
-        {
-            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, fbo);
-            GL.ReadBuffer(from_channel); //Read color
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, fbo);
-            GL.DrawBuffer(to_channel); //Write to blur1
-
-            //Method 1: Use Blitbuffer
-            GL.BlitFramebuffer(0, 0, sourceSizeX, sourceSizeY, 0, 0, sourceSizeX, sourceSizeY,
-            ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Nearest);
-        }
-
-        public static void dumpChannelToImage(int fbo_id, ReadBufferMode from_channel, string name, int width, int height)
-        {
-            var pixels = new byte[4 * width * height];
-            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, fbo_id);
-            GL.ReadBuffer(from_channel);
-            GL.ReadPixels(0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
-
-            NbTextureData tex = NbImagingAPI.Load(pixels, width, height, NbTextureInternalFormat.RGBA8);
-            NbImagingAPI.ImageSave(tex, "Temp//framebuffer_raw_" + name + ".png");
+            GraphicsAPI renderer = RenderState.engineRef.GetRenderer();
+            renderer.CopyDepthChannel(from, to);
         }
 
         //Disposable Stuff
@@ -274,11 +132,17 @@ namespace NbCore
             {
                 ColorAttachments.Clear();
             }
-            
-            //Free unmanaged resources
-            GL.DeleteFramebuffer(fbo);
+
+            GraphicsAPI renderer = RenderState.engineRef.GetRenderer();
+            renderer.DeleteFrameBuffer(this);
+
             foreach (NbTexture tex in textures.Values)
+            {
+                renderer.DeleteTexture(tex);
                 tex.Dispose();
+            }
+                
+            textures.Clear();
 
             disposedValue = true;
         }

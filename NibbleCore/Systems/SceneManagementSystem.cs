@@ -54,49 +54,54 @@ namespace NbCore.Systems
             foreach (SceneGraphNode n in graph.MeshNodes)
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
-                MeshComponent mc = n.GetComponent<MeshComponent>();
-                bool mesh_instance_updated = false;
+                List<Component> meshComponents = n.GetComponents<MeshComponent>();
                 
-                if (td.IsUpdated || mc.IsUpdated)
+                
+                foreach (Component c in meshComponents)
                 {
-                    if (td.IsOccluded && !td.WasOccluded)
+                    MeshComponent mc = (MeshComponent)c;
+                    bool mesh_instance_updated = false;
+
+                    if (td.IsUpdated || mc.IsUpdated)
                     {
-                        //Remove Instance
-                        Log($"Removing Instance {n.Name}", LogVerbosityLevel.DEBUG);
-                        //TODO: Maybe it is  a good idea to keep queues for 
-                        //instances that will be removed and instance that will be added
-                        //which will be passed per frame update to the rendering system
-                        //which has direct access to the renderer
-                        GraphicsAPI.RemoveRenderInstance(ref mc.Mesh, mc);
+                        if (td.IsOccluded && !td.WasOccluded)
+                        {
+                            //Remove Instance
+                            Log($"Removing Instance {n.Name}", LogVerbosityLevel.DEBUG);
+                            //TODO: Maybe it is  a good idea to keep queues for 
+                            //instances that will be removed and instance that will be added
+                            //which will be passed per frame update to the rendering system
+                            //which has direct access to the renderer
+                            GraphicsAPI.RemoveRenderInstance(ref mc.Mesh, mc);
+                        }
+                        else if (!td.IsOccluded && td.WasOccluded)
+                        {
+                            Log($"Adding Instance UpdateMesh {n.Name}", LogVerbosityLevel.DEBUG);
+                            GraphicsAPI.AddRenderInstance(ref mc, td);
+                        }
+                        else if (!td.IsOccluded)
+                        {
+                            mesh_instance_updated = true;
+                            GraphicsAPI.SetInstanceWorldMat(mc.Mesh, mc.InstanceID, td.WorldTransformMat);
+                            GraphicsAPI.SetInstanceWorldMatInv(mc.Mesh, mc.InstanceID, td.InverseTransformMat);
+                        }
                     }
-                    else if (!td.IsOccluded && td.WasOccluded)
+
+                    //Update Instance Data
+                    if (mc.IsUpdated && !td.IsOccluded)
                     {
-                        Log($"Adding Instance UpdateMesh {n.Name}", LogVerbosityLevel.DEBUG);
-                        GraphicsAPI.AddRenderInstance(ref mc, td);
-                    }
-                    else if (!td.IsOccluded)
-                    {
+                        //Upload Uniforms
+                        GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 0, mc.InstanceUniforms[0].Values);
+                        GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 1, mc.InstanceUniforms[1].Values);
+                        GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 2, mc.InstanceUniforms[2].Values);
+                        GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 3, mc.InstanceUniforms[3].Values);
                         mesh_instance_updated = true;
-                        GraphicsAPI.SetInstanceWorldMat(mc.Mesh, mc.InstanceID, td.WorldTransformMat);
-                        GraphicsAPI.SetInstanceWorldMatInv(mc.Mesh, mc.InstanceID, td.InverseTransformMat);
                     }
-                }
 
-                //Update Instance Data
-                if (mc.IsUpdated && !td.IsOccluded)
-                {
-                    //Upload Uniforms
-                    GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 0, mc.InstanceUniforms[0].Values);
-                    GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 1, mc.InstanceUniforms[1].Values);
-                    GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 2, mc.InstanceUniforms[2].Values);
-                    GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 3, mc.InstanceUniforms[3].Values);
-                    mesh_instance_updated = true;
+                    //Update 
+                    if (mesh_instance_updated)
+                        GraphicsAPI.UpdateInstance(mc.Mesh, mc.InstanceID);
                 }
-
-                //Update 
-                if (mesh_instance_updated)
-                    GraphicsAPI.UpdateInstance(mc.Mesh, mc.InstanceID);
-                    
             }
         }
 
@@ -106,7 +111,7 @@ namespace NbCore.Systems
             foreach (SceneGraphNode n in graph.ImposterNodes)
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
-                ImposterComponent ic = n.GetComponent<ImposterComponent>() as ImposterComponent;
+                ImposterComponent ic = n.GetComponent<ImposterComponent>();
                 bool instance_updated = false;
 
                 if (td.IsUpdated)
@@ -151,7 +156,6 @@ namespace NbCore.Systems
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
                 LightComponent lc = n.GetComponent<LightComponent>();
                 bool light_instance_updated = false;
-
 
                 if (!lc.Data.IsRenderable && lc.InstanceID != -1)
                 {

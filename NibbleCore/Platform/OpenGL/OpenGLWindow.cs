@@ -10,9 +10,13 @@ using System.Runtime.CompilerServices;
 using NbCore.Common;
 using System.Timers;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using OpenTK.Graphics.OpenGL;
+using System;
 
 namespace NbCore.Platform.Windowing
 {
+    
     public class NbOpenGLWindow : NbWindow
     {
         private GameWindow _win;
@@ -31,6 +35,9 @@ namespace NbCore.Platform.Windowing
                 _win.Title = value;
             }
         }
+
+        [DllImport("user32.dll", EntryPoint = "SetCursorPos")]
+        private static extern bool SetCursorPos(int X, int Y);
 
         public override NbVector2i Size
         {
@@ -131,7 +138,7 @@ namespace NbCore.Platform.Windowing
                 _resizeWatch.Stop();
                 _resizeWatch.Reset();
             }
-            
+
             OnRenderUpdate(args.Time);
             //Explicitly Handle Mouse Scroll and Pose
             MouseScrollPrevious = MouseScroll;
@@ -141,7 +148,53 @@ namespace NbCore.Platform.Windowing
             MousePosition.X = _win.MousePosition.X;
             MousePosition.Y = _win.MousePosition.Y;
 
+            MouseWrap();
+
+            
+
             _win.SwapBuffers();
+        }
+
+        private void MouseWrap()
+        {
+            //Clamp Mouse Horizontally
+            if (_win.MouseState.IsAnyButtonDown)
+            {
+                Vector2i screenPos = _win.PointToScreen(new Vector2i((int)_win.MousePosition.X, (int)_win.MousePosition.Y));
+                bool update = false;
+                
+                if (_win.MousePosition.X > Size.X - 2)
+                {
+                    screenPos.X -= Size.X - 3;
+                    update = true;
+                }
+                else if (_win.MousePosition.X < 2)
+                {
+                    screenPos.X += Size.X - 3;
+                    update = true;
+                }
+                
+                if (_win.MousePosition.Y > Size.Y - 2)
+                {
+                    screenPos.Y -= Size.Y - 3;
+                    update = true;
+                }
+                else if (_win.MousePosition.Y < 2)
+                {
+                    screenPos.Y += Size.Y - 3;
+                    update = true;
+                }
+                
+                if (update)
+                {
+                    SetCursorPos(screenPos.X, screenPos.Y);
+                    Vector2i newLocalPos = _win.PointToClient(screenPos);
+                    MousePosition.X = newLocalPos.X;
+                    MousePosition.Y = newLocalPos.Y;
+                    MousePositionPrevious = MousePosition;
+                }
+                
+            }
         }
 
         private void FrameUpdateDelegate(FrameEventArgs args)

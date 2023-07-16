@@ -4,15 +4,20 @@ using System;
 namespace NbCore
 {
     [NbSerializable]
-    public class NbFont
+    public class NbFont : Entity
     {
         public string fontPath;
         public string atlasPath;
         
-        public NbFont(string font, string atlas)
+        public NbFont(string font, string atlas) : base(EntityType.Font)
         {
             fontPath = font;
             atlasPath = atlas;
+        }
+
+        public override NbFont Clone()
+        {
+           throw new NotImplementedException();
         }
 
         public void Serialize(JsonTextWriter writer)

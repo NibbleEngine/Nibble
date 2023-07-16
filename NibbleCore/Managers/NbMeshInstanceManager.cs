@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.VisualBasic.FileIO;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -11,21 +13,67 @@ namespace NbCore
         private static int instance_counter;
         private static List<int> free_slots = new() { 0 };
 
-        public static void AddMeshInstance(ref NbMesh mesh, int instanceID)
+        public static void Report()
+        {
+            foreach (KeyValuePair<int, NbMesh> keyValuePair in atlas_position_mesh_map)
+            {
+                Console.WriteLine($"Mesh {keyValuePair.Value.ID} Position {keyValuePair.Key} Count {keyValuePair.Value.InstanceCount}");
+            }
+        }
+
+        public static void AddMeshInstance(ref NbMesh mesh)
         {
             //At first check if the mesh is already in the atlas
             if (mesh.AtlasBufferOffset != -1)
             {
                 //Check if a new instance fits
-                if (atlas_position_mesh_map.ContainsKey(mesh.AtlasBufferOffset + instanceID))
+                if (atlas_position_mesh_map.ContainsKey(mesh.AtlasBufferOffset + mesh.InstanceCount - 1))
                 {
-                    //Does not fit do relocates
-                    throw new NotImplementedException();
+                    //At first check if we need to extend the array
+                    //consider worst case scenario
+                    if (free_slots[free_slots.Count - 1] + mesh.InstanceCount > atlas_cpmu.Length)
+                        ExtendAtlasArray();
+
+
+                    //Now try to find a free index that can host all the mesh instances
+                    int new_mesh_slot = -1;
+                    for (int i=free_slots.Count - 1; i >= 0; i--)
+                    {
+                        bool is_good = true;
+                        for (int j = 0; j < mesh.InstanceCount; j++)
+                        {
+                            if (atlas_position_mesh_map.ContainsKey(free_slots[i] + j))
+                                is_good = false;
+                        }
+
+                        if (is_good)
+                        {
+                            new_mesh_slot = free_slots[i];
+                            break;
+                        }
+                    }
+
+                    if (new_mesh_slot == -1)
+                        throw new NotImplementedException();
+
+                    //Relocate previous + instance data to the new position
+                    for (int i = 0; i < mesh.InstanceCount; i++)
+                        atlas_cpmu[new_mesh_slot + i] = atlas_cpmu[mesh.AtlasBufferOffset + i];
+                    
+                    atlas_position_mesh_map.Remove(mesh.AtlasBufferOffset);
+                    if (new_mesh_slot == free_slots[free_slots.Count - 1])
+                        free_slots.Add(new_mesh_slot + mesh.InstanceCount);
+                    
+                    free_slots.Remove(new_mesh_slot);
+                    free_slots.Add(mesh.AtlasBufferOffset);
+                    free_slots.Sort();
+                    mesh.AtlasBufferOffset = new_mesh_slot; //Set new slot
+                    atlas_position_mesh_map[new_mesh_slot] = mesh; //Save mesh
                 } else
                 {
                     //Fits
                     //Remove index from the free slots
-                    int index = free_slots.IndexOf(mesh.AtlasBufferOffset + instanceID);
+                    int index = free_slots.IndexOf(mesh.AtlasBufferOffset + mesh.InstanceCount - 1);
                     free_slots.RemoveAt(index);
                     if (!atlas_position_mesh_map.ContainsKey(mesh.AtlasBufferOffset + mesh.InstanceCount) && 
                         !free_slots.Contains(mesh.AtlasBufferOffset + mesh.InstanceCount))
@@ -41,21 +89,18 @@ namespace NbCore
                 
                 mesh.AtlasBufferOffset = insertionIndex;
                 atlas_position_mesh_map[insertionIndex] = mesh;
-                if (!free_slots.Contains(insertionIndex + 1))
+                if (!free_slots.Contains(insertionIndex + 1) && !atlas_position_mesh_map.ContainsKey(insertionIndex + 1))
                     free_slots.Insert(0, insertionIndex + 1);
             }
+            //Report();
         }
 
-        public static void RemoveMeshInstance(ref NbMesh mesh, int instanceID) 
+        public static void RemoveMeshInstance(ref NbMesh mesh) 
         {
-            //Bring last index to this instance's place
-            //TODO: Remove the next 2 lines I think they are not needed
-            //MeshInstance last = mesh.InstanceDataBuffer[mesh.InstanceCount - 1];
-            //atlas_cpmu[mesh.InstanceIndexBuffer[instanceID]] = last;
-           
-            if (!free_slots.Contains(mesh.AtlasBufferOffset + instanceID))
+            //Always remove the last instance of the mesh from the atlas
+            if (!free_slots.Contains(mesh.AtlasBufferOffset + mesh.InstanceCount - 1))
             {
-                free_slots.Add(mesh.AtlasBufferOffset + instanceID);
+                free_slots.Add(mesh.AtlasBufferOffset + mesh.InstanceCount - 1);
                 free_slots.Sort(); //TODO: THIS HAS TO BE CHANGED AT SOME POINT WITH A SMARTER DATA STRUCTURE
             }
             
@@ -65,7 +110,7 @@ namespace NbCore
                 atlas_position_mesh_map.Remove(mesh.AtlasBufferOffset);
                 mesh.AtlasBufferOffset = -1;
             }
-
+            //Report();
         }
 
         public static void UpdateMeshInstance(ref NbMesh mesh, int instanceID)
@@ -73,19 +118,16 @@ namespace NbCore
             atlas_cpmu[mesh.AtlasBufferOffset + instanceID] = mesh.InstanceDataBuffer[instanceID];
         }
 
-        private static void ExtendAtlasArray(int threshold)
+        private static void ExtendAtlasArray()
         {
-            if (threshold > 0.9 * atlas_cpmu.Length)
-            {
-                //Make a new atlas array
-                MeshInstance[] new_atlas_cpmu = new MeshInstance[atlas_cpmu.Length + 1024];
-                //Copy old data
-                Array.Copy(atlas_cpmu, new_atlas_cpmu, atlas_cpmu.Length);
+            //Make a new atlas array
+            MeshInstance[] new_atlas_cpmu = new MeshInstance[atlas_cpmu.Length + 1024];
+            //Copy old data
+            Array.Copy(atlas_cpmu, new_atlas_cpmu, atlas_cpmu.Length);
 
-                //Swap arrays
-                atlas_cpmu = new_atlas_cpmu;
-                //The orphan array should be collected by the GC
-            }
+            //Swap arrays
+            atlas_cpmu = new_atlas_cpmu;
+            //The orphan array should be collected by the GC
         }
 
         public static int GetAtlasSize()
