@@ -120,18 +120,18 @@ namespace NbCore.Systems
         {
             //Create gbuffer
             gBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y, FBOOptions.None);
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //albedo
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //normals
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //info1
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //info2
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //depth
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment0); //albedo
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment1); //normals
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment2); //info1
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment3); //info2
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Depth); //depth
             
             renderBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y, FBOOptions.None);
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //final pass
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //color 0 - blur 0
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //color 1 - blur 1
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //composite
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, NbTextureFilter.Nearest, NbTextureFilter.Nearest); //depth
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment0); //HDR Channel 0
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment1); //HDR Channel 1
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment2);   //RGB Channel 0
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment3);   //composite
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH24_STENCIL8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.DepthStencil);  //depth
 
             //Rebind the default framebuffer
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
@@ -514,7 +514,6 @@ namespace NbCore.Systems
             if (RenderState.settings.ViewSettings.ViewCollisions)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("collisionMat");
-                Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes
                 foreach (NbMesh m in collisionMeshList)
@@ -530,7 +529,6 @@ namespace NbCore.Systems
             if (RenderState.settings.ViewSettings.ViewLights)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("lightMat");
-                Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes 
                 foreach (NbMesh m in lightMeshList)
@@ -544,7 +542,6 @@ namespace NbCore.Systems
             if (RenderState.settings.ViewSettings.ViewLightVolumes)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("collisionMat");
-                Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes
                 NbMesh light_sphere = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere"));
@@ -553,11 +550,33 @@ namespace NbCore.Systems
                     Renderer.RenderMesh(light_sphere, mat);
             }
 
+            //Mesh Bounding Volumes
+            if (RenderState.settings.ViewSettings.ViewBoundHulls)
+            {
+                //Bind BBox Shader
+                NbShader bbox_shader = ShaderMgr.GetShaderByType(NbShaderType.BBOX_SHADER);
+                Renderer.EnableShaderProgram(bbox_shader);
+                
+                //Render static meshes
+                foreach (NbMeshGroup mg in MeshGroups)
+                {
+                    Renderer.BindGroupBuffer(mg);
+                    foreach (NbMesh mesh in mg.OpaqueMeshes)
+                    {
+                        if (mesh.InstanceCount == 0)
+                            continue;
+                        
+                        if (mesh.InstanceCount > 0)
+                            Renderer.RenderBBoxes(mesh);
+                    }
+                }
+
+            }
+
             //Joints
             if (RenderState.settings.ViewSettings.ViewJoints)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("jointMat");
-                Renderer.SetProgram(mat.Shader.ProgramID);
 
                 //Render static meshes
                 foreach (NbMesh m in jointMeshList)
@@ -575,7 +594,6 @@ namespace NbCore.Systems
             if (RenderState.settings.ViewSettings.ViewLocators)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("crossMat");
-                Renderer.SetProgram(mat.Shader.ProgramID);
                 
                 //Render static meshes
                 foreach (NbMesh mesh in locatorMeshList)
@@ -612,8 +630,7 @@ namespace NbCore.Systems
         {
             //Set polygon mode
             GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
-            Renderer.SetCullFace(false); //TODO: REMOVE
-
+            
             foreach (NbMeshGroup mg in MeshGroups)
             {
                 Renderer.BindGroupBuffer(mg);
@@ -623,14 +640,12 @@ namespace NbCore.Systems
                         continue;
 
                     NbMaterial mat = MaterialMgr.Get(mesh.Material.ID);
-                    Renderer.SetProgram(mat.Shader.ProgramID);
                     Renderer.RenderMesh(mesh, mat);
                     frameStats.RenderedVerts += mesh.InstanceCount * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics);
                     frameStats.RenderedIndices += mesh.InstanceCount * mesh.MetaData.BatchCount;
                 }
             }
 
-            Renderer.SetCullFace(true); //TODO: REMOVE
             //Set polygon mode
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         }
@@ -642,7 +657,10 @@ namespace NbCore.Systems
             Renderer.BindDrawFrameBuffer(gBuffer, new int[] { 0, 1, 2, 3 });
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             
-            renderGeometry();
+            renderGeometry(); //Renders main geometry
+
+            //Copy depth buffer to the render Buffer
+            Renderer.CopyDepthChannel(gBuffer, renderBuffer);
 
             if (RenderState.settings.RenderSettings.UseLighting)
                 renderDeferredLightPass(); //Deferred Lighting Pass to pbuf
@@ -652,8 +670,15 @@ namespace NbCore.Systems
                 pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment0, gBuffer.GetTexture(NbFBOAttachment.Attachment0));
             }
 
-            //FORWARD STAGE - TRANSPARENT MESHES
-            //renderTransparent(); //Directly to Pbuf
+            //FORWARD STAGE 
+
+            //Draw immediately on the render buffer overwriting the depth buffer
+            //renderDecalMeshes(); //Render Decals
+            //renderTransparent(); //TODO: Bring back
+
+            //Default Meshes
+            renderDefaultMeshes(); //Collisions, Locators, Joints
+            
 
         }
 
@@ -673,7 +698,6 @@ namespace NbCore.Systems
 
         private void renderGeometry()
         {
-
             //Prepare UBOs
             prepareCommonPerFrameUBO();
 
@@ -683,13 +707,10 @@ namespace NbCore.Systems
             //At first render the static meshes
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
+            GL.CullFace(CullFaceMode.Back);
 
             //renderTestQuad();
             renderStaticMeshes(); //Deferred Rendered MESHES
-            //renderDecalMeshes(); //Render Decals
-            renderTransparent();
-            renderDefaultMeshes(); //Collisions, Locators, Joints
-        
         }
         
         private void renderDecalMeshes()
@@ -857,7 +878,6 @@ namespace NbCore.Systems
             
             //Log("Rendering Frame");
             
-            
             //Deferred Shading
             defferedShading();
 
@@ -867,8 +887,8 @@ namespace NbCore.Systems
             Renderer.PostRendering();
 
             //POST-PROCESSING
-            //post_process();
-
+            post_process();
+            
             //Pass results to Screen
             //renderFinalPass();
 
@@ -1050,140 +1070,55 @@ namespace NbCore.Systems
             //Load Programs
             NbShader shader = ShaderMgr.GetShaderByType(NbShaderType.TONE_MAPPING);
 
-            //Copy Color to first channel
-            pass_tex(renderBuffer.fbo,
-                DrawBufferMode.ColorAttachment1,
-                renderBuffer.GetTexture(0)); //LOOKS OK!
-
             //Apply Tone Mapping
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
-            GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+            //Draw to the RGB channel
+            Renderer.BindDrawFrameBuffer(renderBuffer, new int[] {2});
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
 
             //render_quad(new string[] {"sizeX", "sizeY" }, new float[] { to_buf_size[0], to_buf_size[1]}, new string[] { "InTex" }, new int[] { InTex }, shader);
             shader.ClearCurrentState();
             shader.CurrentState.AddSampler("inTex", new NbSampler()
             {
                 SamplerID = 0,
-                Texture = renderBuffer.GetTexture(NbFBOAttachment.Attachment1)
+                Texture = renderBuffer.GetTexture(NbFBOAttachment.Attachment0) //Load HDR channel
             });
             
             Renderer.RenderQuad(EngineRef.GetMesh(NbHasher.Hash("default_renderquad")),
                         shader, shader.CurrentState);
         }
 
-        //private void inv_tone_mapping()
-        //{
-        //    //Load Programs
-        //    GLSLShaderConfig inv_tone_mapping_program = ShaderMgr.GetGenericShader(NbShaderType.INV_TONE_MAPPING);
-
-        //    //Copy Color to first channel
-        //    pass_tex(pbuf.fbo, DrawBufferMode.ColorAttachment1, pbuf.color, pbuf.size); //LOOKS OK!
-
-        //    //Apply Tone Mapping
-        //    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, pbuf.fbo);
-        //    GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
-
-        //    render_quad(Array.Empty<string>(), Array.Empty<float>(), new string[] { "inTex" }, new TextureTarget[] { TextureTarget.Texture2D }, new int[] { pbuf.blur1 }, inv_tone_mapping_program);
-
-        //}
-
         private void post_process()
         {
             //Actuall Post Process effects in AA space without tone mapping
             //TODO: Bring that back
 
-            //    if (RenderState.settings.renderSettings.UseBLOOM)
-            //        bloom(); //BLOOM
+            //if (RenderState.settings.RenderSettings.UseBLOOM)
+            //    bloom(); //BLOOM
 
 
             if (RenderState.settings.RenderSettings.UseFXAA)
                 fxaa(); //FXAA (INCLUDING TONE/UNTONE)
 
-            //tone_mapping(); //FINAL TONE MAPPING, INCLUDES GAMMA CORRECTION
+            tone_mapping(); //FINAL TONE MAPPING, INCLUDES GAMMA CORRECTION
 
         }
 
-        private void backupDepth()
-        {
-            //NOT WORKING
-            //Backup the depth buffer to the secondary fbo
-            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, gBuffer.fbo);
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, gBuffer.fbo);
-            GL.BlitFramebuffer(0, 0, gBuffer.Size.X, gBuffer.Size.Y, 0, 0, gBuffer.Size.X, gBuffer.Size.Y,
-                ClearBufferMask.DepthBufferBit, BlitFramebufferFilter.Nearest);
-            
-        }
-
-        private void restoreDepth()
-        {
-            //NOT WORKING
-            //Backup the depth buffer to the secondary fbo
-            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, gBuffer.fbo);
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, gBuffer.fbo);
-            GL.BlitFramebuffer(0, 0, gBuffer.Size.X, gBuffer.Size.Y, 0, 0, gBuffer.Size.X, gBuffer.Size.Y,
-                ClearBufferMask.DepthBufferBit, BlitFramebufferFilter.Nearest);
-        }
+        
 
         private void renderDeferredLightPass()
         {
-            
-            /*
-            GLSLShaderConfig shader_conf = resMgr.GLShaders[NbShaderType.GBUFFER_SHADER];
-
-            //Bind the color channel of the pbuf for drawing
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, pbuf.fbo);
-            GL.DrawBuffer(DrawBufferMode.ColorAttachment0); //Draw to the light color channel only
-
-            //TEST DRAW TO SCREEN
-            //GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
-
-            //GL.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            render_quad(new string[] { }, new float[] { }, new string[] { "albedoTex", "depthTex", "normalTex", "parameterTex"},
-                                                            new TextureTarget[] { TextureTarget.Texture2D, TextureTarget.Texture2D,
-                                                            TextureTarget.Texture2D, TextureTarget.Texture2D},
-                                                            new int[] { gbuf.albedo, gbuf.depth, gbuf.normals, gbuf.info}, shader_conf);
-            */
-
-            //Render Light volume
-            NbShader shader_conf = ShaderMgr.GetShaderByType(NbShaderType.LIGHT_PASS_LIT_SHADER);
-            
             NbMaterial mat = EngineRef.GetMaterialByName("lightMat");
-            Renderer.EnableMaterialProgram(mat);
-
-            ////At first blit the albedo (gbuf 0) -> channel 0 of the pbuf
-            //FBO.copyChannel(gBuffer.fbo, renderBuffer.fbo,
-            //                gBuffer.Size.X, gBuffer.Size.Y,
-            //                renderBuffer.Size.X, renderBuffer.Size.Y,
-            //    ReadBufferMode.ColorAttachment0, DrawBufferMode.ColorAttachment0);
-
-            //Bind the color channel of the pbuf for drawing
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
-            GL.DrawBuffer(DrawBufferMode.ColorAttachment0); //Draw to the color channel only
-
-            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
-
-            //Enable Blend
-            //At first render the static meshes
-            //GL.Enable(EnableCap.Blend);
-            
-            Renderer.SetCullFace(false);
-            Renderer.SetBlend(true);
-            GL.BlendEquation(BlendEquationMode.FuncAdd);
-            GL.BlendFunc(0, BlendingFactorSrc.One, BlendingFactorDest.One);
-
-            //Disable DepthTest and Depth Write
-            GL.DepthMask(false);
-            Renderer.SetDepthTest(false);
-            
             NbMesh mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere"));
 
-            //Dump Normals
-            //GraphicsAPI.DumpTexture(gBuffer.GetTexture(NbFBOAttachment.Attachment0), "albedo");
-            //GraphicsAPI.DumpTexture(gBuffer.GetTexture(NbFBOAttachment.Attachment1), "normals");
-            
-            Renderer.EnableShaderProgram(shader_conf);
+            if (mesh.InstanceCount == 0)
+                return;
+
+            NbShader stencil_shader = ShaderMgr.GetShaderByType(NbShaderType.LIGHT_PASS_STENCIL_SHADER);
+            NbShader light_shader = ShaderMgr.GetShaderByType(NbShaderType.LIGHT_PASS_LIT_SHADER);
+
+
+            //Setup Light Shader
+            Renderer.EnableShaderProgram(light_shader);
             
             //Upload samplers
             string[] sampler_names = new string[] { "albedoTex", "normalTex", "parameterTex01", "parameterTex02", "depthTex" };
@@ -1196,20 +1131,61 @@ namespace NbCore.Systems
                                                             TextureTarget.Texture2D, TextureTarget.Texture2D, TextureTarget.Texture2D };
             for (int i = 0; i < sampler_names.Length; i++)
             {
-                if (shader_conf.uniformLocations.ContainsKey(sampler_names[i]))
+                if (light_shader.uniformLocations.ContainsKey(sampler_names[i]))
                 {
-                    GL.Uniform1(shader_conf.uniformLocations[sampler_names[i]].loc, i);
+                    GL.Uniform1(light_shader.uniformLocations[sampler_names[i]].loc, i);
                     GL.ActiveTexture(TextureUnit.Texture0 + i);
                     GL.BindTexture(sampler_targets[i], texture_ids[i]);
                 }
             }
-            
-            //Note: we do not draw the light volumes for preview.
-            //Thus we directly render the mesh using the simple RenderMesh method
-            if (mesh.InstanceCount > 0) 
-                Renderer.RenderMesh(mesh);
 
+            Renderer.BindDrawFrameBuffer(renderBuffer);
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color);
+
+            for (int i = 0; i < mesh.InstanceCount; i++)
+            {
+                //Stencil Pass
+                GL.DrawBuffer(DrawBufferMode.None);
+                GraphicsAPI.ClearDrawBuffer(NbBufferMask.Stencil);
+
+                //Setup stencil ops
+                GL.Enable(EnableCap.StencilTest);
+                GL.Enable(EnableCap.DepthTest);
+                GL.DepthMask(false); //Disable writing to depth buffer
+                GL.Disable(EnableCap.CullFace); //Render front/back faces
+                GL.StencilFunc(StencilFunction.Always, 0x0, 0x0); //With always all fragments pass
+                GL.StencilOpSeparate(StencilFace.Back, StencilOp.Keep, StencilOp.IncrWrap, StencilOp.Keep);
+                GL.StencilOpSeparate(StencilFace.Front, StencilOp.Keep, StencilOp.DecrWrap, StencilOp.Keep);
+
+                Renderer.EnableShaderProgram(stencil_shader);
+                //Render the light volumes
+                //Thus we directly render the mesh using the simple RenderMesh method
+                Renderer.RenderMesh(mesh, i);
+
+                //Light Pass
+                
+                //Bind the color channel of the pbuf for drawing
+                GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+                Renderer.EnableShaderProgram(light_shader);
+
+                GL.StencilFunc(StencilFunction.Notequal, 0x0, 0xFF);
+                GL.Disable(EnableCap.DepthTest);
+                GL.Enable(EnableCap.Blend);
+                GL.BlendEquation(BlendEquationMode.FuncAdd);
+                GL.BlendFunc(0, BlendingFactorSrc.One, BlendingFactorDest.One);
+                GL.Enable(EnableCap.CullFace);
+                GL.CullFace(CullFaceMode.Front);
+
+                //Note: we do not draw the light volumes for preview.
+                //Thus we directly render the mesh using the simple RenderMesh method
+                Renderer.RenderMesh(mesh, i);
+            }
+
+            
+            //Cleanup
             GL.DepthMask(true);
+            GL.Disable(EnableCap.StencilTest);
+            GL.CullFace(CullFaceMode.Back);
             Renderer.SetDepthTest(true);
             Renderer.SetCullFace(true);
             Renderer.SetBlend(false);

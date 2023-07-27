@@ -1042,18 +1042,27 @@ namespace NbCore
         #region GLRelatedRequests
 
         public NbTexture CreateTexture(string filepath,
-            NbTextureWrapMode wrapmode, NbTextureFilter minFilter, NbTextureFilter magFilter, bool keepData = false)
+            NbTextureWrapMode wrapmode, NbTextureFilter minFilter, NbTextureFilter magFilter, bool gamma_correct, bool keepData = false)
         {
             byte[] data = File.ReadAllBytes(filepath);
-            return CreateTexture(data, filepath, wrapmode, minFilter, magFilter, keepData);
+            return CreateTexture(data, filepath, wrapmode, minFilter, magFilter, gamma_correct, keepData);
         }
         
         public NbTexture CreateTexture(byte[] data, string name,
-            NbTextureWrapMode wrapmode, NbTextureFilter minFilter, NbTextureFilter magFilter,
+            NbTextureWrapMode wrapmode, NbTextureFilter minFilter, NbTextureFilter magFilter, bool gamma_correct,
             bool keepData = false)
         {
             //TODO: Possibly move that to a separate rendering thread
             NbTexture tex = new(name, data);
+            if (gamma_correct)
+            {
+                switch (tex.Data.pif)
+                {
+                    case NbTextureInternalFormat.RGBA8:
+                        tex.Data.pif = NbTextureInternalFormat.SRGBA8;
+                        break;
+                }
+            }
             GraphicsAPI.GenerateTexture(tex);
             GraphicsAPI.UploadTexture(tex);
             GraphicsAPI.setupTextureParameters(tex, wrapmode, magFilter, minFilter, 8.0f);

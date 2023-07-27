@@ -113,7 +113,7 @@ namespace NbCore.Text
 
             //Generate texture
             NbTexture tex = RenderState.engineRef.CreateTexture(img_data, img_path, NbTextureWrapMode.Repeat, 
-                                                                NbTextureFilter.LinearMipmapLinear, NbTextureFilter.Linear);
+                                                                NbTextureFilter.LinearMipmapLinear, NbTextureFilter.Linear, false);
             
             //tex.Data.target = NbTextureTarget.Texture2DArray;
             //tex.texID = genGLTexture(img_data);
@@ -162,7 +162,7 @@ namespace NbCore.Text
             //TODO: This should be done by the engine. MOVE IT
             byte[] img_data = File.ReadAllBytes(img_path);
             NbTexture tex = RenderState.engineRef.CreateTexture(img_data, img_path,
-                NbTextureWrapMode.Repeat, NbTextureFilter.LinearMipmapLinear, NbTextureFilter.Linear);
+                NbTextureWrapMode.Repeat, NbTextureFilter.LinearMipmapLinear, NbTextureFilter.Linear, false);
             
             //Generate Sampler
             NbSampler sampl = new NbSampler();

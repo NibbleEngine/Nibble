@@ -1,4 +1,7 @@
-﻿using NbCore.Platform.Graphics;
+﻿using NbCore.Common;
+using NbCore.Math;
+using NbCore.Platform.Graphics;
+using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -55,31 +58,36 @@ namespace NbCore.Systems
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
                 List<Component> meshComponents = n.GetComponents<MeshComponent>();
-                
-                
+
                 foreach (Component c in meshComponents)
                 {
                     MeshComponent mc = (MeshComponent)c;
                     bool mesh_instance_updated = false;
 
-                    if (td.IsUpdated || mc.IsUpdated)
+                    //Frustum Culling
+                    bool renderable_status_updated = (n.IsRenderable != n.WasRenderable);
+                    mc.WasOccluded = mc.IsOccluded;
+                    mc.IsOccluded = n.IsRenderable ? FrustumCulling(mc.Mesh, td) : true;
+                    mc.IsUpdated |= (mc.IsOccluded != mc.WasOccluded);
+
+                    if (mc.IsUpdated || renderable_status_updated)
                     {
-                        if (td.IsOccluded && !td.WasOccluded)
+                        if (mc.IsOccluded && !mc.WasOccluded)
                         {
                             //Remove Instance
-                            Log($"Removing Instance {n.Name}", LogVerbosityLevel.DEBUG);
+                            Log($"Removing Instance {n.Name}", LogVerbosityLevel.HIDEBUG);
                             //TODO: Maybe it is  a good idea to keep queues for 
                             //instances that will be removed and instance that will be added
                             //which will be passed per frame update to the rendering system
                             //which has direct access to the renderer
                             GraphicsAPI.RemoveRenderInstance(ref mc.Mesh, mc);
                         }
-                        else if (!td.IsOccluded && td.WasOccluded)
+                        else if (!mc.IsOccluded && mc.WasOccluded)
                         {
-                            Log($"Adding Instance UpdateMesh {n.Name}", LogVerbosityLevel.DEBUG);
+                            Log($"Adding Instance UpdateMesh {n.Name}", LogVerbosityLevel.HIDEBUG);
                             GraphicsAPI.AddRenderInstance(ref mc, td);
                         }
-                        else if (!td.IsOccluded)
+                        else if (!mc.IsOccluded)
                         {
                             mesh_instance_updated = true;
                             GraphicsAPI.SetInstanceWorldMat(mc.Mesh, mc.InstanceID, td.WorldTransformMat);
@@ -88,7 +96,7 @@ namespace NbCore.Systems
                     }
 
                     //Update Instance Data
-                    if (mc.IsUpdated && !td.IsOccluded)
+                    if (mc.IsUpdated && !mc.IsOccluded)
                     {
                         //Upload Uniforms
                         GraphicsAPI.SetInstanceUniform4(mc.Mesh, mc.InstanceID, 0, mc.InstanceUniforms[0].Values);
@@ -100,7 +108,10 @@ namespace NbCore.Systems
 
                     //Update 
                     if (mesh_instance_updated)
+                    {
                         GraphicsAPI.UpdateInstance(mc.Mesh, mc.InstanceID);
+                    }
+                    
                 }
             }
         }
@@ -116,18 +127,18 @@ namespace NbCore.Systems
 
                 if (td.IsUpdated)
                 {
-                    if (td.IsOccluded && !td.WasOccluded)
+                    if (ic.IsOccluded && !ic.WasOccluded)
                     {
                         //Remove Instance
                         Log($"Removing Instance {n.Name}", LogVerbosityLevel.DEBUG);
                         GraphicsAPI.RemoveRenderInstance(ref ic.Mesh, ic); //Remove Imposter Instance
                     }
-                    else if (!td.IsOccluded && td.WasOccluded)
+                    else if (!ic.IsOccluded && ic.WasOccluded)
                     {
                         Log($"Adding Imposter Instance {n.Name}", LogVerbosityLevel.DEBUG);
                         GraphicsAPI.AddRenderInstance(ref ic, td);
                     }
-                    else if (!td.IsOccluded)
+                    else if (!ic.IsOccluded)
                     {
                         instance_updated = true;
                         GraphicsAPI.SetInstanceWorldMat(ic.Mesh, ic.InstanceID, td.WorldTransformMat);
@@ -216,6 +227,176 @@ namespace NbCore.Systems
 
             }
         }
+
+        private bool isPointCulled(NbVector4 vec)
+        {
+            vec = vec * RenderState.activeCam.viewMat; //Bring point into clip space
+            return (-vec.W > vec.X || vec.X > vec.W) && (-vec.W > vec.Y || vec.Y > vec.W) && (-vec.W > vec.Z || vec.Z > vec.W);
+        }
+
+        private bool FrustumCullingMod(NbMesh mesh, TransformData td)
+        {
+            if (mesh.Hash.ToString() == "3881229220707198789")
+            {
+                Console.WriteLine($"{RenderState.activeCam.Position.X}, {RenderState.activeCam.Position.Y}, {RenderState.activeCam.Position.Z}");
+                Console.WriteLine($"{RenderState.activeCam.Front.X}, {RenderState.activeCam.Front.Y}, {RenderState.activeCam.Front.Z}");
+                for (int i = 0; i < 6; i++)
+                    Console.WriteLine($"[{RenderState.activeCam.frPlanes[i].X},{RenderState.activeCam.frPlanes[i].Y},{RenderState.activeCam.frPlanes[i].Z},{RenderState.activeCam.frPlanes[i].W}]");
+
+                Console.WriteLine($"{mesh.MetaData.AABBMIN.X}, {mesh.MetaData.AABBMIN.Y}, {mesh.MetaData.AABBMIN.Z}");
+                Console.WriteLine($"{mesh.MetaData.AABBMAX.X}, {mesh.MetaData.AABBMAX.Y}, {mesh.MetaData.AABBMAX.Z}");
+            }
+            
+
+            NbVector3 instancePos = td.WorldPosition.Xyz;
+            // Loop through each frustum plane
+            for (int planeID = 0; planeID < 6; ++planeID)
+            {
+                NbVector3 planeNormal = RenderState.activeCam.frPlanes[planeID].Xyz;
+                float planeConstant = RenderState.activeCam.frPlanes[planeID].W;
+
+                // Check each axis (x,y,z) to get the AABB vertex furthest away from the direction the plane is facing (plane normal)
+                NbVector3 vec;
+
+                //0:
+                vec = new NbVector3(mesh.MetaData.AABBMIN.X, mesh.MetaData.AABBMIN.Y, mesh.MetaData.AABBMIN.Z);
+                if (planeNormal.Dot(vec + instancePos) + planeConstant >= 0.0f)
+                    return false;
+
+                //1:
+                vec = new NbVector3(mesh.MetaData.AABBMIN.X, mesh.MetaData.AABBMIN.Y, mesh.MetaData.AABBMAX.Z);
+                if (planeNormal.Dot(vec + instancePos) + planeConstant >= 0.0f)
+                    return false;
+
+                //2:
+                vec = new NbVector3(mesh.MetaData.AABBMIN.X, mesh.MetaData.AABBMAX.Y, mesh.MetaData.AABBMIN.Z);
+                if (planeNormal.Dot(vec + instancePos) + planeConstant >= 0.0f)
+                    return false;
+
+                //3:
+                vec = new NbVector3(mesh.MetaData.AABBMIN.X, mesh.MetaData.AABBMAX.Y, mesh.MetaData.AABBMAX.Z);
+                if (planeNormal.Dot(vec + instancePos) + planeConstant >= 0.0f)
+                    return false;
+
+                //4:
+                vec = new NbVector3(mesh.MetaData.AABBMAX.X, mesh.MetaData.AABBMIN.Y, mesh.MetaData.AABBMIN.Z);
+                if (planeNormal.Dot(vec + instancePos) + planeConstant >= 0.0f)
+                    return false;
+
+                //5:
+                vec = new NbVector3(mesh.MetaData.AABBMAX.X, mesh.MetaData.AABBMIN.Y, mesh.MetaData.AABBMAX.Z);
+                if (planeNormal.Dot(vec + instancePos) + planeConstant >= 0.0f)
+                    return false;
+
+                //6:
+                vec = new NbVector3(mesh.MetaData.AABBMAX.X, mesh.MetaData.AABBMAX.Y, mesh.MetaData.AABBMIN.Z);
+                if (planeNormal.Dot(vec + instancePos) + planeConstant >= 0.0f)
+                    return false;
+
+                //7:
+                vec = new NbVector3(mesh.MetaData.AABBMAX.X, mesh.MetaData.AABBMAX.Y, mesh.MetaData.AABBMAX.Z);
+                if (planeNormal.Dot(vec + instancePos) + planeConstant >= 0.0f)
+                    return false;
+            
+            }
+            return true;
+        }
+
+        private bool FrustumCullingSmart(NbMesh mesh, TransformData td)
+        {
+            if (mesh.Hash.ToString() == "3881229220707198789")
+                Console.WriteLine('.');
+
+            NbVector4 instancePos = td.WorldPosition;
+            bool cull = false;
+            // Loop through each frustum plane
+            for (int planeID = 0; planeID < 6; ++planeID)
+            {
+                NbVector3 planeNormal = RenderState.activeCam.frPlanes[planeID].Xyz;
+                float planeConstant = RenderState.activeCam.frPlanes[planeID].W;
+
+                // Check each axis (x,y,z) to get the AABB vertex furthest away from the direction the plane is facing (plane normal)
+                NbVector3 axisVert = new NbVector3();
+
+                // x-axis
+                if (planeNormal.X < 0.0f)    // Which AABB vertex is furthest down (plane normals direction) the x axis
+                    axisVert.X = mesh.MetaData.AABBMIN.X + instancePos.X; // min x plus tree positions x
+                else
+                    axisVert.X = mesh.MetaData.AABBMAX.X + instancePos.X; // max x plus tree positions x
+
+                // y-axis
+                if (planeNormal.Y < 0.0f)    // Which AABB vertex is furthest down (plane normals direction) the y axis
+                    axisVert.Y = mesh.MetaData.AABBMIN.Y + instancePos.Y; // min y plus tree positions y
+                else
+                    axisVert.Y = mesh.MetaData.AABBMAX.Y + instancePos.Y; // max y plus tree positions y
+
+                // z-axis
+                if (planeNormal.Z < 0.0f)    // Which AABB vertex is furthest down (plane normals direction) the z axis
+                    axisVert.Z = mesh.MetaData.AABBMIN.Z + instancePos.Z; // min z plus tree positions z
+                else
+                    axisVert.Z = mesh.MetaData.AABBMAX.Z + instancePos.Z; // max z plus tree positions z
+
+                // Now we get the signed distance from the AABB vertex that's furthest down the frustum planes normal,
+                // and if the signed distance is negative, then the entire bounding box is behind the frustum plane, which means
+                // that it should be culled
+                if (planeNormal.Dot(axisVert) + planeConstant < 0.0f)
+                {
+                    cull = true;
+                    // Skip remaining planes to check and move on to next tree
+                    break;
+                }
+            }
+            return cull;
+        }
+
+        private bool FrustumCulling(NbMesh mesh, TransformData td)
+        {
+            //Check corners
+            NbVector4 vec = new NbVector4();
+
+            //0:
+            vec = new NbVector4(mesh.MetaData.AABBMIN.X, mesh.MetaData.AABBMIN.Y, mesh.MetaData.AABBMIN.Z, 1.0f);
+            if (!isPointCulled(vec * td.WorldTransformMat))
+                return false;
+
+            //1:
+            vec = new NbVector4(mesh.MetaData.AABBMIN.X, mesh.MetaData.AABBMIN.Y, mesh.MetaData.AABBMAX.Z, 1.0f);
+            if (!isPointCulled(vec * td.WorldTransformMat))
+                return false;
+
+            //2:
+            vec = new NbVector4(mesh.MetaData.AABBMIN.X, mesh.MetaData.AABBMAX.Y, mesh.MetaData.AABBMIN.Z, 1.0f);
+            if (!isPointCulled(vec * td.WorldTransformMat))
+                return false;
+
+            //3:
+            vec = new NbVector4(mesh.MetaData.AABBMIN.X, mesh.MetaData.AABBMAX.Y, mesh.MetaData.AABBMAX.Z, 1.0f);
+            if (!isPointCulled(vec * td.WorldTransformMat))
+                return false;
+
+            //4:
+            vec = new NbVector4(mesh.MetaData.AABBMAX.X, mesh.MetaData.AABBMIN.Y, mesh.MetaData.AABBMIN.Z, 1.0f);
+            if (!isPointCulled(vec * td.WorldTransformMat))
+                return false;
+
+            //5:
+            vec = new NbVector4(mesh.MetaData.AABBMAX.X, mesh.MetaData.AABBMIN.Y, mesh.MetaData.AABBMAX.Z, 1.0f);
+            if (!isPointCulled(vec * td.WorldTransformMat))
+                return false;
+
+            //6:
+            vec = new NbVector4(mesh.MetaData.AABBMAX.X, mesh.MetaData.AABBMAX.Y, mesh.MetaData.AABBMIN.Z, 1.0f);
+            if (!isPointCulled(vec * td.WorldTransformMat))
+                return false;
+
+            //7:
+            vec = new NbVector4(mesh.MetaData.AABBMAX.X, mesh.MetaData.AABBMAX.Y, mesh.MetaData.AABBMAX.Z, 1.0f);
+            if (!isPointCulled(vec * td.WorldTransformMat))
+                return false;
+
+            return true;
+        }
+
 
 
         public void UpdateSceneGraph(SceneGraph graph)

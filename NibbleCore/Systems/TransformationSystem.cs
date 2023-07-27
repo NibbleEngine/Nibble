@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using NbCore;
+using NbCore.Common;
 using NbCore.Math;
 
 namespace NbCore.Systems
@@ -95,15 +96,6 @@ namespace NbCore.Systems
             {
                 TransformController tc = GetEntityTransformController(e);
                 tc.Update(dt); //Recalculate state
-            }
-
-            //TODO: Apply frustum culling to all transform data objects and set visibility
-            //For now mark all selected nodes visible
-            foreach (TransformData td in _Data)
-            {
-                td.WasOccluded = td.IsOccluded;
-                td.IsOccluded = !td.IsActive;
-                td.IsUpdated = true;
             }
 
         }

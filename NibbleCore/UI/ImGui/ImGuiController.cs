@@ -54,7 +54,10 @@ namespace NbCore.UI.ImGui
             IntPtr fontPtr = pinnedArray.AddrOfPinnedObject();
             io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 16.0f);
             io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 11.0f);
-            
+            io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 20.0f);
+            io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 25.0f);
+            io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 30.0f);
+            io.Fonts.AddFontFromMemoryTTF(fontPtr, fontdata.Length, 35.0f);
 
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
             io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; //Enable Docking
