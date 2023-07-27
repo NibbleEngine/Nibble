@@ -73,7 +73,7 @@ namespace NbCore
         {
             get
             {
-                return new NbVector4(1.0f) * WorldTransformMat;
+                return WorldTransformMat[3];
             }
 
         }
@@ -107,10 +107,8 @@ namespace NbCore
         public NbMatrix4 InverseTransformMat;
 
         private TransformData parent;
-        public bool WasOccluded; //Set this to true so as to trigger the first instance setup
-        public bool IsOccluded;
         public bool IsUpdated;
-        public bool IsActive;
+        public bool IsActive; //TODO: Not sure if this is neede anywhere
 
         public TransformData()
         {
@@ -118,8 +116,6 @@ namespace NbCore
             LocalTransformMat = NbMatrix4.Identity();
             WorldTransformMat = NbMatrix4.Identity();
             InverseTransformMat = NbMatrix4.Identity();
-            WasOccluded = true;
-            IsOccluded = true;
             IsUpdated = false;
             IsActive = true; //by default
         }

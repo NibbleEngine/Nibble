@@ -38,6 +38,7 @@ namespace NbCore
         MATERIAL_SHADER,
         GBUFFER_SHADER,
         LIGHT_PASS_LIT_SHADER, //18
+        LIGHT_PASS_STENCIL_SHADER,
         LIGHT_PASS_UNLIT_SHADER, //Stupid but keeping that for testing...
         BRIGHTNESS_EXTRACT_SHADER,
         GAUSSIAN_HORIZONTAL_BLUR_SHADER,

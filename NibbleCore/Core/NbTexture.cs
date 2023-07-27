@@ -45,12 +45,15 @@ namespace NbCore
         BC7,
         DX10,
         RGBA8,
+        SRGBA8,
+        SRGB8,
         BGRA8,
         RGBA16F,
         BGRA16F,
         RGBA32F,
         BGRA32F,
-        DEPTH
+        DEPTH,
+        DEPTH24_STENCIL8
     }
 
     [NbSerializable]
@@ -130,8 +133,12 @@ namespace NbCore
             if (disposing)
             {
                 //Free other resources here
-                if (texID != -1) GL.DeleteTexture(texID);
-
+                if (texID != -1)
+                {
+                    GL.DeleteTexture(texID);
+                    texID = -2;
+                }
+                    
                 base.Dispose(disposing);
             }
 

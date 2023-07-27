@@ -13,7 +13,8 @@ namespace NbCore
         Light,
         LightVolume,
         Joint,
-        Collision
+        Collision,
+        Generic
     }
 
     [StructLayout(LayoutKind.Explicit)]

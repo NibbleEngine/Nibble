@@ -11,7 +11,9 @@ namespace NbCore
         public int InstanceID;
         public NbUniform[] InstanceUniforms;
         public bool IsUpdated = true;
-        
+        public bool WasOccluded = true; //Set this to true so as to trigger the first instance setup
+        public bool IsOccluded = true;
+
         public MeshComponent()
         {
             InstanceID = -1;

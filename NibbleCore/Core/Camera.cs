@@ -2,6 +2,7 @@
 using NbCore.Math;
 using NbCore.Common;
 using OpenTK.Mathematics;
+using static NbCore.Frustum;
 
 namespace NbCore
 {
@@ -269,39 +270,58 @@ namespace NbCore
         }
         */
 
+
+
         public void updateFrustumPlanes()
         {
-            //projMat.Transpose();
-            //extFrustum.CalculateFrustum(projMat, lookMat); //Old Method
-            extFrustum.CalculateFrustum(viewMat); // New Method
-            return;
-            /*
-            Matrix4 mat = viewMat;
-            mat.Transpose();
-            //Matrix4 mat = proj;
-            //Left
-            frPlanes[0] = mat.Row0 + mat.Row3;
-            //Right
-            frPlanes[1] = mat.Row3 - mat.Row0;
-            //Bottom
-            frPlanes[2] = mat.Row3 + mat.Row1;
-            //Top
-            frPlanes[3] = mat.Row3 - mat.Row1;
-            //Near
-            frPlanes[4] = mat.Row3 + mat.Row2;
-            //Far
-            frPlanes[5] = mat.Row3 - mat.Row2;
-            //Normalize them
+            //extFrustum.CalculateFrustum(viewMat); // New Method
+            NbMatrix4 cpy = viewMat;
+            //cpy.Transpose();
+            
+            
+            //Front Plane
+            frPlanes[(int)ClippingPlane.Front] = new NbVector4(cpy.M13, cpy.M23, cpy.M33, cpy.M43);
+
+            //Back Plane
+            frPlanes[(int)ClippingPlane.Back] = new NbVector4(-cpy.M13 + cpy.M14,
+                                                                -cpy.M23 + cpy.M24,
+                                                                -cpy.M33 + cpy.M34,
+                                                                -cpy.M43 + cpy.M44);
+
+            //Left Plane
+            frPlanes[(int)ClippingPlane.Left] = new NbVector4(cpy.M14 + cpy.M11,
+                                                                cpy.M24 + cpy.M21,
+                                                                cpy.M34 + cpy.M31,
+                                                                cpy.M44 + cpy.M41);
+
+            //Right Plane
+            frPlanes[(int)ClippingPlane.Right] = new NbVector4(-cpy.M11 + cpy.M14,
+                                                                -cpy.M21 + cpy.M24,
+                                                                -cpy.M31 + cpy.M34,
+                                                                -cpy.M41 + cpy.M44);
+
+            //Top Plane
+            frPlanes[(int)ClippingPlane.Top] = new NbVector4(-cpy.M12 + cpy.M14,
+                                                                -cpy.M22 + cpy.M24,
+                                                                -cpy.M32 + cpy.M34,
+                                                                -cpy.M42 + cpy.M44);
+
+            //Bottom Plane
+            frPlanes[(int)ClippingPlane.Bottom] = new NbVector4(cpy.M14 + cpy.M12,
+                                                                cpy.M24 + cpy.M22,
+                                                                cpy.M34 + cpy.M32,
+                                                                cpy.M44 + cpy.M42);
+
+            //Normalize planes (NOT SURE IF I NEED THAT)
             for (int i = 0; i < 6; i++)
-            { 
-                float l = frPlanes[i].Xyz.Length;
-                //Normalize
-                frPlanes[i].X /= l;
-                frPlanes[i].Y /= l;
-                frPlanes[i].Z /= l;
-                frPlanes[i].W /= l;
-            }
-            */
+            {
+                float length = frPlanes[i].Xyz.Length;
+                frPlanes[i].X /= length;
+                frPlanes[i].Y /= length;
+                frPlanes[i].Z /= length;
+                frPlanes[i].W /= length;
+            } 
+            
         }
 
         public bool frustum_occlude(NbVector3 AABBMIN, NbVector3 AABBMAX, NbMatrix4 transform)
@@ -382,7 +402,6 @@ namespace NbCore
                     //Console.WriteLine("Point vs Frustum, Plane {0} Failed. Failed Vector {1} {2} {3}", (ClippingPlane)p, x, y, z);
                     return false;
                 }
-
             }
             return true;
         }
@@ -519,63 +538,41 @@ namespace NbCore
         public void CalculateFrustum(NbMatrix4 mvp)
         {
             //Front Plane
-            _frustum[(int)ClippingPlane.Front] = new NbVector4(-mvp.M13, -mvp.M23, -mvp.M33, -mvp.M43);
+            _frustum[(int)ClippingPlane.Front] = new NbVector4(mvp.M13, mvp.M23, mvp.M33, mvp.M43);
 
             //Back Plane
-            _frustum[(int)ClippingPlane.Back] = new NbVector4(mvp.M13 - mvp.M14, mvp.M23 - mvp.M24, mvp.M33 - mvp.M34,
-                mvp.M43 - mvp.M44);
+            _frustum[(int)ClippingPlane.Back] = new NbVector4(-mvp.M13 + mvp.M14, 
+                                                              -mvp.M23 + mvp.M24, 
+                                                              -mvp.M33 + mvp.M34,
+                                                              -mvp.M43 + mvp.M44);
 
             //Left Plane
-            _frustum[(int)ClippingPlane.Left] = new NbVector4(-mvp.M14 - mvp.M11, -mvp.M24 - mvp.M21,
-                                                            -mvp.M34 - mvp.M31,
-                                                            -mvp.M44 - mvp.M41);
+            _frustum[(int)ClippingPlane.Left] = new NbVector4(mvp.M14 + mvp.M11, 
+                                                              mvp.M24 + mvp.M21,
+                                                              mvp.M34 + mvp.M31,
+                                                              mvp.M44 + mvp.M41);
 
             //Right Plane
-            _frustum[(int)ClippingPlane.Right] = new NbVector4(mvp.M11 - mvp.M14, mvp.M21 - mvp.M24,
-                                                             mvp.M31 - mvp.M34,
-                                                             mvp.M41 - mvp.M44);
+            _frustum[(int)ClippingPlane.Right] = new NbVector4(-mvp.M11 + mvp.M14, 
+                                                               -mvp.M21 + mvp.M24,
+                                                               -mvp.M31 + mvp.M34,
+                                                               -mvp.M41 + mvp.M44);
 
             //Top Plane
-            _frustum[(int)ClippingPlane.Top] = new NbVector4(mvp.M12 - mvp.M14, mvp.M22 - mvp.M24,
-                                                             mvp.M32 - mvp.M34,
-                                                             mvp.M42 - mvp.M44);
+            _frustum[(int)ClippingPlane.Top] = new NbVector4(-mvp.M12 + mvp.M14, 
+                                                             -mvp.M22 + mvp.M24,
+                                                             -mvp.M32 + mvp.M34,
+                                                             -mvp.M42 + mvp.M44);
 
             //Bottom Plane
-            _frustum[(int)ClippingPlane.Bottom] = new NbVector4(-mvp.M14 - mvp.M12,
-                                                                -mvp.M24 - mvp.M22,
-                                                                -mvp.M34 - mvp.M32,
-                                                                -mvp.M44 - mvp.M42);
-
-            //Invert everything to bring it to the original values
-            for (int i = 0; i < 6; i++)
-                _frustum[i] *= -1.0f;
+            _frustum[(int)ClippingPlane.Bottom] = new NbVector4(mvp.M14 + mvp.M12,
+                                                                mvp.M24 + mvp.M22,
+                                                                mvp.M34 + mvp.M32,
+                                                                mvp.M44 + mvp.M42);
 
             //Normalize planes (NOT SURE IF I NEED THAT)
             for (int i = 0; i < 6; i++)
                 _frustum[i].Normalize();
-
-            /*
-
-            //Find Frustum Points by solving all the systems
-            float[] p;
-            p = solvePlaneSystem((int)ClippingPlane.Back, (int)ClippingPlane.Left, (int)ClippingPlane.Bottom);
-            _frustum_points[0, 0] = p[0]; _frustum_points[0, 1] = p[1]; _frustum_points[0, 2] = p[2];
-            p = solvePlaneSystem((int)ClippingPlane.Back, (int)ClippingPlane.Left, (int)ClippingPlane.Top);
-            _frustum_points[1, 0] = p[0]; _frustum_points[1, 1] = p[1]; _frustum_points[1, 2] = p[2];
-            p = solvePlaneSystem((int)ClippingPlane.Back, (int)ClippingPlane.Right, (int)ClippingPlane.Bottom);
-            _frustum_points[2, 0] = p[0]; _frustum_points[2, 1] = p[1]; _frustum_points[2, 2] = p[2];
-            p = solvePlaneSystem((int)ClippingPlane.Back, (int)ClippingPlane.Right, (int)ClippingPlane.Top);
-            _frustum_points[3, 0] = p[0]; _frustum_points[3, 1] = p[1]; _frustum_points[3, 2] = p[2];
-            p = solvePlaneSystem((int)ClippingPlane.Front, (int)ClippingPlane.Left, (int)ClippingPlane.Bottom);
-            _frustum_points[4, 0] = p[0]; _frustum_points[4, 1] = p[1]; _frustum_points[4, 2] = p[2];
-            p = solvePlaneSystem((int)ClippingPlane.Front, (int)ClippingPlane.Left, (int)ClippingPlane.Top);
-            _frustum_points[5, 0] = p[0]; _frustum_points[5, 1] = p[1]; _frustum_points[5, 2] = p[2];
-            p = solvePlaneSystem((int)ClippingPlane.Front, (int)ClippingPlane.Right, (int)ClippingPlane.Bottom);
-            _frustum_points[6, 0] = p[0]; _frustum_points[6, 1] = p[1]; _frustum_points[6, 2] = p[2];
-            p = solvePlaneSystem((int)ClippingPlane.Front, (int)ClippingPlane.Right, (int)ClippingPlane.Top);
-            _frustum_points[7, 0] = p[0]; _frustum_points[7, 1] = p[1]; _frustum_points[7, 2] = p[2];
-
-            */
 
         }
 

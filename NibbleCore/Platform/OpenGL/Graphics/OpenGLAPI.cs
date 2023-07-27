@@ -35,29 +35,29 @@ namespace NbCore.Platform.Graphics
         [FieldOffset(12)]
         public float MSAA_SAMPLES; //MSAA Samples
         [FieldOffset(16)]
-        public OpenTK.Mathematics.Vector2 frameDim; //Frame Dimensions
+        public Vector2 frameDim; //Frame Dimensions
         [FieldOffset(24)]
         public float cameraNearPlane;
         [FieldOffset(28)]
         public float cameraFarPlane;
         [FieldOffset(32)]
-        public OpenTK.Mathematics.Matrix4 rotMat;
+        public Matrix4 rotMat;
         [FieldOffset(96)]
-        public OpenTK.Mathematics.Matrix4 rotMatInv;
+        public Matrix4 rotMatInv;
         [FieldOffset(160)]
-        public OpenTK.Mathematics.Matrix4 projMat;
+        public Matrix4 projMat;
         [FieldOffset(224)]
-        public OpenTK.Mathematics.Matrix4 projMatInv;
+        public Matrix4 projMatInv;
         [FieldOffset(288)]
-        public OpenTK.Mathematics.Matrix4 lookMat;
+        public Matrix4 lookMat;
         [FieldOffset(352)]
-        public OpenTK.Mathematics.Matrix4 lookMatInv;
+        public Matrix4 lookMatInv;
         [FieldOffset(416)]
-        public OpenTK.Mathematics.Matrix4 cameraRotMat;
+        public Matrix4 cameraRotMat;
         [FieldOffset(480)]
-        public OpenTK.Mathematics.Vector4 cameraPositionExposure; //Exposure is the W component
+        public Vector4 cameraPositionExposure; //Exposure is the W component
         [FieldOffset(496)]
-        public OpenTK.Mathematics.Vector3 cameraDirection;
+        public Vector3 cameraDirection;
         [FieldOffset(508)]
         public int light_number;
         public static readonly int SizeInBytes = 512;
@@ -66,7 +66,8 @@ namespace NbCore.Platform.Graphics
     public enum NbBufferMask
     {
         Color,
-        Depth
+        Depth,
+        Stencil
     }
 
     public class GraphicsAPI
@@ -93,8 +94,9 @@ namespace NbCore.Platform.Graphics
             { NbFBOAttachment.Attachment3 , FramebufferAttachment.ColorAttachment3},
             { NbFBOAttachment.Attachment4 , FramebufferAttachment.ColorAttachment4},
             { NbFBOAttachment.Attachment5 , FramebufferAttachment.ColorAttachment5},
-            { NbFBOAttachment.Depth , FramebufferAttachment.DepthAttachment}
-        };
+            { NbFBOAttachment.Depth , FramebufferAttachment.DepthAttachment},
+            { NbFBOAttachment.DepthStencil , FramebufferAttachment.DepthStencilAttachment}
+    };
 
         public static readonly Dictionary<NbTextureTarget, TextureTarget> TextureTargetMap = new()
         {
@@ -126,32 +128,42 @@ namespace NbCore.Platform.Graphics
         public static readonly Dictionary<NbTextureInternalFormat, InternalFormat> InternalFormatMap = new()
         {
             { NbTextureInternalFormat.DXT1, InternalFormat.CompressedSrgbAlphaS3tcDxt1Ext },
-            { NbTextureInternalFormat.DXT3, InternalFormat.CompressedRgbaS3tcDxt3Ext },
+            { NbTextureInternalFormat.DXT3, InternalFormat.CompressedSrgbAlphaS3tcDxt3Ext },
             { NbTextureInternalFormat.DXT5, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext },
             { NbTextureInternalFormat.RGTC2, InternalFormat.CompressedRgRgtc2 },
             { NbTextureInternalFormat.BC7, InternalFormat.CompressedSrgbAlphaBptcUnorm },
             { NbTextureInternalFormat.RGBA8, InternalFormat.Rgba8},
+            { NbTextureInternalFormat.SRGBA8, InternalFormat.Srgb8Alpha8},
+            { NbTextureInternalFormat.SRGB8, InternalFormat.Srgb8},
             { NbTextureInternalFormat.BGRA8, InternalFormat.Rgba8},
             { NbTextureInternalFormat.RGBA16F, InternalFormat.Rgba16f},
             { NbTextureInternalFormat.RGBA32F, InternalFormat.Rgba32f},
             { NbTextureInternalFormat.DEPTH, InternalFormat.DepthComponent},
+            { NbTextureInternalFormat.DEPTH24_STENCIL8, InternalFormat.Depth24Stencil8}
+
         };
 
         public static readonly Dictionary<NbTextureInternalFormat, PixelType> PixelTypeMap = new()
         {
             { NbTextureInternalFormat.RGBA8, PixelType.UnsignedByte},
+            { NbTextureInternalFormat.SRGBA8, PixelType.UnsignedByte},
             { NbTextureInternalFormat.BGRA8, PixelType.UnsignedByte},
             { NbTextureInternalFormat.RGBA16F, PixelType.Float},
             { NbTextureInternalFormat.RGBA32F, PixelType.Float},
-            { NbTextureInternalFormat.DEPTH, PixelType.Float},
+            { NbTextureInternalFormat.DEPTH, PixelType.UnsignedByte },
+            { NbTextureInternalFormat.DEPTH24_STENCIL8, PixelType.UnsignedInt248 }
         };
 
         public static readonly Dictionary<NbTextureInternalFormat, PixelFormat> PixelFormatMap = new()
         {
             {NbTextureInternalFormat.RGBA8, PixelFormat.Rgba },
-            {NbTextureInternalFormat.BGRA8, PixelFormat.Bgra }
+            {NbTextureInternalFormat.SRGBA8, PixelFormat.Rgba },
+            {NbTextureInternalFormat.BGRA8, PixelFormat.Bgra },
+            {NbTextureInternalFormat.RGBA16F, PixelFormat.Rgba },
+            {NbTextureInternalFormat.DEPTH, PixelFormat.DepthComponent },
+            {NbTextureInternalFormat.DEPTH24_STENCIL8, PixelFormat.DepthStencil }
         };
-
+        
         //UBO structs
         CommonPerFrameUniforms cpfu;
         
@@ -454,7 +466,6 @@ namespace NbCore.Platform.Graphics
             {
                 GL.Disable(EnableCap.Blend);
             }
-                
         }
 
         public void ClearColor(NbVector4 vec)
@@ -604,8 +615,11 @@ namespace NbCore.Platform.Graphics
             GL.Enable(EnableCap.DepthTest);
 
         }
-
-        public void RenderMesh(NbMesh mesh)
+        /// <summary>
+        /// Uses instanced rendering to draw all instances of a mesh in a single drawcall
+        /// </summary>
+        /// <param name="mesh"></param>
+        public void RenderMeshInstanced(NbMesh mesh)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
 
@@ -623,7 +637,34 @@ namespace NbCore.Platform.Graphics
             GL.BindVertexArray(0);
         }
 
-        public void RenderMesh(NbMesh mesh, NbMaterial mat)
+        public void RenderMesh(NbMesh mesh)
+        {
+            RenderMesh(mesh, 0);
+        }
+
+        public void RenderMesh(NbMesh mesh, int instanceId)
+        {
+            GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
+
+            //Bind Mesh Buffer
+            int instanceBufferSize = Marshal.SizeOf<MeshInstance>();
+            uint offset = (uint)((mesh.AtlasBufferOffset + instanceId) * instanceBufferSize);
+             
+            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+                (IntPtr)(offset), instanceBufferSize);
+
+            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.DrawElements(PrimitiveType.Triangles,
+                mesh.MetaData.BatchCount, glmesh.IndicesLength, IntPtr.Zero);
+            GL.BindVertexArray(0);
+        }
+
+        /// <summary>
+        /// Uses instanced rendering to render all instance of a mesh in a single drawcall
+        /// </summary>
+        /// <param name="mesh"></param>
+        /// <param name="mat"></param>
+        public void RenderMeshInstanced(NbMesh mesh, NbMaterial mat)
         {
             GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
 
@@ -642,6 +683,42 @@ namespace NbCore.Platform.Graphics
                 glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, IntPtr.Zero,
                 glmesh.Mesh.InstanceCount);
             GL.BindVertexArray(0);
+        }
+
+        /// <summary>
+        /// Renders the indicated instance of a mesh
+        /// </summary>
+        /// <param name="mesh"></param>
+        /// <param name="mat"></param>
+        /// <param name="instanceId"></param>
+        public void RenderMesh(NbMesh mesh, NbMaterial mat, int instanceId)
+        {
+            GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
+
+            //Bind Mesh Buffer
+            int instanceBufferSize = Marshal.SizeOf<MeshInstance>();
+            uint offset = (uint)((mesh.AtlasBufferOffset + instanceId) * instanceBufferSize);
+
+            //Bind Mesh Buffer
+            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+                (IntPtr)(offset), instanceBufferSize);
+
+            SetShaderAndUniforms(mat); //Set Shader and material uniforms
+
+            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.DrawElements(PrimitiveType.Triangles,
+                glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, IntPtr.Zero);
+            GL.BindVertexArray(0);
+        }
+
+        /// <summary>
+        /// Renders the first instance of a mesh
+        /// </summary>
+        /// <param name="mesh"></param>
+        /// <param name="mat"></param>
+        public void RenderMesh(NbMesh mesh, NbMaterial mat)
+        {
+            RenderMesh(mesh, mat, 0);
         }
 
         public void RenderLocator(NbMesh mesh, NbMaterial mat)
@@ -742,15 +819,15 @@ namespace NbCore.Platform.Graphics
         }
 
 
-        public void renderBBoxes(GLInstancedMesh mesh, int pass)
+        public void RenderBBoxes(NbMesh mesh)
         {
-            for (int i = 0; i > mesh.Mesh.InstanceCount; i++)
+            for (int i = 0; i < mesh.InstanceCount; i++)
             {
-                renderBbox(mesh.Mesh, i);
+                RenderBbox(mesh, i);
             }
         }
 
-        public void renderBbox(NbMesh mesh, int instanceID)
+        public void RenderBbox(NbMesh mesh, int instanceID)
         {
             if (mesh == null)
                 return;
@@ -791,6 +868,8 @@ namespace NbCore.Platform.Graphics
                                             1,0,5};
             //Generate OpenGL buffers
             int arraysize = sizeof(float) * verts1.Length;
+            int vao = GL.GenVertexArray();
+            GL.BindVertexArray(vao);
             GL.GenBuffers(1, out int vb_bbox);
             GL.GenBuffers(1, out int eb_bbox);
 
@@ -807,14 +886,16 @@ namespace NbCore.Platform.Graphics
 
 
             //Render
-
             GL.BindBuffer(BufferTarget.ArrayBuffer, vb_bbox);
             GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 0, 0);
             GL.EnableVertexAttribArray(0);
 
-            //InverseBind Matrices
-            //loc = GL.GetUniformLocation(shader_program, "invBMs");
-            //GL.UniformMatrix4(loc, this.vbo.jointData.Count, false, this.vbo.invBMats);
+            //Bind Mesh Buffer
+            int instanceBufferSize = Marshal.SizeOf<MeshInstance>();
+            uint offset = (uint)((mesh.AtlasBufferOffset + instanceID) * instanceBufferSize);
+
+            GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
+                (IntPtr)(offset), instanceBufferSize);
 
             //Render Elements
             GL.PointSize(5.0f);
@@ -824,10 +905,12 @@ namespace NbCore.Platform.Graphics
                 indices.Length, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
             GL.DisableVertexAttribArray(0);
+            GL.BindVertexArray(0);
 
+            //Cleanup
             GL.DeleteBuffer(vb_bbox);
             GL.DeleteBuffer(eb_bbox);
-
+            GL.DeleteVertexArray(vao);
         }
 
         public static void renderBHull(GLInstancedMesh mesh)
@@ -993,15 +1076,21 @@ namespace NbCore.Platform.Graphics
             //avgColor = getAvgColor(pixels);
         }
 
-        private static void UploadTextureData(int tex_id, NbTextureData tex_data)
+        private static void UploadTextureData(int tex_id, NbTextureData tex_data, bool upload_data=true)
         {
             TextureTarget gl_target = TextureTargetMap[tex_data.target];
             InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
             PixelType gl_pxtype = PixelTypeMap[tex_data.pif];
             
             GL.BindTexture(gl_target, tex_id);
-            GL.TexImage2D(gl_target, 0, (PixelInternalFormat)gl_pif, tex_data.Width, tex_data.Height, 0,
+            
+            if (upload_data)
+                GL.TexImage2D(gl_target, 0, (PixelInternalFormat)gl_pif, tex_data.Width, tex_data.Height, 0,
                     PixelFormatMap[tex_data.pif], gl_pxtype, tex_data.Data);
+            else
+                GL.TexImage2D(gl_target, 0, (PixelInternalFormat)gl_pif, tex_data.Width, tex_data.Height, 0,
+                    PixelFormatMap[tex_data.pif], gl_pxtype, IntPtr.Zero);
+            
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
             GL.BindTexture(gl_target, 0);
         }
@@ -1113,8 +1202,10 @@ namespace NbCore.Platform.Graphics
             Callbacks.Assert(tex.texID >= 0, "Invalid texture ID");
             if (tex.Data is DDSImage) 
                 UploadTextureData(tex.texID, tex.Data as DDSImage);
-            else
+            else if (tex.Data != null)
                 UploadTextureData(tex.texID, tex.Data);
+            else
+                UploadTextureData(tex.texID, tex.Data, false);
         }
 
         #endregion
@@ -1172,7 +1263,7 @@ namespace NbCore.Platform.Graphics
                         throw new NotImplementedException();
                 }
 
-                GL.VertexAttribPointer(buf.semantic, buf.count, buftype, buf.normalize, (int) buf.stride, buf.offset);
+                GL.VertexAttribPointer(buf.semantic, buf.count, buftype, buf.normalize, buf.stride, buf.offset);
                 GL.EnableVertexArrayAttrib(vao.vao_id, buf.semantic);
             }
 
@@ -1221,6 +1312,7 @@ namespace NbCore.Platform.Graphics
         private void SetShaderAndUniforms(NbMaterial Material)
         {
             //Upload Material Information
+            EnableMaterialProgram(Material);
 
             //Upload Custom Per Material Uniforms
             foreach (NbUniform un in Material.ActiveUniforms)
@@ -1254,12 +1346,14 @@ namespace NbCore.Platform.Graphics
             if (mask.HasFlag(NbBufferMask.Color))
                 glmask |= ClearBufferMask.ColorBufferBit;
             
-            if (mask.HasFlag(NbBufferMask.Color))
+            if (mask.HasFlag(NbBufferMask.Depth))
                 glmask |= ClearBufferMask.DepthBufferBit;
+
+            if (mask.HasFlag(NbBufferMask.Stencil))
+                glmask |= ClearBufferMask.StencilBufferBit;
 
             GL.Clear(glmask);
         }
-
         
 
         public FBO CreateFrameBuffer(int w, int h, FBOOptions options)
@@ -1342,10 +1436,8 @@ namespace NbCore.Platform.Graphics
             PixelType pixel_type = PixelTypeMap[tex.Data.pif];
             TextureTarget textarget = TextureTargetMap[tex.Data.target];
 
-            PixelFormat fmt = PixelFormat.Rgba;
-
-            if (tex.Data.pif == NbTextureInternalFormat.DEPTH)
-                fmt = PixelFormat.DepthComponent;
+            //PixelFormat fmt = PixelFormat.Rgba;
+            PixelFormat fmt = PixelFormatMap[tex.Data.pif];
 
             if (textarget == TextureTarget.Texture2DMultisample)
             {
@@ -1380,9 +1472,16 @@ namespace NbCore.Platform.Graphics
             }
 
             //Check
-            if (GL.CheckFramebufferStatus(FramebufferTarget.FramebufferExt) != FramebufferErrorCode.FramebufferComplete)
+            if (GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer) != FramebufferErrorCode.FramebufferComplete)
                 Log("MALAKIES STO FRAMEBUFFER tou GBuffer during texture setup " + GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer), LogVerbosityLevel.ERROR);
             
+        }
+
+        public void BindDrawFrameBuffer(FBO fbo)
+        {
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, fbo.fbo);
+            GL.Viewport(0, 0, fbo.Size.X, fbo.Size.Y);
+            GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
         }
 
         public void BindDrawFrameBuffer(FBO fbo, int[] drawBuffers)

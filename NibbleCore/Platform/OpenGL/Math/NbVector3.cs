@@ -38,6 +38,11 @@ namespace NbCore.Math
             };
         }
 
+        public float Dot(NbVector3 a)
+        {
+            return Vector3.Dot(_Value, a._Value);
+        }
+
         public override string ToString()
         {
             return $"{_Value.X} {_Value.Y} {_Value.Z}";

@@ -75,15 +75,15 @@ namespace NbCore
         {
             ulong hash = (uint)VertrStartPhysics;
             hash = NbHasher.CombineHash(hash, (uint) VertrEndPhysics);
-            hash = NbHasher.CombineHash(hash, (uint)VertrStartGraphics);
-            hash = NbHasher.CombineHash(hash, (uint)VertrEndGraphics);
-            hash = NbHasher.CombineHash(hash, (uint)BatchStartPhysics);
-            hash = NbHasher.CombineHash(hash, (uint)BatchCount);
-            hash = NbHasher.CombineHash(hash, (uint)FirstSkinMat);
-            hash = NbHasher.CombineHash(hash, (uint)LastSkinMat);
-            hash = NbHasher.CombineHash(hash, (uint)LODLevel);
-            hash = NbHasher.CombineHash(hash, (uint)BoundHullStart);
-            hash = NbHasher.CombineHash(hash, (uint)BoundHullEnd);
+            hash = NbHasher.CombineHash(hash, (uint) VertrStartGraphics);
+            hash = NbHasher.CombineHash(hash, (uint) VertrEndGraphics);
+            hash = NbHasher.CombineHash(hash, (uint) BatchStartPhysics);
+            hash = NbHasher.CombineHash(hash, (uint) BatchCount);
+            hash = NbHasher.CombineHash(hash, (uint) FirstSkinMat);
+            hash = NbHasher.CombineHash(hash, (uint) LastSkinMat);
+            hash = NbHasher.CombineHash(hash, (uint) LODLevel);
+            hash = NbHasher.CombineHash(hash, (uint) BoundHullStart);
+            hash = NbHasher.CombineHash(hash, (uint) BoundHullEnd);
             return hash;
         }
     }

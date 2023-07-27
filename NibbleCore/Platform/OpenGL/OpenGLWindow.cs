@@ -84,6 +84,8 @@ namespace NbCore.Platform.Windowing
             _win = new GameWindow(GameWindowSettings.Default,
             new()
             {
+                StencilBits = 8,
+                DepthBits = 24,
                 IsEventDriven = false,
                 WindowBorder = WindowBorder.Resizable,
                 StartFocused = true,
@@ -98,7 +100,7 @@ namespace NbCore.Platform.Windowing
 #else
                 Flags = ContextFlags.Default
 #endif
-            }); ;
+            });
             SetWindowCallbacks();
         }
 
@@ -123,6 +125,7 @@ namespace NbCore.Platform.Windowing
             
             _win.TextInput += (TextInputEventArgs a) =>
             {
+                //InvokeKeyPressed(new NbKeyArgs(a));
                 InvokeTextInput(new NbTextInputArgs(a));
             };
         }

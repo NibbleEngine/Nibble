@@ -20,14 +20,15 @@ namespace NbCore.Platform.Windowing
         public NbWindowOnRender OnRenderUpdate;
         public NbWindowOnFrameUpdate OnFrameUpdate;
         public NbWindowOnLoad OnWindowLoad;
-        public NbKeyEventHandler OnKeyUp;
-        public NbKeyEventHandler OnKeyDown;
+        //public NbKeyEventHandler OnKeyUp;
+        //public NbKeyEventHandler OnKeyDown;
         public NbMouseButtonEventHandler OnMouseButtonDown;
         public NbMouseButtonEventHandler OnMouseButtonUp;
         public NbMouseMoveEventHandler OnMouseMove;
         public NbMouseWheelEventHandler OnMouseWheel;
         public NbResizeEventHandler OnResize;
         public NbTextInputEventHandler OnTextInput;
+        public NbKeyEventHandler OnKeyPressed;
 
         public virtual NbVector2i Size { get; set; }
         public virtual NbVector2 MouseDelta { get; }
@@ -72,6 +73,11 @@ namespace NbCore.Platform.Windowing
         public void InvokeTextInput(NbTextInputArgs args)
         {
             OnTextInput?.Invoke(args);
+        }
+
+        public void InvokeKeyPressed(NbKeyArgs args)
+        {
+            OnKeyPressed?.Invoke(args);
         }
 
         public void Log(string msg, LogVerbosityLevel lvl)

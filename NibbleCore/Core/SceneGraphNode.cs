@@ -33,6 +33,7 @@ namespace NbCore
         public bool IsSelected = false;
         public string Name = "";
         public bool IsRenderable = true;
+        public bool WasRenderable = true;
         public bool IsOpen = false;
         //public SceneGraphNode ParentScene = null; //Is this useful at all?
         public List<float> LODDistances = new();

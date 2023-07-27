@@ -25,7 +25,8 @@ namespace NbCore
         Attachment8,
         Attachment9,
         Attachment10,
-        Depth
+        Depth,
+        DepthStencil
     }
 
     public struct FBOAttachmentDescription
@@ -70,7 +71,7 @@ namespace NbCore
             return textures[attachment];
         }
 
-        public void AddAttachment(NbTextureTarget target, NbTextureInternalFormat format, NbTextureFilter mag_filter, NbTextureFilter min_filter)
+        public void AddAttachment(NbTextureTarget target, NbTextureInternalFormat format, NbTextureFilter mag_filter, NbTextureFilter min_filter, NbFBOAttachment attachment_type)
         {
             FBOAttachmentDescription attachment = new()
             {
@@ -98,16 +99,18 @@ namespace NbCore
                 }
             };
 
-            if (format != NbTextureInternalFormat.DEPTH)
+            renderer.AddFrameBufferAttachment(this, tex, attachment_type);
+            textures[attachment_type] = tex;
+
+            switch (attachment_type)
             {
-                renderer.AddFrameBufferAttachment(this, tex, (NbFBOAttachment) ColorAttachments.Count);
-                textures[NbFBOAttachment.Attachment0 + ColorAttachments.Count] = tex;
-                ColorAttachments.Add(attachment);
-            } else
-            {
-                renderer.AddFrameBufferAttachment(this, tex, (NbFBOAttachment.Depth));
-                textures[NbFBOAttachment.Depth] = tex;
-                DepthAttachment = attachment;
+                case NbFBOAttachment.Depth:
+                case NbFBOAttachment.DepthStencil:
+                    DepthAttachment = attachment;
+                    break;
+                default:
+                    ColorAttachments.Add(attachment);
+                    break;
             }
         }
 
