@@ -334,6 +334,28 @@ namespace NbCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void AddSceneGraphNode(SceneGraphNode node, SceneGraph graph = null, SceneGraphNode parent = null)
+        {
+            if (RegisterEntity(node))
+            {
+                if (graph == null)
+                    GetActiveSceneGraph().AddNode(node); //Add to active scenegraph
+                else
+                    graph.AddNode(node); //Add to given scenegraph
+            
+                //Set Parent
+                if (parent != null)
+                {
+                    node.SetParent(parent); //Set new parent for the node
+                }
+
+                //Update node transform
+                RequestEntityTransformUpdate(node);
+            }
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RegisterSceneGraphTree(SceneGraph graph, SceneGraphNode e, bool recurse = true)
         {
             //Add Entity to main registry

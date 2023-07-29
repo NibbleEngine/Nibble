@@ -1116,7 +1116,6 @@ namespace NbCore.Systems
             NbShader stencil_shader = ShaderMgr.GetShaderByType(NbShaderType.LIGHT_PASS_STENCIL_SHADER);
             NbShader light_shader = ShaderMgr.GetShaderByType(NbShaderType.LIGHT_PASS_LIT_SHADER);
 
-
             //Setup Light Shader
             Renderer.EnableShaderProgram(light_shader);
             

@@ -70,7 +70,7 @@ namespace NbCore.Systems
                     mc.IsOccluded = n.IsRenderable ? FrustumCulling(mc.Mesh, td) : true;
                     mc.IsUpdated |= (mc.IsOccluded != mc.WasOccluded);
 
-                    if (mc.IsUpdated || renderable_status_updated)
+                    if (mc.IsUpdated || renderable_status_updated || td.IsUpdated)
                     {
                         if (mc.IsOccluded && !mc.WasOccluded)
                         {
@@ -87,7 +87,7 @@ namespace NbCore.Systems
                             Log($"Adding Instance UpdateMesh {n.Name}", LogVerbosityLevel.HIDEBUG);
                             GraphicsAPI.AddRenderInstance(ref mc, td);
                         }
-                        else if (!mc.IsOccluded)
+                        else if (!mc.IsOccluded && td.IsUpdated)
                         {
                             mesh_instance_updated = true;
                             GraphicsAPI.SetInstanceWorldMat(mc.Mesh, mc.InstanceID, td.WorldTransformMat);

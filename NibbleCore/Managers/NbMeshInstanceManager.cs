@@ -10,7 +10,7 @@ namespace NbCore
     {
         public static MeshInstance[] atlas_cpmu = new MeshInstance[1024];
         private static Dictionary<int, NbMesh> atlas_position_mesh_map = new();
-        private static int instance_counter;
+        private static int instance_counter = 0;
         private static List<int> free_slots = new() { 0 };
 
         public static void Report()
@@ -29,12 +29,6 @@ namespace NbCore
                 //Check if a new instance fits
                 if (atlas_position_mesh_map.ContainsKey(mesh.AtlasBufferOffset + mesh.InstanceCount - 1))
                 {
-                    //At first check if we need to extend the array
-                    //consider worst case scenario
-                    if (free_slots[free_slots.Count - 1] + mesh.InstanceCount > atlas_cpmu.Length)
-                        ExtendAtlasArray();
-
-
                     //Now try to find a free index that can host all the mesh instances
                     int new_mesh_slot = -1;
                     for (int i=free_slots.Count - 1; i >= 0; i--)
@@ -55,6 +49,12 @@ namespace NbCore
 
                     if (new_mesh_slot == -1)
                         throw new NotImplementedException();
+
+                    //Check if the atlas needs extension
+                    if (new_mesh_slot + mesh.InstanceCount > 0.9 * atlas_cpmu.Length)
+                    {
+                        ExtendAtlasArray();
+                    }
 
                     //Relocate previous + instance data to the new position
                     for (int i = 0; i < mesh.InstanceCount; i++)
@@ -92,6 +92,7 @@ namespace NbCore
                 if (!free_slots.Contains(insertionIndex + 1) && !atlas_position_mesh_map.ContainsKey(insertionIndex + 1))
                     free_slots.Insert(0, insertionIndex + 1);
             }
+            instance_counter++;
             //Report();
         }
 
@@ -111,6 +112,7 @@ namespace NbCore
                 mesh.AtlasBufferOffset = -1;
             }
             //Report();
+            instance_counter--;
         }
 
         public static void UpdateMeshInstance(ref NbMesh mesh, int instanceID)
@@ -121,7 +123,7 @@ namespace NbCore
         private static void ExtendAtlasArray()
         {
             //Make a new atlas array
-            MeshInstance[] new_atlas_cpmu = new MeshInstance[atlas_cpmu.Length + 1024];
+            MeshInstance[] new_atlas_cpmu = new MeshInstance[2 * atlas_cpmu.Length];
             //Copy old data
             Array.Copy(atlas_cpmu, new_atlas_cpmu, atlas_cpmu.Length);
 
