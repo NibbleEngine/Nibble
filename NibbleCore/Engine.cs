@@ -17,6 +17,7 @@ using NbCore.IO;
 using OpenTK.Windowing.Common.Input;
 using Microsoft.CodeAnalysis;
 using System.Reflection.Metadata.Ecma335;
+using System.Xml.Linq;
 
 namespace NbCore
 {
@@ -752,28 +753,28 @@ namespace NbCore
             };
 
             //Add Lights
-            SceneGraphNode l = CreateLightNode("Light 1", new NbVector3(1.0f), 100.0f,
+            SceneGraphNode l = CreateLightNode("Light 1", new NbVector3(1.0f), 100.0f, 1.0f,
                 ATTENUATION_TYPE.QUADRATIC, LIGHT_TYPE.POINT);
 
             TransformationSystem.SetEntityLocation(l, new NbVector3(0.2f, 0.2f, -2.0f));
             RegisterEntity(l);
             scene.Children.Add(l);
 
-            SceneGraphNode l1 = CreateLightNode("Light 2", new NbVector3(1.0f), 100.0f,
+            SceneGraphNode l1 = CreateLightNode("Light 2", new NbVector3(1.0f), 100.0f, 1.0f,
                 ATTENUATION_TYPE.QUADRATIC, LIGHT_TYPE.POINT);
 
             TransformationSystem.SetEntityLocation(l1, new NbVector3(0.2f, -0.2f, -2.0f));
             RegisterEntity(l1);
             scene.Children.Add(l1);
 
-            SceneGraphNode l2 = CreateLightNode("Light 3", new NbVector3(1.0f), 100.0f,
+            SceneGraphNode l2 = CreateLightNode("Light 3", new NbVector3(1.0f), 100.0f, 1.0f,
                 ATTENUATION_TYPE.QUADRATIC, LIGHT_TYPE.POINT);
 
             TransformationSystem.SetEntityLocation(l2, new NbVector3(-0.2f, 0.2f, -2.0f));
             RegisterEntity(l2);
             scene.Children.Add(l2);
 
-            SceneGraphNode l3 = CreateLightNode("Light 4", new NbVector3(1.0f), 100.0f,
+            SceneGraphNode l3 = CreateLightNode("Light 4", new NbVector3(1.0f), 100.0f, 1.0f,
                 ATTENUATION_TYPE.QUADRATIC, LIGHT_TYPE.POINT);
 
             TransformationSystem.SetEntityLocation(l3, new NbVector3(-0.2f, -0.2f, -2.0f));
@@ -990,7 +991,7 @@ namespace NbCore
         }
 
         
-        public SceneGraphNode CreateLightNode(string name, NbVector3 color, float intensity,
+        public SceneGraphNode CreateLightNode(string name, NbVector3 color, float intensity, float radius,
                                                 ATTENUATION_TYPE attenuation=ATTENUATION_TYPE.QUADRATIC,
                                                 LIGHT_TYPE lighttype = LIGHT_TYPE.POINT)
         {
@@ -1004,23 +1005,29 @@ namespace NbCore
             TransformComponent tc = new(td);
             n.AddComponent<TransformComponent>(tc);
 
-            //Add Mesh Component
-            LineSegment ls = new LineSegment(2, new NbVector3(1.0f, 0.0f, 0.0f));
+
+            //Add Line Segment Component
+            LineSegment ls = new LineSegment(1, new NbVector3(1.0f, 1.0f, 0.0f));
+            NbMeshData md = ls.geom.GetMeshData();
+            NbMeshMetaData mmd = ls.geom.GetMetaData();
+
             MeshComponent mc = new()
             {
                 Mesh = new()
                 {
-                    Hash = NbHasher.Hash(name) ^ (ulong) DateTime.Now.GetHashCode(),
-                    Type = NbMeshType.Light,
-                    MetaData = ls.geom.GetMetaData(),
+                    Data = md,
+                    Hash = (ulong) mmd.GetHashCode(),
+                    MetaData = mmd,
                     Material = GetMaterialByName("lightMat"),
-                    Data = ls.geom.GetMeshData()
+                    Type = NbMeshType.Light
                 }
+                //Mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_dir")),
             };
+
+            ls.Dispose();
             
             n.AddComponent<MeshComponent>(mc);
-            ls.Dispose();
-
+            
             //Add Light Component
             LightComponent lc = new()
             {
@@ -1028,9 +1035,9 @@ namespace NbCore
                 Data = new()
                 {
                     Color = color,
-                    FOV = 360.0f,
                     Intensity = intensity,
                     Falloff = attenuation,
+                    Falloff_radius = radius,
                     LightType = lighttype,
                     IsRenderable = true,
                     IsUpdated = true
@@ -1063,6 +1070,13 @@ namespace NbCore
         
         #region GLRelatedRequests
 
+        public void CreateTexture(NbTexture tex)
+        {
+            GraphicsAPI.GenerateTexture(tex);
+            GraphicsAPI.UploadTexture(tex);
+            GraphicsAPI.setupTextureParameters(tex, tex.Data.WrapMode, tex.Data.MagFilter, tex.Data.MinFilter, 8.0f);
+        }
+
         public NbTexture CreateTexture(string filepath,
             NbTextureWrapMode wrapmode, NbTextureFilter minFilter, NbTextureFilter magFilter, bool gamma_correct, bool keepData = false)
         {
@@ -1076,6 +1090,12 @@ namespace NbCore
         {
             //TODO: Possibly move that to a separate rendering thread
             NbTexture tex = new(name, data);
+
+            //Override properties
+            tex.Data.MinFilter = minFilter;
+            tex.Data.MagFilter = magFilter;
+            tex.Data.WrapMode = wrapmode;
+
             if (gamma_correct)
             {
                 switch (tex.Data.pif)
@@ -1222,7 +1242,6 @@ namespace NbCore
             StreamWriter sw = new(filepath);
             Newtonsoft.Json.JsonTextWriter writer = new Newtonsoft.Json.JsonTextWriter(sw);
             writer.Formatting = Newtonsoft.Json.Formatting.Indented;
-
             writer.WriteStartObject();
 
             //Step A: Export SceneGraph

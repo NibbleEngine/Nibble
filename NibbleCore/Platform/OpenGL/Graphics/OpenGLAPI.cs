@@ -706,7 +706,7 @@ namespace NbCore.Platform.Graphics
             SetShaderAndUniforms(mat); //Set Shader and material uniforms
 
             GL.BindVertexArray(glmesh.vao.vao_id);
-            GL.DrawElements(PrimitiveType.Triangles,
+            GL.DrawElements(glmesh.RenderPrimitive,
                 glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, IntPtr.Zero);
             GL.BindVertexArray(0);
         }
@@ -795,17 +795,20 @@ namespace NbCore.Platform.Graphics
         {
             GLInstancedMesh glmesh = MeshMap[mesh.ID];
 
+            //Re-Upload vertex buffer for the line segment
+            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, glmesh.vao.vertex_buffer_object);
+            GL.BufferSubData(BufferTarget.ArrayBuffer, (IntPtr)0, (IntPtr) mesh.Data.VertexBuffer.Length, mesh.Data.VertexBuffer);
+            
             //Bind Mesh Buffer
             uint offset = (uint)(mesh.AtlasBufferOffset * Marshal.SizeOf<MeshInstance>());
             int size = mesh.InstanceCount * Marshal.SizeOf<MeshInstance>();
 
-            //Bind Mesh Buffer
             GL.BindBufferRange(BufferRangeTarget.ShaderStorageBuffer, 1, SSBOs["_COMMON_PER_MESH"],
-                (IntPtr)(offset), size);
+                (IntPtr) offset, size);
 
             SetShaderAndUniforms(mat);
 
-            GL.BindVertexArray(glmesh.vao.vao_id);
             GL.PointSize(5.0f);
             GL.DrawArraysInstanced(PrimitiveType.Lines, 0, 2, mesh.InstanceCount);
             GL.DrawArraysInstanced(PrimitiveType.Points, 0, 2, mesh.InstanceCount); //Draw both points
@@ -967,7 +970,6 @@ namespace NbCore.Platform.Graphics
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
             GL.BindTexture(gl_target, tex.texID);
             GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, TextureFilterMap[minFilter]);
-            tex.Data.MinFilter = minFilter;
             GL.BindTexture(gl_target, 0); //Unbind
         }
 
@@ -977,19 +979,17 @@ namespace NbCore.Platform.Graphics
             GL.BindTexture(gl_target, tex.texID);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, TextureWrapMap[wrapMode]);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, TextureWrapMap[wrapMode]);
-            tex.Data.WrapMode = wrapMode;
             
             if (magFilter == NbTextureFilter.NearestMipmapLinear || magFilter == NbTextureFilter.LinearMipmapNearest)
-                Log($"Non compatible mag filter {magFilter}. No Mag filter used", LogVerbosityLevel.WARNING);
+                Log($"Non compatible mag filter {magFilter}. Switching to Default (Linear)", LogVerbosityLevel.WARNING);
             else
             {
                 GL.TexParameter(gl_target, TextureParameterName.TextureMagFilter, TextureFilterMap[magFilter]);
-                tex.Data.MagFilter = magFilter;
+                tex.Data.MagFilter = NbTextureFilter.Linear;
             }
             
             GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, TextureFilterMap[minFilter]);
-            tex.Data.MinFilter = minFilter;
-
+            
             //Use anisotropic filtering
             //af_amount = System.Math.Max(af_amount, GL.GetFloat((GetPName)All.MaxTextureMaxAnisotropy));
             GL.TexParameter(gl_target, (TextureParameterName)0x84FE, 4.0f);
@@ -1250,6 +1250,9 @@ namespace NbCore.Platform.Graphics
                     case NbPrimitiveDataType.UnsignedByte:
                         buftype = VertexAttribPointerType.UnsignedByte;
                         break;
+                    case NbPrimitiveDataType.Byte:
+                        buftype = VertexAttribPointerType.Byte;
+                        break;
                     case NbPrimitiveDataType.Float:
                         buftype = VertexAttribPointerType.Float;
                         break;
@@ -1263,8 +1266,8 @@ namespace NbCore.Platform.Graphics
                         throw new NotImplementedException();
                 }
 
-                GL.VertexAttribPointer(buf.semantic, buf.count, buftype, buf.normalize, buf.stride, buf.offset);
-                GL.EnableVertexArrayAttrib(vao.vao_id, buf.semantic);
+                GL.VertexAttribPointer((int) buf.semantic, buf.count, buftype, buf.normalize, buf.stride, buf.offset);
+                GL.EnableVertexArrayAttrib(vao.vao_id, (int) buf.semantic);
             }
 
             //Upload index buffer

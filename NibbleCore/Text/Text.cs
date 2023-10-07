@@ -188,7 +188,6 @@ namespace NbCore.Text
             geom.vx_size = vx_size + uv_size;
 
             //Set Buffer Offsets
-            geom.mesh_descr = "vu";
             
             NbMeshBufferInfo buf = new()
             {
@@ -208,7 +207,7 @@ namespace NbCore.Text
                 normalize = false,
                 offset = geom.vertCount * 12,
                 sem_text = "uvPosition",
-                semantic = 1,
+                semantic = NbBufferSemantic.UV,
                 stride = 8,
                 type = NbPrimitiveDataType.Float
             };

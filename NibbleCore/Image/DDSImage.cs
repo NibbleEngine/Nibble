@@ -29,6 +29,11 @@ namespace NbCore {
 	    public List<byte[]> mipMaps = new List<byte[]>(); //TODO load and upload them separately.
 		public int blockSize = 16;
 
+		public DDSImage()
+		{
+
+		}
+
 	    public DDSImage(byte[] rawdata) {
             using MemoryStream ms = new MemoryStream(rawdata); using (BinaryReader r = new BinaryReader(ms))
 			{

@@ -17,20 +17,29 @@ namespace NbCore
         Double,
         Int2101010Rev,
         Int,
+        Byte,
     }
-    
 
-    public enum NbRenderPass
+    public enum NbRenderPrimitive
     {
-        DEFERRED = 0x0,
-        FORWARD,
-        DECAL,
-        BHULL,
-        BBOX,
-        DEBUG,
-        PICK,
-        COUNT
+        Points,
+        Lines,
+        Triangles,
+        TriangleFan,
+        TriangleStrip,
     }
+
+    public enum NbBufferSemantic
+    {
+        VERTEX,
+        UV,
+        NORMAL,
+        TANGENT,
+        BITANGENT,
+        BLENDINDICES,
+        BLENDWEIGHTS
+    }
+
 
     public struct geomMeshMetaData
     {
@@ -46,8 +55,6 @@ namespace NbCore
     public class GeomObject : Entity
     {
         public string Name;
-        public string mesh_descr;
-        public string small_mesh_descr;
 
         public bool interleaved;
         public uint vx_size;
@@ -120,7 +127,6 @@ namespace NbCore
             temp_geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
 
             //Set Buffer Offsets
-            temp_geom.mesh_descr = "v";
             NbMeshBufferInfo buf = new()
             {
                 count = 3,
@@ -180,19 +186,19 @@ namespace NbCore
         public NbMeshData GetMeshData()
         {
             NbMeshData data = new();
-            data.Hash = (ulong)(System.Math.Max(1,ibuffer.GetHashCode()) ^ vbuffer.GetHashCode());
+            data.Hash = NbHasher.CombineHash(NbHasher.Hash(vbuffer), NbHasher.Hash(ibuffer));
             data.IndexBuffer = new byte[ibuffer.Length];
             data.VertexBuffer = new byte[vbuffer.Length];
             data.VertexBufferStride = vx_size;
             data.buffers = bufInfo.ToArray();
-            data.IndicesLength = indicesType;
+            data.IndexFormat = indicesType;
 
             //Calculate vertex count on stream
             uint vx_count = (uint) vbuffer.Length / vx_size;
 
-            data.IndicesLength = NbPrimitiveDataType.UnsignedShort;
+            data.IndexFormat = NbPrimitiveDataType.UnsignedShort;
             if (vx_count > 0xFFFF)
-                data.IndicesLength = NbPrimitiveDataType.UnsignedInt;
+                data.IndexFormat = NbPrimitiveDataType.UnsignedInt;
 
             //Copy buffer data
             Buffer.BlockCopy(vbuffer, 0, data.VertexBuffer, 0, vbuffer.Length);

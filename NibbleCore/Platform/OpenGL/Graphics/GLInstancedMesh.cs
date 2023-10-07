@@ -28,11 +28,28 @@ namespace NbCore.Platform.Graphics
             { NbPrimitiveDataType.UnsignedShort, DrawElementsType.UnsignedShort }
         };
 
+        public static Dictionary<NbRenderPrimitive, PrimitiveType> RenderPrimitiveMap = new()
+        {
+            { NbRenderPrimitive.Points, PrimitiveType.Points },
+            { NbRenderPrimitive.Lines, PrimitiveType.Lines },
+            { NbRenderPrimitive.Triangles, PrimitiveType.Triangles },
+            { NbRenderPrimitive.TriangleStrip, PrimitiveType.TriangleStrip },
+            { NbRenderPrimitive.TriangleFan, PrimitiveType.TriangleFan },
+        };
+
         //GLSpecific Properties
         public DrawElementsType IndicesLength { 
             get
             {
-                return IndicesLengthMap[Mesh.Data.IndicesLength];
+                return IndicesLengthMap[Mesh.Data.IndexFormat];
+            }
+        }
+
+        public PrimitiveType RenderPrimitive
+        {
+            get
+            {
+                return RenderPrimitiveMap[Mesh.Data.IndicesType];
             }
         }
 

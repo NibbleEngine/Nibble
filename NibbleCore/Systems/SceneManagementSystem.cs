@@ -166,6 +166,7 @@ namespace NbCore.Systems
             {
                 TransformData td = TransformationSystem.GetEntityTransformData(n);
                 LightComponent lc = n.GetComponent<LightComponent>();
+                MeshComponent mc = n.GetComponent<MeshComponent>();
                 bool light_instance_updated = false;
 
                 if (!lc.Data.IsRenderable && lc.InstanceID != -1)
@@ -183,9 +184,19 @@ namespace NbCore.Systems
                     Log($"Adding Light Volume Instance {n.Name}", LogVerbosityLevel.DEBUG);
                     GraphicsAPI.AddLightRenderInstance(ref lc, td);
                 }
-                else if (lc.Data.IsRenderable)
+                else if (lc.Data.IsRenderable && td.IsUpdated)
                 {
+                    //Update transform data for the light volume
                     GraphicsAPI.SetInstanceWorldMat(lc.Mesh, lc.InstanceID, td.WorldTransformMat);
+                    //Update light segment mesh
+                    //mc.Mesh.Data.UpdateVertex(0, td.WorldPosition.Xyz);
+                    NbMatrix4 rotX = NbMatrix4.CreateRotationX(MathUtils.radians(lc.Data.Direction.X));
+                    NbMatrix4 rotY = NbMatrix4.CreateRotationY(MathUtils.radians(lc.Data.Direction.Y));
+                    NbMatrix4 rotZ = NbMatrix4.CreateRotationZ(MathUtils.radians(lc.Data.Direction.Z));
+
+                    NbVector4 endPoint = NbVector4.Transform(new NbVector4(1.0f, 0.0f, 0.0f, 0.0f), rotZ * rotX * rotY);
+                    //NbVector4 endPoint = NbVector4.Transform(new NbVector4(1.0f, 0.0f, 0.0f, 0.0f), rot);
+                    mc.Mesh.Data.UpdateVertex(1, endPoint.Xyz);
                     light_instance_updated = true;
                 }
 

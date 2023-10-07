@@ -138,6 +138,13 @@ namespace NbCore.Math
         
         public float Length => _Value.Length;
 
+        public static NbVector3 ZPos = new NbVector3(0.0f, 0.0f, 1.0f);
+        public static NbVector3 ZNeg = new NbVector3(0.0f, 0.0f, -1.0f);
+        public static NbVector3 YPos = new NbVector3(0.0f, 1.0f, 0.0f);
+        public static NbVector3 YNeg = new NbVector3(0.0f, -1.0f, 0.0f);
+        public static NbVector3 XPos = new NbVector3(1.0f, 0.0f, 0.0f);
+        public static NbVector3 XNeg = new NbVector3(-1.0f, 0.0f, 0.0f);
+
         public void Serialize(JsonTextWriter writer)
         {
             writer.WriteStartObject();

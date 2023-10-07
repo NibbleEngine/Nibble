@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO.Compression;
 using System.IO;
 using Newtonsoft.Json;
+using NbCore.Math;
+using NbCore.Common;
 
 namespace NbCore
 {
@@ -14,8 +16,9 @@ namespace NbCore
         public byte[] VertexBuffer;
         public byte[] IndexBuffer;
         public NbMeshBufferInfo[] buffers;
-        public NbPrimitiveDataType IndicesLength;
-        
+        public NbPrimitiveDataType IndexFormat;
+        public NbRenderPrimitive IndicesType;
+            
         public void Dispose()
         {
             VertexBuffer = null;
@@ -29,9 +32,29 @@ namespace NbCore
                 Hash = 0,
                 VertexBuffer = null,
                 IndexBuffer = null,
-                IndicesLength = NbPrimitiveDataType.UnsignedInt
+                IndexFormat = NbPrimitiveDataType.UnsignedInt,
+                IndicesType = NbRenderPrimitive.Triangles
             };
             return md;
+        }
+
+        public void UpdateVertex(int vertexId, NbVector3 vec)
+        {
+            //Calculate Offset
+            int offset = 0;
+            foreach (NbMeshBufferInfo info in buffers)
+            {
+                if (info.semantic == NbBufferSemantic.VERTEX)
+                {
+                    offset = info.offset + (int)VertexBufferStride * vertexId;
+                    break;
+                }
+                    
+            }
+            
+            //Add the new vertex in the offset
+            float[] tempBuffer = new float[3] {vec.X, vec.Y, vec.Z};
+            Buffer.BlockCopy(tempBuffer, 0, VertexBuffer, offset, sizeof(float) * tempBuffer.Length);
         }
 
         public void Serialize(JsonTextWriter writer)
@@ -43,8 +66,10 @@ namespace NbCore
             writer.WriteValue(Hash.ToString());
             writer.WritePropertyName("VertexBufferStride");
             writer.WriteValue(VertexBufferStride);
-            writer.WritePropertyName("IndicesLength");
-            writer.WriteValue(IndicesLength);
+            writer.WritePropertyName("IndexFormat");
+            writer.WriteValue(IndexFormat);
+            writer.WritePropertyName("IndicesType");
+            writer.WriteValue(IndicesType);
 
             writer.WritePropertyName("buffers");
             writer.WriteStartArray();
@@ -92,7 +117,8 @@ namespace NbCore
             NbMeshData data = new();
             data.Hash = ulong.Parse(token.Value<string>("Hash"));
             data.VertexBufferStride = token.Value<uint>("VertexBufferStride");
-            data.IndicesLength = (NbPrimitiveDataType)token.Value<int>("IndicesLength");
+            data.IndexFormat = (NbPrimitiveDataType) token.Value<int>("IndexFormat");
+            data.IndicesType = (NbRenderPrimitive) token.Value<int>("IndicesType");
 
             Newtonsoft.Json.Linq.JToken bufs = token.Value<Newtonsoft.Json.Linq.JToken>("buffers");
 

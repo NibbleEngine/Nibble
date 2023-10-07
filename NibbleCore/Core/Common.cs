@@ -100,7 +100,9 @@ namespace NbCore.Common
     {
         public int FPS = 60;
         public float HDRExposure = 0.005f;
-        
+
+        public NbVector4 BackgroundColor = new NbVector4(0.3f, 0.3f, 0.3f, 1.0f);
+
         //Set Full rendermode by default
         [JsonIgnore]
         public PolygonMode RENDERMODE 
@@ -247,7 +249,6 @@ namespace NbCore.Common
         public static byte[] DefaultGetResourceFromAssembly(Assembly assembly, string resource_name)
         {
             byte[] data = null; //output data
-
             string[] resources = assembly.GetManifestResourceNames();
 
             //for (int i=0;i<resources.Length;i++)

@@ -18,6 +18,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Components\ReferenceComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\SceneComponent.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Components\ScriptComponent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\LightData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimNodeFrameData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimPoseData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)core\NbConfig.cs" />

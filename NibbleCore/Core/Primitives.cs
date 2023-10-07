@@ -5,6 +5,7 @@ using OpenTK;
 using NbCore.Math;
 using OpenTK.Graphics.OpenGL4;
 using NbCore.Utils;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace NbCore.Primitives
 {
@@ -69,37 +70,119 @@ namespace NbCore.Primitives
                 geom.indicesType = NbPrimitiveDataType.Int;
                 indicesLength = 0x4;
             }
-                
-            //Set Strides
-            geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
+
+            //Calculate vx size
+            geom.vx_size = 0;
+            if (verts.Length > 0)
+                geom.vx_size += 3 * 4; //3 Floats per vertex
+            if (uvs is not null)
+                geom.vx_size += 2 * 4; //2 Floats per vertex
+            if (normals is not null)
+                geom.vx_size += 3 * 4; //3 Floats per vertex
+            if (colors is not null)
+                geom.vx_size += 3 * 4; //3 Floats per vertex
+
+            //Init Buffer
+            float[] float_vbuffer = new float[geom.vx_size * geom.vertCount / 4];
             
+            int off = 0;
+
             //Set Buffer Offsets
-            geom.mesh_descr = "vn";
-            
-            NbMeshBufferInfo buf = new()
+            if (verts.Length > 0) {
+                geom.bufInfo.Add(new()
+                {
+                    count = 3,
+                    normalize = false,
+                    offset = off,
+                    sem_text = "vPosition",
+                    semantic = NbBufferSemantic.VERTEX,
+                    stride = (int) geom.vx_size,
+                    type = NbPrimitiveDataType.Float
+                });
+
+                //Copy position data to temp float array
+                for (int i=0; i < geom.vertCount; i++)
+                {
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 0] = verts[3 * i + 0];
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 1] = verts[3 * i + 1];
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 2] = verts[3 * i + 2];
+                }
+                
+                off += 12;
+            }
+
+            if (uvs is not null)
             {
-                count = 3,
-                normalize = false,
-                offset = 0,
-                sem_text = "vPosition",
-                semantic = 0,
-                stride = 0,
-                type = NbPrimitiveDataType.Float
-            };
-            geom.bufInfo.Add(buf);
-            
-            buf = new()
+                geom.bufInfo.Add(new()
+                {
+                    count = 2,
+                    normalize = false,
+                    offset = off,
+                    sem_text = "uvPosition",
+                    semantic = NbBufferSemantic.NORMAL,
+                    stride = (int) geom.vx_size,
+                    type = NbPrimitiveDataType.Float
+                });
+
+                //Copy normal data to temp float array
+                for (int i = 0; i < geom.vertCount; i++)
+                {
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 0] = uvs[2 * i + 0];
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 1] = uvs[2 * i + 1];
+                }
+
+                off += 8;
+            }
+
+
+            if (normals is not null)
             {
-                count = 3,
-                normalize = false,
-                offset = 0,
-                sem_text = "nPosition",
-                semantic = 2,
-                stride = 0,
-                type = NbPrimitiveDataType.Float
-            };
-            geom.bufInfo.Add(buf);
-            
+                geom.bufInfo.Add(new()
+                {
+                    count = 3,
+                    normalize = false,
+                    offset = off,
+                    sem_text = "nPosition",
+                    semantic = NbBufferSemantic.NORMAL,
+                    stride = (int) geom.vx_size,
+                    type = NbPrimitiveDataType.Float
+                });
+
+                //Copy normal data to temp float array
+                for (int i = 0; i < geom.vertCount; i++)
+                {
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 0] = normals[3 * i + 0];
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 1] = normals[3 * i + 1];
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 2] = normals[3 * i + 2];
+                }
+
+                off += 12;
+            }
+
+            if (colors is not null)
+            {
+                geom.bufInfo.Add(new()
+                {
+                    count = 3,
+                    normalize = false,
+                    offset = off,
+                    sem_text = "bPosition",
+                    semantic = NbBufferSemantic.BITANGENT,
+                    stride = (int) geom.vx_size,
+                    type = NbPrimitiveDataType.Float
+                });
+
+                //Copy colors data to temp float array
+                for (int i = 0; i < geom.vertCount; i++)
+                {
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 0] = colors[3 * i + 0];
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 1] = colors[3 * i + 1];
+                    float_vbuffer[off / 4 + i * (geom.vx_size / 4) + 2] = colors[3 * i + 2];
+                }
+                
+                off += 12;
+            }
+
             //Set Buffers
             geom.ibuffer = new byte[indicesLength * indices.Length];
             if (geom.indicesType == NbPrimitiveDataType.UnsignedShort)
@@ -113,9 +196,9 @@ namespace NbCore.Primitives
             else
                 System.Buffer.BlockCopy(indices, 0, geom.ibuffer, 0, geom.ibuffer.Length);
             
-            geom.vbuffer = new byte[sizeof(float) * verts.Length];
-            System.Buffer.BlockCopy(verts, 0, geom.vbuffer, 0, geom.vbuffer.Length);
-
+            geom.vbuffer = new byte[geom.vx_size * geom.vertCount];
+            System.Buffer.BlockCopy(float_vbuffer, 0, geom.vbuffer, 0, geom.vbuffer.Length);
+            
             return geom;
         }
 
@@ -469,7 +552,6 @@ namespace NbCore.Primitives
             //Set Buffer Offsets
             geom.bufInfo = new List<NbMeshBufferInfo>();
 
-            geom.mesh_descr = "vn";
             //geom.bufInfo[0] = new bufInfo(0, NbVertexAttribPointerType.Float, 3, 0, 0, "vPosition", false);
             //geom.bufInfo[2] = new bufInfo(2, NbVertexAttribPointerType.Float, 3, 0, 0, "nPosition", false);
             //geom.bufInfo[4] = new bufInfo(4, NbVertexAttribPointerType.Float, 3, 0, geom.vertCount * 12, "bPosition", false);
@@ -480,7 +562,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = 0,
                 sem_text = "vPosition",
-                semantic = 0,
+                semantic = NbBufferSemantic.VERTEX,
                 stride = 0,
                 type = NbPrimitiveDataType.Float
             };
@@ -492,7 +574,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = 0,
                 sem_text = "nPosition",
-                semantic = 2,
+                semantic = NbBufferSemantic.NORMAL,
                 stride = 0,
                 type = NbPrimitiveDataType.Float
             };
@@ -504,7 +586,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = geom.vertCount * 12,
                 sem_text = "bPosition",
-                semantic = 4,
+                semantic = NbBufferSemantic.BITANGENT,
                 stride = 0,
                 type = NbPrimitiveDataType.Float
             };
@@ -669,7 +751,6 @@ namespace NbCore.Primitives
             geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
 
             //Set Buffer Offsets
-            geom.mesh_descr = "vn";
             
             NbMeshBufferInfo buf = new()
             {
@@ -677,7 +758,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = 0,
                 sem_text = "vPosition",
-                semantic = 0,
+                semantic = NbBufferSemantic.VERTEX,
                 stride = 12,
                 type = NbPrimitiveDataType.Float
             };
@@ -689,7 +770,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = geom.vertCount * 12,
                 sem_text = "nPosition",
-                semantic = 2,
+                semantic = NbBufferSemantic.NORMAL,
                 stride = 12,
                 type = NbPrimitiveDataType.Float
             };
@@ -701,7 +782,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = 2 * geom.vertCount * 12,
                 sem_text = "bPosition",
-                semantic = 4,
+                semantic = NbBufferSemantic.BITANGENT,
                 stride = 12,
                 type = NbPrimitiveDataType.Float
             };
@@ -821,7 +902,6 @@ namespace NbCore.Primitives
             geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
 
             //Set Buffer Offsets
-            geom.mesh_descr = "vn";
             
             NbMeshBufferInfo buf = new()
             {
@@ -841,7 +921,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = 0,
                 sem_text = "nPosition",
-                semantic = 2,
+                semantic = NbBufferSemantic.NORMAL,
                 stride = 0,
                 type = NbPrimitiveDataType.Float
             };
@@ -853,7 +933,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = geom.vertCount * 12,
                 sem_text = "bPosition",
-                semantic = 4,
+                semantic = NbBufferSemantic.BITANGENT,
                 stride = 0,
                 type = NbPrimitiveDataType.Float
             };
@@ -880,44 +960,86 @@ namespace NbCore.Primitives
         public Box(float width, float height, float depth, NbVector3 col, bool generateGeom = false)
         {
             //Init Arrays
-            verts = new float[8*3];
+            verts = new float[8 * 3];
+            uvs = null;
             colors = new float[8 * 3];
-            normals = new float[8*3];
-            indices = new int[12*3];
+            normals = new float[8 * 3];
+            indices = new int[12 * 3];
 
+            NbVector3 vec = new NbVector3();
             //Verts
             //0
             verts[0] = width / 2.0f;
             verts[1] = height / 2.0f;
             verts[2] = depth / 2.0f;
+            vec = new NbVector3(1.0f, 1.0f, 1.0f);
+            vec.Normalize();
+            normals[0] = vec.X;
+            normals[1] = vec.Y;
+            normals[2] = vec.Z;
             //1
             verts[3] = -width / 2.0f;
             verts[4] = height / 2.0f;
             verts[5] = depth / 2.0f;
+            vec = new NbVector3(-1.0f, 1.0f, 1.0f);
+            vec.Normalize();
+            normals[3] = vec.X;
+            normals[4] = vec.Y;
+            normals[5] = vec.Z;
             //2
             verts[6] = -width / 2.0f;
             verts[7] = height / 2.0f;
             verts[8] = -depth / 2.0f;
+            vec = new NbVector3(-1.0f, 1.0f, -1.0f);
+            vec.Normalize();
+            normals[6] = vec.X;
+            normals[7] = vec.Y;
+            normals[8] = vec.Z;
             //3
             verts[9] = width / 2.0f;
             verts[10] = height / 2.0f;
             verts[11] = -depth / 2.0f;
+            vec = new NbVector3(1.0f, 1.0f, -1.0f);
+            vec.Normalize();
+            normals[9] = vec.X;
+            normals[10] = vec.Y;
+            normals[11] = vec.Z;
             //4
             verts[12] = width / 2.0f;
             verts[13] = -height / 2.0f;
             verts[14] = depth / 2.0f;
+            vec = new NbVector3(1.0f, -1.0f, 1.0f);
+            vec.Normalize();
+            normals[12] = vec.X;
+            normals[13] = vec.Y;
+            normals[14] = vec.Z;
             //5
             verts[15] = -width / 2.0f;
             verts[16] = -height / 2.0f;
             verts[17] = depth / 2.0f;
+            vec = new NbVector3(-1.0f, -1.0f, 1.0f);
+            vec.Normalize();
+            normals[15] = vec.X;
+            normals[16] = vec.Y;
+            normals[17] = vec.Z;
             //6
             verts[18] = -width / 2.0f;
             verts[19] = -height / 2.0f;
             verts[20] = -depth / 2.0f;
+            vec = new NbVector3(-1.0f, -1.0f, -1.0f);
+            vec.Normalize();
+            normals[18] = vec.X;
+            normals[19] = vec.Y;
+            normals[20] = vec.Z;
             //7
             verts[21] = width / 2.0f;
             verts[22] = -height / 2.0f;
             verts[23] = -depth / 2.0f;
+            vec = new NbVector3(1.0f, -1.0f, -1.0f);
+            vec.Normalize();
+            normals[21] = vec.X;
+            normals[22] = vec.Y;
+            normals[23] = vec.Z;
 
             indices = new int[]{
                 0, 3, 1,
@@ -941,7 +1063,7 @@ namespace NbCore.Primitives
                 colors[3 * i + 2] = col.Z;
             }
 
-
+            
             if (generateGeom)
                 geom = getGeom();
         }
@@ -1068,7 +1190,6 @@ namespace NbCore.Primitives
             geom.vx_size = (3 + 2 + 3) * 4; //Positions, Uvs, Normals
 
             //Set Buffer Offsets
-            geom.mesh_descr = "vun";
 
             NbMeshBufferInfo buf = new()
             {
@@ -1088,7 +1209,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = 12, //Skipping position data
                 sem_text = "uvPosition0",
-                semantic = 1,
+                semantic = NbBufferSemantic.UV,
                 stride = (int)geom.vx_size,
                 type = NbPrimitiveDataType.Float
             };
@@ -1100,7 +1221,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = 20, //Skipping position + uv data
                 sem_text = "nPosition",
-                semantic = 2,
+                semantic = NbBufferSemantic.NORMAL,
                 stride = (int)geom.vx_size, 
                 type = NbPrimitiveDataType.Float
             };
@@ -1196,7 +1317,6 @@ namespace NbCore.Primitives
             geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
 
             //Set Buffer Offsets
-            geom.mesh_descr = "vn";
             
             NbMeshBufferInfo buf = new()
             {
@@ -1216,7 +1336,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = 72,
                 sem_text = "nPosition",
-                semantic = 2,
+                semantic = NbBufferSemantic.NORMAL,
                 stride = 0,
                 type = NbPrimitiveDataType.Float
             };
@@ -1228,7 +1348,7 @@ namespace NbCore.Primitives
                 normalize = false,
                 offset = 72,
                 sem_text = "bPosition",
-                semantic = 4,
+                semantic = NbBufferSemantic.BITANGENT,
                 stride = 0,
                 type = NbPrimitiveDataType.Float
             };
@@ -1257,13 +1377,8 @@ namespace NbCore.Primitives
             verts = new float[instance_num * 2 * 3];
             Array.Clear(verts, 0, instance_num * 2 * 3);
             
-            int arraysize = instance_num * 2 * 3;
-            int b_size = 2 * arraysize;
-            float[] verts_combined = new float[b_size];
-
-            Array.Copy(verts, 0, verts_combined, 0, arraysize);
             //Colors
-            float[] colors = new float[instance_num * 2 * 3];
+            colors = new float[instance_num * 2 * 3];
 
             for (int i=0; i < instance_num; i++)
             {
@@ -1275,16 +1390,11 @@ namespace NbCore.Primitives
                 colors[6 * i + 5] = color.Z;
             }
 
-            Array.Copy(colors, 0, verts_combined, arraysize, arraysize);
-
             //Indices
             indices = new Int32[instance_num * 2];
             for (int i = 0; i <instance_num * 2; i++)
                 indices[i] = i;
             
-            //Replace verts
-            verts = verts_combined;
-
             geom = getGeom();
         }
 

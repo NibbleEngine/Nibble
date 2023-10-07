@@ -345,14 +345,22 @@ namespace NbCore.Systems
             mg.NextFrameJointData = new NbMatrix4[System.Math.Max(1, mg.JointBindingDataList.Count)];
 
             //Copy any existing data to the bytearray
-            for (int i = 0; i < mg.JointBindingDataList.Count; i++)
+            NbMatrix4 temp_matrix = NbMatrix4.Identity();
+            if (mg.JointBindingDataList.Count > 1)
             {
-                NbMatrix4 temp_matrix = mg.JointBindingDataList[i].invBindMatrix;
-                mg.GroupTBO1Data[i] = temp_matrix;
-                mg.PrevFrameJointData[i] = temp_matrix;
-                mg.NextFrameJointData[i] = temp_matrix;
-                //This does not work for all models (e.g. the astronaut)
-                //I suspect that its just an issue with the model, this matrix multiplication should bring the model to its binding pose
+                for (int i = 0; i < mg.JointBindingDataList.Count; i++)
+                {
+                    mg.GroupTBO1Data[i] = temp_matrix;
+                    mg.PrevFrameJointData[i] = temp_matrix;
+                    mg.NextFrameJointData[i] = temp_matrix;
+                    //This does not work for all models (e.g. the astronaut)
+                    //I suspect that its just an issue with the model, this matrix multiplication should bring the model to its binding pose
+                }
+            } else
+            {
+                mg.GroupTBO1Data[0] = temp_matrix;
+                mg.PrevFrameJointData[0] = temp_matrix;
+                mg.NextFrameJointData[0] = temp_matrix;
             }
             
             MeshGroups.Add(mg);
@@ -378,7 +386,8 @@ namespace NbCore.Systems
             //Upload skinning data
             unsafe
             {
-                GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, mg.GroupTBO1Data.Length * sizeof(NbMatrix4), mg.GroupTBO1Data);
+                GL.BufferSubData(BufferTarget.ShaderStorageBuffer, IntPtr.Zero, 
+                    mg.GroupTBO1Data.Length * sizeof(NbMatrix4), mg.GroupTBO1Data);
             }
         }
 
@@ -653,7 +662,7 @@ namespace NbCore.Systems
         private void defferedShading()
         {
             //DEFERRED STAGE
-            GL.ClearColor(new OpenTK.Mathematics.Color4(0.0f, 0, 0, 1.0f));
+            Renderer.ClearColor(RenderState.settings.RenderSettings.BackgroundColor);
             Renderer.BindDrawFrameBuffer(gBuffer, new int[] { 0, 1, 2, 3 });
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             
