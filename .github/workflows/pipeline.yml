@@ -11,23 +11,41 @@ on:
   create:
 
 jobs:
-  build:
-    name: Debug Build Nibble on Windows
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '6.x'
-      - name: Build Windows .net 6.x binary
-        run: dotnet publish -maxcpucount:1 -c Debug -f net6.0 -r win-x64
-      - name: Upload binary for release
-        uses: actions/upload-artifact@v2
-        with:
-          name: Nibble-Debug
-          path: |
-            Build/Debug/net5.0/win-x64/publish/*.*
-            Build/Debug/net5.0/win-x64/publish/Plugins
-            Build/Debug/net5.0/win-x64/publish/Shaders
-  # TODO: Add release stuff. Will do this later when we are closer to wanting to release! ;)
+  build_OPENGL_DEBUG:
+      name: Building Debug version of Nibble for OpenGL [WINDOWS]
+      runs-on: windows-latest
+      steps:
+        - uses: actions/checkout@v2
+        - name: Setup .NET
+          uses: actions/setup-dotnet@v1
+          with:
+            dotnet-version: '6.x'
+        - name: Build Windows .net 6.x binary
+          run: dotnet publish -maxcpucount:1 -c OpenGL_DEBUG -f net6.0 -r win-x64
+        - name: Upload binary for release
+          uses: actions/upload-artifact@v2
+          with:
+            name: Nibble-Debug
+            path: |
+              Build/OpenGL_DEBUG/net6.0/win-x64/publish/*.dll
+
+  build_OPENGL_RELEASE:
+      name: Building Release version of Nibble for OpenGL [WINDOWS]
+      runs-on: windows-latest
+      steps:
+        - uses: actions/checkout@v2
+        - name: Setup .NET
+          uses: actions/setup-dotnet@v1
+          with:
+            dotnet-version: '6.x'
+        - name: Build Windows .net 6.x binary
+          run: dotnet publish -maxcpucount:1 -c OpenGL_RELEASE -f net6.0 -r win-x64
+        - name: Upload binary for release
+          uses: actions/upload-artifact@v2
+          with:
+            name: Nibble-Release
+            path: |
+              Build/OpenGL_RELEASE/net6.0/win-x64/publish/*.dll
+
+
+  
