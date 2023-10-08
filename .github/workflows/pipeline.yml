@@ -20,8 +20,8 @@ jobs:
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: '6.x'
-      - name: Build Windows .net 5 binary
-        run: dotnet publish -maxcpucount:1 -c Debug -f net5.0 -r win-x64
+      - name: Build Windows .net 6.x binary
+        run: dotnet publish -maxcpucount:1 -c Debug -f net6.0 -r win-x64
       - name: Upload binary for release
         uses: actions/upload-artifact@v2
         with:
