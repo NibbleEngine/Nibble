@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace NbCore.Math
+namespace NbCore
 {
     public class TwosComplement
     {

@@ -86,7 +86,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Managers\GeometryManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Managers\NbMaterialManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Managers\ShaderManager.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\MathUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\Math.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\NbMatrix4.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\NbQuaternion.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Math\NbVector2.cs" />

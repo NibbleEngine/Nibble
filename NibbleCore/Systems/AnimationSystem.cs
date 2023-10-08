@@ -4,7 +4,7 @@ using System.Text;
 using OpenTK;
 using OpenTK.Mathematics;
 using NbCore.Managers;
-using NbCore.Math;
+using NbCore;
 
 namespace NbCore.Systems
 {

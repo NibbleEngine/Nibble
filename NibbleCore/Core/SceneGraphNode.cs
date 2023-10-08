@@ -106,6 +106,12 @@ namespace NbCore
 
         public void SetParent(SceneGraphNode e)
         {
+            if (Parent != null)
+            {
+                //Remove from previous parent
+                Parent.RemoveChild(this);
+            }
+
             Parent = e;
             Parent.Children.Add(this);
 

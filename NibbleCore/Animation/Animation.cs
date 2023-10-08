@@ -1,5 +1,5 @@
 using MathNet.Numerics.Distributions;
-using NbCore.Math;
+using NbCore;
 using System;
 
 namespace NbCore

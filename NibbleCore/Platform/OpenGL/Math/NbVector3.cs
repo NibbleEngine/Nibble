@@ -1,7 +1,7 @@
 using OpenTK.Mathematics;
 using Newtonsoft.Json;
 
-namespace NbCore.Math
+namespace NbCore
 {
     [NbSerializable]
     public struct NbVector3
@@ -99,6 +99,28 @@ namespace NbCore.Math
             return n;
         }
 
+        public static NbVector3 operator -(float a, NbVector3 b)
+        {
+            NbVector3 n = new()
+            {
+                _Value = new Vector3(a - b._Value.X,
+                    a - b._Value.Y,
+                    a - b._Value.Z)
+            };
+            return n;
+        }
+
+        public static NbVector3 operator -(NbVector3 a, float b)
+        {
+            NbVector3 n = new()
+            {
+                _Value = new Vector3(a._Value.X - b,
+                                     a._Value.Y - b,
+                                     a._Value.Z - b)
+            };
+            return n;
+        }
+
         public static NbVector3 operator *(NbVector3 v, float a)
         {
             return new NbVector3()
@@ -135,7 +157,17 @@ namespace NbCore.Math
                 _Value = Vector3.Normalize(_Value)
             };
         }
-        
+
+        public float[] ToArray()
+        {
+            float[] fmat = new float[3];
+            fmat[0] = X;
+            fmat[1] = Y;
+            fmat[2] = Z;
+
+            return fmat;
+        }
+
         public float Length => _Value.Length;
 
         public static NbVector3 ZPos = new NbVector3(0.0f, 0.0f, 1.0f);

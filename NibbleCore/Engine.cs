@@ -4,7 +4,7 @@ using NbCore;
 using NbCore.Systems;
 using NbCore.Common;
 using NbCore.Text;
-using NbCore.Math;
+using NbCore;
 using NbCore.Primitives;
 using NbCore.Utils;
 using NbCore.Plugins;

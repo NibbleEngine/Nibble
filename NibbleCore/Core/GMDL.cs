@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using NbCore.Math;
+using NbCore;
 
 namespace NbCore
 {
@@ -215,9 +215,9 @@ namespace NbCore
             uint val2 = br.ReadUInt16();
             uint val3 = br.ReadUInt16();
             //Convert Values
-            temp.X = Math.Half.decompress(val1);
-            temp.Y = Math.Half.decompress(val2);
-            temp.Z = Math.Half.decompress(val3);
+            temp.X = Half.decompress(val1);
+            temp.Y = Half.decompress(val2);
+            temp.Z = Half.decompress(val3);
             //Console.WriteLine("half {0} {1} {2}", temp[0],temp[1],temp[2]);
             return temp;
         }
@@ -229,8 +229,8 @@ namespace NbCore
             uint val1 = br.ReadUInt16();
             uint val2 = br.ReadUInt16();
             //Convert Values
-            temp.X = Math.Half.decompress(val1);
-            temp.Y = Math.Half.decompress(val2);
+            temp.X = Half.decompress(val1);
+            temp.Y = Half.decompress(val2);
             return temp;
         }
 

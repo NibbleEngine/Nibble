@@ -1,7 +1,7 @@
 ﻿
 using OpenTK.Graphics.OpenGL4; //TODO : REMOVE 
 using System;
-using NbCore.Math;
+using NbCore;
 using System.IO;
 using NbCore.Common;
 using Newtonsoft.Json;

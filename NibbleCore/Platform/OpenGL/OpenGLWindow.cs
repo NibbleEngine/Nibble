@@ -3,7 +3,7 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using NbCore.Math;
+using NbCore;
 using ImGuiNET;
 using System.Reflection;
 using System.Runtime.CompilerServices;

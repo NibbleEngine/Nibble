@@ -1,4 +1,4 @@
-﻿using NbCore.Math;
+﻿using NbCore;
 using System.Collections.Generic;
 using System.IO;
 

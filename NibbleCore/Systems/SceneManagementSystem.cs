@@ -1,5 +1,5 @@
 ﻿using NbCore.Common;
-using NbCore.Math;
+using NbCore;
 using NbCore.Platform.Graphics;
 using OpenTK.Mathematics;
 using System;
@@ -190,9 +190,9 @@ namespace NbCore.Systems
                     GraphicsAPI.SetInstanceWorldMat(lc.Mesh, lc.InstanceID, td.WorldTransformMat);
                     //Update light segment mesh
                     //mc.Mesh.Data.UpdateVertex(0, td.WorldPosition.Xyz);
-                    NbMatrix4 rotX = NbMatrix4.CreateRotationX(MathUtils.radians(lc.Data.Direction.X));
-                    NbMatrix4 rotY = NbMatrix4.CreateRotationY(MathUtils.radians(lc.Data.Direction.Y));
-                    NbMatrix4 rotZ = NbMatrix4.CreateRotationZ(MathUtils.radians(lc.Data.Direction.Z));
+                    NbMatrix4 rotX = NbMatrix4.CreateRotationX(Math.Radians(lc.Data.Direction.X));
+                    NbMatrix4 rotY = NbMatrix4.CreateRotationY(Math.Radians(lc.Data.Direction.Y));
+                    NbMatrix4 rotZ = NbMatrix4.CreateRotationZ(Math.Radians(lc.Data.Direction.Z));
 
                     NbVector4 endPoint = NbVector4.Transform(new NbVector4(1.0f, 0.0f, 0.0f, 0.0f), rotZ * rotX * rotY);
                     //NbVector4 endPoint = NbVector4.Transform(new NbVector4(1.0f, 0.0f, 0.0f, 0.0f), rot);

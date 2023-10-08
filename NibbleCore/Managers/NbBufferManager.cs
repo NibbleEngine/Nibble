@@ -1,5 +1,5 @@
 ﻿using System;
-using NbCore.Math;
+using NbCore;
 
 namespace NbCore
 {

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using NbCore.Primitives;
 using NbCore;
-using NbCore.Math;
+using NbCore;
 using NbCore.Platform.Graphics;
 using OpenTK.Graphics.OpenGL4; //TODO Get rid of that
 

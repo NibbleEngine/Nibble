@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using NbCore.Math;
+using NbCore;
 using Newtonsoft.Json;
 
 namespace NbCore

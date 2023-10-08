@@ -1,7 +1,8 @@
+using System.Diagnostics.Contracts;
 using System.Xml;
 using OpenTK.Mathematics;
 
-namespace NbCore.Math
+namespace NbCore
 {
     public struct NbQuaternion
     {
@@ -125,7 +126,12 @@ namespace NbCore.Math
                 _Value = Quaternion.Multiply(q1._Value, q2._Value)
             };
         }
-        
+
+        public NbVector3 ToEulerAngles()
+        {
+            return ToEulerAngles(this);
+        }
+
         public static NbVector3 ToEulerAngles(NbQuaternion q)
         {
             Vector3 v = q._Value.ToEulerAngles();

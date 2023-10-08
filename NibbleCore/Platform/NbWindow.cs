@@ -1,5 +1,5 @@
 ﻿using NbCore.Common;
-using NbCore.Math;
+using NbCore;
 
 namespace NbCore.Platform.Windowing
 {

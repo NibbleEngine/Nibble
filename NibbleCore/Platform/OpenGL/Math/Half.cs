@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NbCore.Math
+namespace NbCore
 {
     public static class Half
     {

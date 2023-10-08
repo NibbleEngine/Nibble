@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using NbCore.Math;
-using NbCore;
-
+﻿
 namespace NbCore
 {
     public class TransformData
@@ -54,18 +49,18 @@ namespace NbCore
         {
             get
             {
-                return NbQuaternion.FromEulerAngles(MathUtils.radians(RotX),
-                                                  MathUtils.radians(RotY),
-                                                  MathUtils.radians(RotZ), "XYZ");
+                return NbQuaternion.FromEulerAngles(Math.Radians(RotX),
+                                                  Math.Radians(RotY),
+                                                  Math.Radians(RotZ), "XYZ");
             }
 
             set
             {
                 NbVector3 res;
                 NbQuaternion.ToEulerAngles(value, out res);
-                RotX = MathUtils.degrees(res.X);
-                RotY = MathUtils.degrees(res.Y);
-                RotZ = MathUtils.degrees(res.Z);
+                RotX = Math.Degrees(res.X);
+                RotY = Math.Degrees(res.Y);
+                RotZ = Math.Degrees(res.Z);
             }
         }
 

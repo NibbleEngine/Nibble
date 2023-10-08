@@ -1,5 +1,5 @@
 ﻿using System;
-using NbCore.Math;
+using NbCore;
 using OpenTK.Graphics.OpenGL4;
 using Newtonsoft.Json;
 using System.Reflection;
@@ -101,7 +101,7 @@ namespace NbCore.Common
         public int FPS = 60;
         public float HDRExposure = 0.005f;
 
-        public NbVector4 BackgroundColor = new NbVector4(0.3f, 0.3f, 0.3f, 1.0f);
+        public NbVector3 BackgroundColor = new NbVector3(0.3f, 0.3f, 0.3f);
 
         //Set Full rendermode by default
         [JsonIgnore]

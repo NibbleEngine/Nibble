@@ -1,21 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.InteropServices;
-using System.Text;
-using NbCore.Math;
 
-namespace NbCore.Math
+namespace NbCore
 {
-    public static class MathUtils
+    public static class Math
     {
         public static float FloatParse(string text)
         {
             float res = float.Parse(text, CultureInfo.InvariantCulture);
             return res;
         }
-        
+
         public static float[] mulMatArrays(float[] lmat1, float[] lmat2, int count)
         {
             float[] res = new float[count * 16];
@@ -49,7 +45,7 @@ namespace NbCore.Math
 
                 //Unrolled version
                 int off = 16 * i;
-                
+
                 for (int j = 0; j < 4; j++)
                 {
                     //k = 0
@@ -59,19 +55,19 @@ namespace NbCore.Math
                     dest[off + 4 * j + 0] += lmat1[off + 4 * j + 3] * lmat2[off + 4 * 3 + 0];
 
                     //k = 1
-                    dest[off + 4 * j + 1] =  lmat1[off + 4 * j + 0] * lmat2[off + 4 * 0 + 1];
+                    dest[off + 4 * j + 1] = lmat1[off + 4 * j + 0] * lmat2[off + 4 * 0 + 1];
                     dest[off + 4 * j + 1] += lmat1[off + 4 * j + 1] * lmat2[off + 4 * 1 + 1];
                     dest[off + 4 * j + 1] += lmat1[off + 4 * j + 2] * lmat2[off + 4 * 2 + 1];
                     dest[off + 4 * j + 1] += lmat1[off + 4 * j + 3] * lmat2[off + 4 * 3 + 1];
 
                     //k = 2
-                    dest[off + 4 * j + 2] =  lmat1[off + 4 * j + 0] * lmat2[off + 4 * 0 + 2];
+                    dest[off + 4 * j + 2] = lmat1[off + 4 * j + 0] * lmat2[off + 4 * 0 + 2];
                     dest[off + 4 * j + 2] += lmat1[off + 4 * j + 1] * lmat2[off + 4 * 1 + 2];
                     dest[off + 4 * j + 2] += lmat1[off + 4 * j + 2] * lmat2[off + 4 * 2 + 2];
                     dest[off + 4 * j + 2] += lmat1[off + 4 * j + 3] * lmat2[off + 4 * 3 + 2];
 
                     //k = 3
-                    dest[off + 4 * j + 3] =  lmat1[off + 4 * j + 0] * lmat2[off + 4 * 0 + 3];
+                    dest[off + 4 * j + 3] = lmat1[off + 4 * j + 0] * lmat2[off + 4 * 0 + 3];
                     dest[off + 4 * j + 3] += lmat1[off + 4 * j + 1] * lmat2[off + 4 * 1 + 3];
                     dest[off + 4 * j + 3] += lmat1[off + 4 * j + 2] * lmat2[off + 4 * 2 + 3];
                     dest[off + 4 * j + 3] += lmat1[off + 4 * j + 3] * lmat2[off + 4 * 3 + 3];
@@ -110,7 +106,7 @@ namespace NbCore.Math
             array[offset + 13] = mat.Row3.Y;
             array[offset + 14] = mat.Row3.Z;
             array[offset + 15] = mat.Row3.W;
-        
+
         }
 
         public unsafe static void insertMatToArray16(float* array, int offset, NbMatrix4 mat)
@@ -179,7 +175,7 @@ namespace NbCore.Math
             mat.M42 = array[offset + 13];
             mat.M43 = array[offset + 14];
             mat.M44 = array[offset + 15];
-            
+
             return mat;
         }
 
@@ -204,13 +200,13 @@ namespace NbCore.Math
         {
             float n = 0.0f;
             NbMatrix4 temp = a - b;
-            for (int i=0; i<4; i++)
+            for (int i = 0; i < 4; i++)
                 for (int j = 0; j < 4; j++)
                 {
                     n += temp[i, j] * temp[i, j];
                 }
 
-            return (float) System.Math.Sqrt(n);
+            return (float)System.Math.Sqrt(n);
         }
 
         public static bool isIdentity(NbMatrix4 mat)
@@ -229,22 +225,23 @@ namespace NbCore.Math
         }
 
 
-        public static float radians(float angle)
+
+        public static float Radians(float angle)
         {
-            return ((float) System.Math.PI / 180) * angle;
+            return ((float)System.Math.PI / 180) * angle;
         }
 
-        public static float degrees(float radians)
+        public static float Degrees(float radians)
         {
-            return (float) (radians * 180.0 / (float) System.Math.PI);
+            return (float)(radians * 180.0 / (float)System.Math.PI);
         }
 
-        public static float clamp(float val, float min, float max)
+        public static float Clamp(float val, float min, float max)
         {
-            return (float) System.Math.Min(System.Math.Max(min, val), (double) max);
+            return (float)System.Math.Min(System.Math.Max(min, val), (double)max);
         }
 
-        public static double clamp(double val, double min, double max)
+        public static double Clamp(double val, double min, double max)
         {
             return System.Math.Min(System.Math.Max(min, val), max);
         }
@@ -286,7 +283,8 @@ namespace NbCore.Math
                     {
                         return dz;
                     }
-                } else
+                }
+                else
                 {
                     if (is_in_z)
                     {
@@ -294,11 +292,12 @@ namespace NbCore.Math
                     }
                     else
                     {
-                        return (float) System.Math.Sqrt(dz * dz + dy * dy);
+                        return (float)System.Math.Sqrt(dz * dz + dy * dy);
                     }
                 }
 
-            } else
+            }
+            else
             {
                 if (is_in_y)
                 {
@@ -310,7 +309,8 @@ namespace NbCore.Math
                     {
                         return (float)System.Math.Sqrt(dx * dx + dz * dz);
                     }
-                } else
+                }
+                else
                 {
                     if (is_in_z)
                     {
@@ -322,24 +322,30 @@ namespace NbCore.Math
                     }
                 }
             }
-
-
-
-
-
-
-
-
-
+        
         }
 
-        public static NbVector3 quaternionToEuler(NbQuaternion q)
+        public static NbVector4 Log(NbVector4 a)
         {
-            NbMatrix4 rotMat = NbMatrix4.CreateFromQuaternion(q);
-            rotMat.Transpose();
-            NbVector3 test;
-            test = matrixToEuler(rotMat, "YZX");
-            return test;
+            return new NbVector4((float) System.Math.Log(a.X),
+                                 (float) System.Math.Log(a.Y),
+                                 (float) System.Math.Log(a.Z),
+                                 (float) System.Math.Log(a.W));
+        }
+
+        public static NbVector3 Log(NbVector3 a)
+        {
+            return new NbVector3((float)System.Math.Log(a.X),
+                                 (float)System.Math.Log(a.Y),
+                                 (float)System.Math.Log(a.Z));
+        }
+
+        public static NbVector4 Max(NbVector4 a, NbVector4 b)
+        {
+            return new NbVector4((float)System.Math.Max(a.X, b.X),
+                                 (float)System.Math.Max(a.Y, b.Y),
+                                 (float)System.Math.Max(a.Z, b.Z),
+                                 (float)System.Math.Max(a.W, b.W));
         }
 
         public static NbVector3 matrixToEuler(NbMatrix4 rotMat, string order)
@@ -360,7 +366,7 @@ namespace NbCore.Math
             if (order == "XYZ")
             {
 
-                euler.Y = (float)System.Math.Asin(MathUtils.clamp(m13, -1, 1));
+                euler.Y = (float)System.Math.Asin(Math.Clamp(m13, -1, 1));
                 if (System.Math.Abs(m13) < 0.99999)
                 {
 
@@ -378,7 +384,7 @@ namespace NbCore.Math
             else if (order == "YXZ")
             {
 
-                euler.X = (float)System.Math.Asin(-MathUtils.clamp(m23, -1, 1));
+                euler.X = (float)System.Math.Asin(-Math.Clamp(m23, -1, 1));
 
                 if (System.Math.Abs(m23) < 0.99999)
                 {
@@ -397,7 +403,7 @@ namespace NbCore.Math
             else if (order == "ZXY")
             {
 
-                euler.X = (float)System.Math.Asin(MathUtils.clamp(m32, -1, 1));
+                euler.X = (float)System.Math.Asin(Math.Clamp(m32, -1, 1));
 
                 if (System.Math.Abs(m32) < 0.99999)
                 {
@@ -418,7 +424,7 @@ namespace NbCore.Math
             else if (order == "ZYX")
             {
 
-                euler.Y = (float)System.Math.Asin(-MathUtils.clamp(m31, -1, 1));
+                euler.Y = (float)System.Math.Asin(-Math.Clamp(m31, -1, 1));
 
                 if (System.Math.Abs(m31) < 0.99999)
                 {
@@ -439,7 +445,7 @@ namespace NbCore.Math
             else if (order == "YZX")
             {
 
-                euler.Z = (float)System.Math.Asin(MathUtils.clamp(m21, -1, 1));
+                euler.Z = (float)System.Math.Asin(Math.Clamp(m21, -1, 1));
 
                 if (System.Math.Abs(m21) < 0.99999)
                 {
@@ -460,7 +466,7 @@ namespace NbCore.Math
             else if (order == "XZY")
             {
 
-                euler.Z = (float)System.Math.Asin(-MathUtils.clamp(m12, -1, 1));
+                euler.Z = (float)System.Math.Asin(-Math.Clamp(m12, -1, 1));
 
                 if (System.Math.Abs(m12) < 0.99999)
                 {
@@ -485,59 +491,13 @@ namespace NbCore.Math
 
 
             //Convert to degrees
-            euler.X = MathUtils.degrees(euler.X);
-            euler.Y = MathUtils.degrees(euler.Y);
-            euler.Z = MathUtils.degrees(euler.Z);
+            euler.X = Math.Degrees(euler.X);
+            euler.Y = Math.Degrees(euler.Y);
+            euler.Z = Math.Degrees(euler.Z);
 
             //Console.WriteLine("Converted Angles {0} {1} {2}", euler.X, euler.Y, euler.Z);
 
             return euler;
         }
-
-
-        public static float[] convertVec(NbVector3 vec)
-        {
-            float[] fmat = new float[3];
-            fmat[0] = vec.X;
-            fmat[1] = vec.Y;
-            fmat[2] = vec.Z;
-
-            return fmat;
-        }
-
-        public static float[] convertVec(NbVector4 vec)
-        {
-            float[] fmat = new float[4];
-            fmat[0] = vec.X;
-            fmat[1] = vec.Y;
-            fmat[2] = vec.Z;
-            fmat[3] = vec.W;
-
-            return fmat;
-        }
-
-        public static float[] convertMat(NbMatrix4 mat)
-        {
-            float[] fmat = new float[16];
-            fmat[0] = mat.M11;
-            fmat[1] = mat.M12;
-            fmat[2] = mat.M13;
-            fmat[3] = mat.M14;
-            fmat[4] = mat.M21;
-            fmat[5] = mat.M22;
-            fmat[6] = mat.M23;
-            fmat[7] = mat.M24;
-            fmat[8] = mat.M31;
-            fmat[9] = mat.M32;
-            fmat[10] = mat.M33;
-            fmat[11] = mat.M34;
-            fmat[12] = mat.M41;
-            fmat[13] = mat.M42;
-            fmat[14] = mat.M43;
-            fmat[15] = mat.M44;
-
-            return fmat;
-        }
-
     }
 }

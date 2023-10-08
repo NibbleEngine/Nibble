@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using OpenTK;
-using NbCore.Math;
+using NbCore;
 using OpenTK.Graphics.OpenGL4;
 using NbCore.Utils;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -690,17 +690,17 @@ namespace NbCore.Primitives
             NbMatrix4 t;
 
             //Move arrowhead up in place
-            t = s * NbMatrix4.CreateRotationZ(MathUtils.radians(90));
+            t = s * NbMatrix4.CreateRotationZ(Math.Radians(90));
             XNegAxis.applyTransform(t);
-            t = s * NbMatrix4.CreateRotationZ(MathUtils.radians(-90));
+            t = s * NbMatrix4.CreateRotationZ(Math.Radians(-90));
             XPosAxis.applyTransform(t);
 
-            t = s * NbMatrix4.CreateRotationX(MathUtils.radians(90));
+            t = s * NbMatrix4.CreateRotationX(Math.Radians(90));
             ZPosAxis.applyTransform(t);
-            t = s * NbMatrix4.CreateRotationX(MathUtils.radians(-90));
+            t = s * NbMatrix4.CreateRotationX(Math.Radians(-90));
             ZNegAxis.applyTransform(t);
 
-            t = s * NbMatrix4.CreateRotationX(MathUtils.radians(180));
+            t = s * NbMatrix4.CreateRotationX(Math.Radians(180));
             YNegAxis.applyTransform(t);
             YPosAxis.applyTransform(s);
 

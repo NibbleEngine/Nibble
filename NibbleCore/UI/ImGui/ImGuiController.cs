@@ -7,7 +7,7 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using NbCore.Common;
-using NbCore.Math;
+using NbCore;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using NbCore.Platform.Windowing;

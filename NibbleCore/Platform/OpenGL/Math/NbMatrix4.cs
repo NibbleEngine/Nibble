@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using OpenTK.Mathematics;
 
-namespace NbCore.Math
+namespace NbCore
 {
     public struct NbMatrix4
     {
@@ -326,8 +326,31 @@ namespace NbCore.Math
                 _Value = a._Value - b._Value
             };
         }
-        
-        
+
+        public float[] ToArray()
+        {
+            float[] fmat = new float[16];
+            fmat[0] = M11;
+            fmat[1] = M12;
+            fmat[2] = M13;
+            fmat[3] = M14;
+            fmat[4] = M21;
+            fmat[5] = M22;
+            fmat[6] = M23;
+            fmat[7] = M24;
+            fmat[8] = M31;
+            fmat[9] = M32;
+            fmat[10] = M33;
+            fmat[11] = M34;
+            fmat[12] = M41;
+            fmat[13] = M42;
+            fmat[14] = M43;
+            fmat[15] = M44;
+
+            return fmat;
+        }
+
+
     }
     
     

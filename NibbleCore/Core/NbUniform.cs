@@ -1,5 +1,5 @@
 using NbCore.IO;
-using NbCore.Math;
+using NbCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;

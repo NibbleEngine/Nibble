@@ -1,6 +1,6 @@
 using OpenTK.Mathematics;
 
-namespace NbCore.Math
+namespace NbCore
 {
     public class NbVector2i
     {

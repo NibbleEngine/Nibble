@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using NbCore.Math;
+using NbCore;
 using NbCore.Platform.Graphics;
 using NbCore.Common;
 using NbCore.Systems;

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
-using NbCore.Math;
+using NbCore;
 
 
 namespace NbCore

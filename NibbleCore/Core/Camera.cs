@@ -1,5 +1,5 @@
 ﻿using System;
-using NbCore.Math;
+using NbCore;
 using NbCore.Common;
 using OpenTK.Mathematics;
 using static NbCore.Frustum;
@@ -82,20 +82,20 @@ namespace NbCore
 
             if (type == 0)
             {
-                projMat = NbMatrix4.CreatePerspectiveFieldOfView(MathUtils.radians(settings.FOV), aspect, settings.zNear, settings.zFar);
+                projMat = NbMatrix4.CreatePerspectiveFieldOfView(Math.Radians(settings.FOV), aspect, settings.zNear, settings.zFar);
             }
             else
             {
                 //Create orthographic projection
                 projMat = NbMatrix4.CreateOrthographic(viewport_size.X, viewport_size.Y, settings.zNear, settings.zFar);
                 //Create scale matrix based on the fov
-                NbMatrix4 scaleMat = NbMatrix4.CreateScale(0.8f * MathUtils.radians(settings.FOV));
+                NbMatrix4 scaleMat = NbMatrix4.CreateScale(0.8f * Math.Radians(settings.FOV));
             }
 
             viewMat = lookMat * projMat;
             
-            cameraRotMat = NbMatrix4.CreateRotationX(MathUtils.radians(System.Math.Clamp(pitch, -89, 89)));
-            cameraRotMat *= NbMatrix4.CreateRotationY(MathUtils.radians(-yaw - 90));
+            cameraRotMat = NbMatrix4.CreateRotationX(Math.Radians(System.Math.Clamp(pitch, -89, 89)));
+            cameraRotMat *= NbMatrix4.CreateRotationY(Math.Radians(-yaw - 90));
             
             //Calculate invert Matrices
             lookMatInv = lookMat.Inverted();
@@ -109,9 +109,9 @@ namespace NbCore
             TransformController t_controller = RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
             cam.Position = t_controller.Position;
 
-            cam.Front.X = (float)System.Math.Cos(MathUtils.radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Cos(MathUtils.radians(cam.yaw));
-            cam.Front.Y = (float)System.Math.Sin(MathUtils.radians(System.Math.Clamp(cam.pitch, -89, 89)));
-            cam.Front.Z = (float)System.Math.Cos(MathUtils.radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Sin(MathUtils.radians(cam.yaw));
+            cam.Front.X = (float)System.Math.Cos(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Cos(Math.Radians(cam.yaw));
+            cam.Front.Y = (float)System.Math.Sin(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89)));
+            cam.Front.Z = (float)System.Math.Cos(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Sin(Math.Radians(cam.yaw));
             cam.Front.Normalize();
 
             //NbQuaternion q = t_controller.Rotation;
@@ -131,8 +131,8 @@ namespace NbCore
         {
             yaw = -90f; pitch = 0;
             NbVector3 newPosition = new NbVector3(0.0f);
-            NbQuaternion yaw_q = NbQuaternion.FromAxis(BaseUp, MathUtils.radians(yaw));
-            NbQuaternion pitch_q = NbQuaternion.FromAxis(BaseRight, MathUtils.radians(pitch));
+            NbQuaternion yaw_q = NbQuaternion.FromAxis(BaseUp, Math.Radians(yaw));
+            NbQuaternion pitch_q = NbQuaternion.FromAxis(BaseRight, Math.Radians(pitch));
             NbQuaternion new_rot = pitch_q * yaw_q;
 
             //Move Camera based on the impulse
@@ -157,8 +157,8 @@ namespace NbCore
             cam.pitch -= 0.1f * RenderState.settings.CamSettings.Sensitivity * target.Rotation.Y;
             cam.yaw += 0.1f * RenderState.settings.CamSettings.Sensitivity * target.Rotation.X;
 
-            NbQuaternion yaw_q = NbQuaternion.FromAxis(BaseUp, MathUtils.radians(cam.yaw));
-            NbQuaternion pitch_q = NbQuaternion.FromAxis(BaseRight, MathUtils.radians(cam.pitch));
+            NbQuaternion yaw_q = NbQuaternion.FromAxis(BaseUp, Math.Radians(cam.yaw));
+            NbQuaternion pitch_q = NbQuaternion.FromAxis(BaseRight, Math.Radians(cam.pitch));
             NbQuaternion new_rot = pitch_q * yaw_q;
 
             //Console.WriteLine("Mouse Displacement {0} {1}",

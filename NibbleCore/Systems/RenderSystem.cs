@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-
 using NbCore;
 using NbCore.Common;
 using NbCore.Platform.Graphics;
 using NbCore.Managers;
-using NbCore.Math;
 using OpenTK.Graphics.OpenGL4;
-using OpenTK.Windowing.Common.Input;
 
 namespace NbCore.Systems
 {
@@ -662,7 +659,7 @@ namespace NbCore.Systems
         private void defferedShading()
         {
             //DEFERRED STAGE
-            Renderer.ClearColor(RenderState.settings.RenderSettings.BackgroundColor);
+            Renderer.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             Renderer.BindDrawFrameBuffer(gBuffer, new int[] { 0, 1, 2, 3 });
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             
@@ -1096,6 +1093,22 @@ namespace NbCore.Systems
                         shader, shader.CurrentState);
         }
 
+        private void composite()
+        {
+            //Draw to the composite RGB channel
+            Renderer.BindDrawFrameBuffer(renderBuffer, new int[] { 3 });
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
+            Renderer.ClearColor(RenderState.settings.RenderSettings.BackgroundColor);
+
+            GL.Enable(EnableCap.Blend);
+            GL.BlendEquation(BlendEquationMode.FuncAdd);
+            GL.BlendFunc(0, BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+
+            pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment3, renderBuffer.GetTexture(NbFBOAttachment.Attachment2));
+
+            GL.Disable(EnableCap.Blend);
+        }
+
         private void post_process()
         {
             //Actuall Post Process effects in AA space without tone mapping
@@ -1109,6 +1122,11 @@ namespace NbCore.Systems
                 fxaa(); //FXAA (INCLUDING TONE/UNTONE)
 
             tone_mapping(); //FINAL TONE MAPPING, INCLUDES GAMMA CORRECTION
+
+            //Composite 
+
+            composite();
+
 
         }
 
@@ -1147,6 +1165,7 @@ namespace NbCore.Systems
                 }
             }
 
+            //Drawing on the render buffer main channel
             Renderer.BindDrawFrameBuffer(renderBuffer);
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color);
 

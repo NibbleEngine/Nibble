@@ -1,7 +1,8 @@
 using OpenTK.Mathematics;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
-namespace NbCore.Math
+namespace NbCore
 {
     [NbSerializable]
     public struct NbVector4
@@ -152,6 +153,30 @@ namespace NbCore.Math
             return n;
         }
 
+        public static NbVector4 operator -(float a, NbVector4 b)
+        {
+            NbVector4 n = new()
+            {
+                _Value = new Vector4(a - b._Value.X,
+                    a - b._Value.Y,
+                    a - b._Value.Z,
+                    a - b._Value.W)
+            };
+            return n;
+        }
+
+        public static NbVector4 operator -(NbVector4 a, float b)
+        {
+            NbVector4 n = new()
+            {
+                _Value = new Vector4(a._Value.X - b,
+                                     a._Value.Y - b,
+                                     a._Value.Z - b,
+                                     a._Value.W - b)
+            };
+            return n;
+        }
+
         public static NbVector4 Transform(NbVector4 vec, NbQuaternion q)
         {
             return new NbVector4()
@@ -174,6 +199,17 @@ namespace NbCore.Math
             {
                 _Value = Vector4.TransformColumn(mat._Value, vec._Value)
             };
+        }
+
+        public float[] ToArray()
+        {
+            float[] fmat = new float[4];
+            fmat[0] = X;
+            fmat[1] = Y;
+            fmat[2] = Z;
+            fmat[3] = W;
+
+            return fmat;
         }
 
         public void Serialize(JsonTextWriter writer)

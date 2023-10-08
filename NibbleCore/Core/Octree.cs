@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using NbCore.Math;
+using NbCore;
 using OpenTK.Graphics.OpenGL4;
 
 namespace NbCore

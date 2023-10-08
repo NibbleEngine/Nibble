@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using NbCore;
 using NbCore.Systems;
-using NbCore.Math;
 using NbCore.Common;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -471,6 +470,16 @@ namespace NbCore.Platform.Graphics
         public void ClearColor(NbVector4 vec)
         {
             GL.ClearColor(vec.X, vec.Y, vec.Z, vec.W);
+        }
+
+        public void ClearColor(NbVector3 vec)
+        {
+            GL.ClearColor(vec.X, vec.Y, vec.Z, 1.0f);
+        }
+
+        public void ClearColor(float x, float y, float z, float w)
+        {
+            GL.ClearColor(x, y, z, w);
         }
 
         public bool AddMesh(NbMesh mesh)

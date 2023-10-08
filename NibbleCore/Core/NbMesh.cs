@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System;
-using NbCore.Math;
+using NbCore;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 
