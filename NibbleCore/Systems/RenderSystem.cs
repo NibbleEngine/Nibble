@@ -635,7 +635,7 @@ namespace NbCore.Systems
         private void renderStaticMeshes()
         {
             //Set polygon mode
-            GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
+            Renderer.SetPolygonMode(RenderState.settings.RenderSettings.RenderMode);
             
             foreach (NbMeshGroup mg in MeshGroups)
             {
@@ -780,7 +780,7 @@ namespace NbCore.Systems
             GL.BlendFunc(1, BlendingFactorSrc.Zero, BlendingFactorDest.OneMinusSrcAlpha);
 
             //Set polygon mode
-            GL.PolygonMode(MaterialFace.FrontAndBack, RenderState.settings.RenderSettings.RENDERMODE);
+            Renderer.SetPolygonMode(RenderState.settings.RenderSettings.RenderMode);
 
             foreach (NbMeshGroup mg in MeshGroups)
             {

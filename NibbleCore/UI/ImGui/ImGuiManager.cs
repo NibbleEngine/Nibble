@@ -10,25 +10,17 @@ namespace NbCore.UI.ImGui
         //ImGui Variables
         private readonly ImGuiLog LogViewer;
         private ImGuiController _controller;
-        public Engine EngineRef = null;
+        public NbWindow WindowRef { get; } = null;
 
         //ImguiPalette Colors
         //Blue
         public static System.Numerics.Vector4 DarkBlue = new(0.04f, 0.2f, 0.96f, 1.0f);
 
-        public ImGuiManager(int width, int height, Engine engine)
+        public ImGuiManager(NbWindow win)
         {
-            EngineRef = engine;
-            _controller = new ImGuiController(width, height); //Init with a start size
-
-            //Initialize items
+            WindowRef = win;
+            _controller = new ImGuiController(win); //Init with a start size
             LogViewer = new();
-        }
-
-        //Resize available imgui space
-        public virtual void Resize(int x, int y)
-        {
-            _controller.WindowResized(x, y);
         }
 
         public virtual void Update(double dt)
@@ -38,7 +30,7 @@ namespace NbCore.UI.ImGui
 
         public virtual void SetWindowRef(NbWindow win)
         {
-            _controller.SetWindowRef(win);
+            
         }
 
         public virtual void Render()

@@ -140,7 +140,27 @@ namespace NbCore
         {
             //Orphan Component will be collected from the GC
             if (HasComponent<T>())
+            {
+                foreach (Component comp in _componentMap[typeof(T)])
+                {
+                    comp.RefEntity = null;
+                    Components.Remove(comp);
+                }
+                _componentMap[typeof(T)].Clear();
                 _componentMap.Remove(typeof(T));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RemoveComponent(Component comp)
+        {
+            //Orphan Component will be collected from the GC
+            if (HasComponent(comp))
+            {
+                comp.RefEntity = null;
+                Components.Remove(comp);
+                _componentMap[comp.GetType()].Remove(comp);
+            }
         }
 
         public abstract Entity Clone();

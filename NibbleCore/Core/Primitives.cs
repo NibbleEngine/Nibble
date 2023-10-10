@@ -295,9 +295,9 @@ namespace NbCore.Primitives
                     verts[lat * (longBands + 1) * 3 + 3 * lng + 1] = center.Y + radius * y;
                     verts[lat * (longBands + 1) * 3 + 3 * lng + 2] = center.Z + radius * z;
                     
-                    normals[lat * latBands * 3 + 3 * lng + 0] = x;
-                    normals[lat * latBands * 3 + 3 * lng + 1] = y;
-                    normals[lat * latBands * 3 + 3 * lng + 2] = z;
+                    normals[lat * (longBands + 1) * 3 + 3 * lng + 0] = x;
+                    normals[lat * (longBands + 1) * 3 + 3 * lng + 1] = y;
+                    normals[lat * (longBands + 1) * 3 + 3 * lng + 2] = z;
                 }
             }
 

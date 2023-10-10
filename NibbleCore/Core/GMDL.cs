@@ -20,6 +20,12 @@ namespace NbCore
         Byte,
     }
 
+    public enum NbPolygonRenderMode
+    {
+        Fill,
+        Line
+    }
+
     public enum NbRenderPrimitive
     {
         Points,
@@ -192,6 +198,7 @@ namespace NbCore
             data.VertexBufferStride = vx_size;
             data.buffers = bufInfo.ToArray();
             data.IndexFormat = indicesType;
+            data.IndicesType = NbRenderPrimitive.Triangles;
 
             //Calculate vertex count on stream
             uint vx_count = (uint) vbuffer.Length / vx_size;

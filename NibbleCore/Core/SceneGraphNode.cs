@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using NbCore.Utils;
 using Newtonsoft.Json.Serialization;
+using NbCore.Common;
 
 namespace NbCore
 {
@@ -203,6 +204,15 @@ namespace NbCore
             {
                 Component c = IO.NbDeserializer.Deserialize(tkn) as Component;
                 node.AddComponent(c.GetType(), c);
+            }
+
+            //Compile Scripts (if any)
+            if (node.HasComponent<ScriptComponent>())
+            {
+                foreach (ScriptComponent sc in node.GetComponents<ScriptComponent>())
+                {
+                    sc.Script = RenderState.engineRef.CreateScript(sc);
+                }
             }
 
             //Deserialize Children

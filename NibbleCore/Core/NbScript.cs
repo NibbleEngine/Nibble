@@ -1,25 +1,22 @@
-﻿using System;
+﻿using NbCore.Common;
+using Newtonsoft.Json;
+using System;
 
 namespace NbCore
 {
-    public abstract class NbScript : Entity
+    public abstract class NbScript
     {
-        public ulong Hash;
         public Engine EngineRef;
+        public ulong Hash; //Unique hash per object
         
-        public NbScript(Engine _e) : base(EntityType.Script)
+        public NbScript(Engine _e)
         {
             EngineRef = _e;
         }
 
-        public override Entity Clone()
-        {
-            throw new NotImplementedException();
-        }
-        
         public void Log(string msg, LogVerbosityLevel lvl)
         {
-            Common.Callbacks.Log(this, msg, lvl);
+            Callbacks.Log(this, msg, lvl);
         }
         
         public abstract void OnFrameUpdate(SceneGraphNode node, double dt);

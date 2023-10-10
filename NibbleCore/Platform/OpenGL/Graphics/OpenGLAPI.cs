@@ -231,13 +231,14 @@ namespace NbCore.Platform.Graphics
 #endif
 
             //Default Enables
+            GL.Enable(EnableCap.LineSmooth);
             SetBlend(true);
             
             //Setup per Frame UBOs
             setupFrameUBO();
 
             //Setup SSBOs
-
+            
             setupSSBOs(SSBO_size); //Init SSBOs to 2MB
             multiBufferActiveId = 0;
             SSBOs["_COMMON_PER_MESH"] = multiBufferSSBOs[0];
@@ -445,6 +446,14 @@ namespace NbCore.Platform.Graphics
                 GL.Enable(EnableCap.CullFace);
             else
                 GL.Disable(EnableCap.CullFace);
+        }
+
+        public void SetPolygonMode(NbPolygonRenderMode mode)
+        {
+            if (mode == NbPolygonRenderMode.Line)
+                GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+            else if (mode == NbPolygonRenderMode.Fill)
+                GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         }
 
         public void SetDepthTest(bool status)

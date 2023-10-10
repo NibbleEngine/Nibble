@@ -26,22 +26,18 @@ namespace NbCore.UI.ImGui
 
         private ImGuiTexture _fontTexture;
         private ImGuiShader _shader;
-
-        private int _windowWidth;
-        private int _windowHeight;
-
-        private NbWindow WindowRef;
+        
+        private NbWindow WindowRef { get; }
         private System.Numerics.Vector2 _scaleFactor = System.Numerics.Vector2.One;
         private float _scrollFactor = 0.5f;
         
         /// <summary>
         /// Constructs a new ImGuiController.
         /// </summary>
-        public ImGuiController(int width, int height)
+        public ImGuiController(NbWindow win)
         {
-            _windowWidth = width;
-            _windowHeight = height;
-
+            WindowRef = win;
+            
             IntPtr context = ImGuiNET.ImGui.CreateContext();
             ImGuiNET.ImGui.SetCurrentContext(context);
             var io = ImGuiNET.ImGui.GetIO();
@@ -63,6 +59,7 @@ namespace NbCore.UI.ImGui
             io.ConfigFlags |= ImGuiConfigFlags.DockingEnable; //Enable Docking
             io.ConfigFlags |= ImGuiConfigFlags.ViewportsEnable; //Enable MultipleViewport
 
+            
             CreateDeviceResources();
             SetKeyMappings();
             SetPerFrameImGuiData(1f / 60f);
@@ -71,12 +68,6 @@ namespace NbCore.UI.ImGui
             
             ImGuiNET.ImGui.NewFrame();
             _frameBegun = true;
-        }
-
-        public void WindowResized(int width, int height)
-        {
-            _windowWidth = width;
-            _windowHeight = height;
         }
 
         public void DestroyDeviceObjects()
@@ -154,7 +145,6 @@ void main()
             _fontTexture.SetMinFilter(TextureMinFilter.Linear);
 
             io.Fonts.SetTexID((IntPtr)_fontTexture.GLTexture);
-
             io.Fonts.ClearTexData();
         }
 
@@ -199,19 +189,14 @@ void main()
         {
             ImGuiIOPtr io = ImGuiNET.ImGui.GetIO();
             io.DisplaySize = new System.Numerics.Vector2(
-                _windowWidth / _scaleFactor.X,
-                _windowHeight / _scaleFactor.Y);
+                WindowRef.Size.X / _scaleFactor.X,
+                WindowRef.Size.Y / _scaleFactor.Y);
             io.DisplayFramebufferScale = _scaleFactor;
             io.DeltaTime = deltaSeconds; // DeltaTime is in seconds.
             
         }
 
         readonly List<char> PressedChars = new List<char>();
-
-        public void SetWindowRef(NbWindow win)
-        {
-            WindowRef = win;
-        }
 
         private void UpdateImGuiInput()
         {
@@ -356,7 +341,7 @@ void main()
 
                         // We do _windowHeight - (int)clip.W instead of (int)clip.Y because gl has flipped Y when it comes to these coordinates
                         var clip = pcmd.ClipRect;
-                        GL.Scissor((int)clip.X, _windowHeight - (int)clip.W, (int)(clip.Z - clip.X), (int)(clip.W - clip.Y));
+                        GL.Scissor((int)clip.X, WindowRef.Size.Y - (int)clip.W, (int)(clip.Z - clip.X), (int)(clip.W - clip.Y));
                         ImGuiUtil.CheckGLError("Scissor");
 
                         if ((io.BackendFlags & ImGuiBackendFlags.RendererHasVtxOffset) != 0)

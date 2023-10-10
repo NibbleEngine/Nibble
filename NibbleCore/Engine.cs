@@ -421,7 +421,7 @@ namespace NbCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool RegisterEntity(NbScript e)
+        public bool RegisterEntity(NbScriptAsset e)
         {
             //Add Entity to main registry
             if (GetSystem<EntityRegistrySystem>().RegisterEntity(e))
@@ -450,7 +450,7 @@ namespace NbCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DestroyEntity(NbScript script)
+        public void DestroyEntity(NbScriptAsset script)
         {
             //Remove from main registry
             if (GetSystem<EntityRegistrySystem>().DeleteEntity(script))
@@ -498,12 +498,16 @@ namespace NbCore
                 RequestEntityTransformUpdate(child);
         }
 
-        public void RemoveScriptComponentFromNode(SceneGraphNode node)
+        public void RemoveScriptComponentFromNode(SceneGraphNode node, ScriptComponent sc)
         {
-            node.RemoveComponent<ScriptComponent>();
+            node.RemoveComponent(sc);
+            
             //Remove scriptcomponent from the Scripting system
             ScriptingSystem ss = GetSystem<ScriptingSystem>();
-            ss.EntityDataMap.Remove(node.ID);
+            ss.Remove(sc);
+            
+            //Dispose script component
+            sc.Dispose();
         }
         
         #region SceneManagement
@@ -602,10 +606,17 @@ namespace NbCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public NbScript GetScriptByHash(ulong hash)
+        public NbScriptAsset GetScriptAssetByHash(ulong hash)
         {
             return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.Script)
-                .Find(x => ((NbScript)x).Hash == hash) as NbScript;
+                .Find(x => ((NbScriptAsset)x).Hash == hash) as NbScriptAsset;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public NbScriptAsset GetScriptAssetByPath(string path)
+        {
+            return GetSystem<EntityRegistrySystem>().GetEntityTypeList(EntityType.Script)
+                .Find(x => ((NbScriptAsset)x).Path == path) as NbScriptAsset;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -662,6 +673,7 @@ namespace NbCore
             fileDict[typeof(NbShaderConfig)] = new();
             fileDict[typeof(NbShader)] = new();
             fileDict[typeof(NbFont)] = new();
+            fileDict[typeof(NbScriptAsset)] = new();
 
             //Fetch files
             Directory.CreateDirectory("Assets");
@@ -679,6 +691,8 @@ namespace NbCore
                     fileDict[typeof(NbShaderConfig)].Add(file);
                 else if (file.EndsWith(".nbshader"))
                     fileDict[typeof(NbShader)].Add(file);
+                else if (file.EndsWith(".nbscript"))
+                    fileDict[typeof(NbScriptAsset)].Add(file);
                 else if (file.EndsWith(".nbfont"))
                     fileDict[typeof(NbFont)].Add(file);
             }
@@ -723,6 +737,14 @@ namespace NbCore
             {
                 NbFont ob = (NbFont)NbDeserializer.Deserialize(NbDeserializer.DeserializeToToken(file));
                 RegisterEntity(ob);
+            }
+
+            //Load Scripts
+            foreach (string file in fileDict[typeof(NbScriptAsset)])
+            {
+                NbScriptAsset ob = (NbScriptAsset) NbDeserializer.Deserialize(NbDeserializer.DeserializeToToken(file));
+                if (ob != null)
+                    RegisterEntity(ob);
             }
 
         }
@@ -883,7 +905,43 @@ namespace NbCore
         //functionality to the user abstracted from engine systems and other
         //iternals. The idea is to pass a reference to an instantiated
         //engine object (whenever needed) and let the method do the rest
-        
+
+
+        #region NodeManipulation
+
+        public NbVector3 GetNodeLocation(SceneGraphNode node)
+        {
+            TransformComponent tc = node.GetComponent<TransformComponent>();
+            return tc.Data.localTranslation;
+        }
+
+        public NbQuaternion GetNodeRotation(SceneGraphNode node)
+        {
+            TransformComponent tc = node.GetComponent<TransformComponent>();
+            return tc.Data.localRotation;
+        }
+
+        public void SetNodeLocation(SceneGraphNode node, NbVector3 location)
+        {
+            TransformationSystem.SetEntityLocation(node, location);
+            RequestEntityTransformUpdate(node);
+        }
+
+        public void SetNodeRotation(SceneGraphNode node, NbQuaternion rotation)
+        {
+            TransformationSystem.SetEntityRotation(node, rotation);
+            RequestEntityTransformUpdate(node);
+        }
+
+        public void SetNodeScale(SceneGraphNode node, NbVector3 scale)
+        {
+            TransformationSystem.SetEntityScale(node, scale);
+            RequestEntityTransformUpdate(node);
+        }
+
+        #endregion  
+
+
         #region NodeGenerators
 
         public SceneGraphNode CreateLocatorNode(string name)
@@ -1177,14 +1235,14 @@ namespace NbCore
             return shader_conf;
         }
 
-        public NbScript CreateScript(string filepath)
+        public NbScriptAsset CreateScriptAsset(string path)
         {
-            NbScript script = GetSystem<ScriptingSystem>().CompileScript(filepath);
-            if (script != null)
-            {
-                RegisterEntity(script);
-            }
-            return script;
+            return new NbScriptAsset(path);
+        }
+
+        public NbScript CreateScript(ScriptComponent sc)
+        {
+            return GetSystem<ScriptingSystem>().CompileScript(sc.Asset.Path, (int)sc.RefEntity.ID);
         }
 
         public NbShader CreateShader(NbShaderConfig conf, List<string> extradirectives = null)
@@ -1248,7 +1306,7 @@ namespace NbCore
             List<NbShaderConfig> configs = new();
             List<NbMaterial> materials = new();
             List<NbTexture> textures = new();
-            List<string> scripts = new();
+            List<NbScript> scripts = new();
             List<NbMesh> meshes = new();
             List<NbMeshData> mesh_data = new();
 
@@ -1299,11 +1357,12 @@ namespace NbCore
 
                 if (node.HasComponent<ScriptComponent>())
                 {
-                    ScriptComponent sc = node.GetComponent<ScriptComponent>() as ScriptComponent;
+                    ScriptComponent sc = node.GetComponent<ScriptComponent>();
                     
-                    if (sc.SourcePath != "" && !scripts.Contains(sc.SourcePath))
+
+                    if (sc.Script != null && !scripts.Contains(sc.Script))
                     {
-                        scripts.Add(sc.SourcePath);
+                        scripts.Add(sc.Script);
                     }
                 
                 }
@@ -1346,8 +1405,8 @@ namespace NbCore
 
             writer.WritePropertyName("SCRIPTS");
             writer.WriteStartArray();
-            foreach (string script_path in scripts)
-                IO.NbSerializer.Serialize(script_path, writer);
+            foreach (NbScript script in scripts)
+                IO.NbSerializer.Serialize(script, writer);
             writer.WriteEndArray();
 
             writer.WritePropertyName("MATERIALS");
@@ -1509,5 +1568,7 @@ namespace NbCore
 
     }
 }
+
+
 
 

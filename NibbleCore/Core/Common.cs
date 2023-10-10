@@ -1,6 +1,4 @@
 ﻿using System;
-using NbCore;
-using OpenTK.Graphics.OpenGL4;
 using Newtonsoft.Json;
 using System.Reflection;
 using System.IO;
@@ -105,12 +103,12 @@ namespace NbCore.Common
 
         //Set Full rendermode by default
         [JsonIgnore]
-        public PolygonMode RENDERMODE 
+        public NbPolygonRenderMode RenderMode 
         {
             get {
                 if (RenderWireFrame)
-                    return PolygonMode.Line;
-                return PolygonMode.Fill;
+                    return NbPolygonRenderMode.Line;
+                return NbPolygonRenderMode.Fill;
             }
         }
 

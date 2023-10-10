@@ -29,11 +29,11 @@
     <ItemGroup>
       <PackageReference Include="ImGui.NET" Version="1.89.6" />
       <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-      <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
+      <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Condition="$(DefineConstants.Contains('OPENGL'))" Include="OpenTK" Version="4.7.7" />
       <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
-      <PackageReference Include="System.CodeDom" Version="6.0.0" />
+      <PackageReference Include="System.CodeDom" Version="7.0.0" />
       <PackageReference Include="TextCopy" Version="6.2.1" />
     </ItemGroup>
 
