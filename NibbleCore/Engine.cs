@@ -18,6 +18,7 @@ using OpenTK.Windowing.Common.Input;
 using Microsoft.CodeAnalysis;
 using System.Reflection.Metadata.Ecma335;
 using System.Xml.Linq;
+using NbCore.Platform.Windowing;
 
 namespace NbCore
 {
@@ -909,6 +910,12 @@ namespace NbCore
 
         #region NodeManipulation
 
+        public float[] GetNodeTransformArray(SceneGraphNode node)
+        {
+            TransformComponent tc = node.GetComponent<TransformComponent>();
+            return tc.Data.WorldTransformMat.ToArray();
+        }
+
         public NbVector3 GetNodeLocation(SceneGraphNode node)
         {
             TransformComponent tc = node.GetComponent<TransformComponent>();
@@ -1074,7 +1081,7 @@ namespace NbCore
                 Mesh = new()
                 {
                     Data = md,
-                    Hash = (ulong) mmd.GetHashCode(),
+                    Hash = NbHasher.CombineHash(mmd.GetHash(), md.Hash),
                     MetaData = mmd,
                     Material = GetMaterialByName("lightMat"),
                     Type = NbMeshType.Light
@@ -1568,6 +1575,7 @@ namespace NbCore
 
     }
 }
+
 
 
 

@@ -32,6 +32,7 @@ namespace NbCore.Platform.Graphics
         {
             { NbRenderPrimitive.Points, PrimitiveType.Points },
             { NbRenderPrimitive.Lines, PrimitiveType.Lines },
+            { NbRenderPrimitive.LineStrip, PrimitiveType.LineStrip },
             { NbRenderPrimitive.Triangles, PrimitiveType.Triangles },
             { NbRenderPrimitive.TriangleStrip, PrimitiveType.TriangleStrip },
             { NbRenderPrimitive.TriangleFan, PrimitiveType.TriangleFan },

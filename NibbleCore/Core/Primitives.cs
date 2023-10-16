@@ -1275,96 +1275,25 @@ namespace NbCore.Primitives
                                        0.0f,  0.0f,   1.0f,
                                        0.0f,  0.0f,  -1.0f};
 
-            //Apply Scane to verts
+            //Apply Scale to verts
             for (int i = 0; i < 3 * 6; i++)
                 verts[i] *= scale;
 
             int arraysize = 6 * 3;
-            int b_size = 2 * arraysize;
-            float[] verts_combined = new float[b_size];
-
-            Array.Copy(verts, 0, verts_combined, 0, arraysize);
             
             //Colors
-            float[] colors = new float[6 * 3] { 1.0f, 0.0f, 0.0f,
+            colors = new float[6 * 3] { 1.0f, 0.0f, 0.0f,
                     1.0f, 0.0f, 0.0f,
                     0.0f, 1.0f, 0.0f,
                     0.0f, 1.0f, 0.0f,
                     0.0f, 0.0f, 1.0f,
                     0.0f, 0.0f, 1.0f};
 
-            Array.Copy(colors, 0, verts_combined, arraysize, arraysize);
-
+            
             //Indices
             indices = new Int32[2 * 3] { 0, 1, 2, 3, 4, 5 };
 
-            //Replace verts
-            verts = verts_combined;
-
             geom = getGeom();
-        }
-
-        public GeomObject getGeom()
-        {
-            GeomObject geom = new();
-
-            //Set main Geometry Info
-            geom.vertCount = 6;
-            geom.indicesCount = indices.Length;
-            geom.indicesType = NbPrimitiveDataType.Int;
-
-            //Set Strides
-            geom.vx_size = 3 * 4; //3 Floats * 4 Bytes each
-
-            //Set Buffer Offsets
-            
-            NbMeshBufferInfo buf = new()
-            {
-                count = 3,
-                normalize = false,
-                offset = 0,
-                sem_text = "vPosition",
-                semantic = 0,
-                stride = 0,
-                type = NbPrimitiveDataType.Float
-            };
-            geom.bufInfo.Add(buf);
-            
-            buf = new NbMeshBufferInfo()
-            {
-                count = 3,
-                normalize = false,
-                offset = 72,
-                sem_text = "nPosition",
-                semantic = NbBufferSemantic.NORMAL,
-                stride = 0,
-                type = NbPrimitiveDataType.Float
-            };
-            geom.bufInfo.Add(buf);
-            
-            buf = new NbMeshBufferInfo()
-            {
-                count = 3,
-                normalize = false,
-                offset = 72,
-                sem_text = "bPosition",
-                semantic = NbBufferSemantic.BITANGENT,
-                stride = 0,
-                type = NbPrimitiveDataType.Float
-            };
-            geom.bufInfo.Add(buf);
-            
-            //geom.bufInfo[0] = new bufInfo(0, VertexAttribPointerType.Float, 3, 0, 0, "vPosition", false);
-            //geom.bufInfo[2] = new bufInfo(2, VertexAttribPointerType.Float, 3, 0, 72, "nPosition", false);
-            //geom.bufInfo[4] = new bufInfo(4, VertexAttribPointerType.Float, 3, 0, 72, "bPosition", false);
-
-            //Set Buffers
-            geom.ibuffer = new byte[4 * indices.Length];
-            System.Buffer.BlockCopy(indices, 0, geom.ibuffer, 0, geom.ibuffer.Length);
-            geom.vbuffer = new byte[4 * verts.Length];
-            System.Buffer.BlockCopy(verts, 0, geom.vbuffer, 0, geom.vbuffer.Length);
-
-            return geom;
         }
     }
 

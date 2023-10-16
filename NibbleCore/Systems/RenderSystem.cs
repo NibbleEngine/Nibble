@@ -881,9 +881,12 @@ namespace NbCore.Systems
             //Previous frame time but makes sense
             frameStats.Frametime = (float) dt; 
             gfTime += dt; //Update render time
-            
+
+            Renderer.SetBlend(true);
+
             //Log("Rendering Frame");
             
+
             //Deferred Shading
             defferedShading();
 
@@ -941,14 +944,17 @@ namespace NbCore.Systems
         }
         */
 
-        private void pass_tex(int to_fbo, DrawBufferMode to_channel, NbTexture InTex)
+        
+
+
+        private void pass_tex(int to_fbo, DrawBufferMode to_channel, NbTexture InTex, ClearBufferMask mask = ClearBufferMask.ColorBufferBit)
         {
             //passthrough a texture to the specified to_channel of the to_fbo
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, to_fbo);
             GL.DrawBuffer(to_channel);
 
             GL.Disable(EnableCap.DepthTest); //Disable Depth test
-            GL.Clear(ClearBufferMask.ColorBufferBit);
+            GL.Clear(mask);
             NbShader shader = ShaderMgr.GetShaderByType(NbShaderType.PASSTHROUGH_SHADER);
             //render_quad(new string[] {"sizeX", "sizeY" }, new float[] { to_buf_size[0], to_buf_size[1]}, new string[] { "InTex" }, new int[] { InTex }, shader);
             shader.ClearCurrentState();
@@ -1100,13 +1106,15 @@ namespace NbCore.Systems
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             Renderer.ClearColor(RenderState.settings.RenderSettings.BackgroundColor);
 
-            GL.Enable(EnableCap.Blend);
-            GL.BlendEquation(BlendEquationMode.FuncAdd);
-            GL.BlendFunc(0, BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+            //The following settings are the defaults
+            //GL.Enable(EnableCap.Blend);
+            //GL.BlendEquation(BlendEquationMode.FuncAdd);
+            //GL.BlendFunc(0, BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+
 
             pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment3, renderBuffer.GetTexture(NbFBOAttachment.Attachment2));
 
-            GL.Disable(EnableCap.Blend);
+            //GL.Disable(EnableCap.Blend);
         }
 
         private void post_process()
@@ -1165,8 +1173,8 @@ namespace NbCore.Systems
                 }
             }
 
-            //Drawing on the render buffer main channel
-            Renderer.BindDrawFrameBuffer(renderBuffer);
+            //Drawing on the render buffer second channel
+            Renderer.BindDrawFrameBuffer(renderBuffer, NbFBOAttachment.Attachment0);
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color);
 
             for (int i = 0; i < mesh.InstanceCount; i++)
@@ -1197,8 +1205,8 @@ namespace NbCore.Systems
 
                 GL.StencilFunc(StencilFunction.Notequal, 0x0, 0xFF);
                 GL.Disable(EnableCap.DepthTest);
-                GL.Enable(EnableCap.Blend);
-                GL.BlendEquation(BlendEquationMode.FuncAdd);
+                //GL.Enable(EnableCap.Blend);
+                //GL.BlendEquation(BlendEquationMode.FuncAdd);
                 GL.BlendFunc(0, BlendingFactorSrc.One, BlendingFactorDest.One);
                 GL.Enable(EnableCap.CullFace);
                 GL.CullFace(CullFaceMode.Front);
@@ -1208,14 +1216,26 @@ namespace NbCore.Systems
                 Renderer.RenderMesh(mesh, i);
             }
 
-            
             //Cleanup
             GL.DepthMask(true);
-            GL.Disable(EnableCap.StencilTest);
-            GL.CullFace(CullFaceMode.Back);
             Renderer.SetDepthTest(true);
+            GL.Disable(EnableCap.StencilTest);
             Renderer.SetCullFace(true);
-            Renderer.SetBlend(false);
+            GL.CullFace(CullFaceMode.Back);
+            
+
+            //Copy Channels
+            //Blend lighting and albedo info on the main channel of the renderbuffer
+            
+            //GL.BlendEquation(BlendEquationMode.FuncAdd);
+            GL.BlendFunc(0, BlendingFactorSrc.OneMinusDstAlpha, BlendingFactorDest.DstAlpha);
+
+            //Copy the albedo info to the accumulated lighting info on channel 0
+            pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment0, gBuffer.GetTexture(0), ClearBufferMask.None);
+
+            //Renderer.SetBlend(false);
+            //Restore default blendfunc
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
         }
 
 #endregion Rendering Methods
@@ -1261,7 +1281,7 @@ namespace NbCore.Systems
                 NbShader shader = ShaderMgr.ShaderCompilationQueue.Dequeue();
                 EngineRef.CompileShader(shader);
             }
-            
+
             //Render Scene
             render(dt); //Render Everything
         }

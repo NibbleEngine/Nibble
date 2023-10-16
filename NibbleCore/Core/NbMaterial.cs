@@ -25,7 +25,8 @@ namespace NbCore
         _NB_EMISSIVE_MAP,
         _NB_UNLIT,
         _NB_VERTEX_COLOUR,
-
+        _NB_SMOOTH_LINES,
+        
         //OLD FLAGS TO BE TRANSFORMED
         //_F01_DIFFUSEMAP, //CHECK
         //_F02_SKINNED, //CHECK
@@ -125,7 +126,7 @@ namespace NbCore
             NbMaterialFlagEnum._NB_EMISSIVE_MAP,
             NbMaterialFlagEnum._NB_UNLIT,
             NbMaterialFlagEnum._NB_VERTEX_COLOUR,
-
+            NbMaterialFlagEnum._NB_SMOOTH_LINES,
 
             NbMaterialFlagEnum._F09_TRANSPARENT,
             NbMaterialFlagEnum._F22_TRANSPARENT_SCALAR,
@@ -187,6 +188,10 @@ namespace NbCore
 
         public void UpdateUniform(NbUniform uf)
         {
+            //Prevent crashes with empty uniforms during shader recompilation
+            if (uf.ShaderBinding == null)
+                return;
+
             if (Shader.uniformLocations.ContainsKey(uf.ShaderBinding))
             {
                 NbUniformFormat fmt = Shader.uniformLocations[uf.ShaderBinding];

@@ -27,7 +27,6 @@
 	</PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="ImGui.NET" Version="1.89.6" />
       <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
@@ -38,7 +37,24 @@
     </ItemGroup>
 
 	<ItemGroup>
+		<Reference Include="ImGui.NET">
+			<HintPath>..\lib\ImGui.NET.dll</HintPath>
+		 </Reference>
+		<Reference Include="ImGuizmo.NET">
+			<HintPath>..\lib\ImGuizmo.NET.dll</HintPath>
+		</Reference>
+		<!-->Reference Include="Nibble">
+	  <HintPath>lib\Nibble.dll</HintPath>
+	</Reference-->
+	</ItemGroup>
+
+
+
+	<ItemGroup>
 		<Content Include="..\lib\cimgui\linux-x64\cimgui.so" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' ">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="..\lib\cimgui\win-x64\cimgui.dll" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' ">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
@@ -70,6 +86,7 @@
 		<Message Text="Hooya $(TargetPath)" Importance="high" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleNMSPlugin\lib" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleAssimpPlugin\lib" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleZwiftPlugin\lib" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleNMSPLugin\lib" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NibbleEditor\lib" />
 		<Copy SourceFiles="$(TargetPath)" DestinationFolder="..\..\NIbbleExamples\NibbleOpenGL\deps" />

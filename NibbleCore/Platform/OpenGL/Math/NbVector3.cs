@@ -1,5 +1,7 @@
 using OpenTK.Mathematics;
 using Newtonsoft.Json;
+using MathNet.Numerics.RootFinding;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace NbCore
 {
@@ -7,7 +9,8 @@ namespace NbCore
     public struct NbVector3
     {
         internal Vector3 _Value;
-
+        public static NbVector3 Zero = new NbVector3(0.0f);
+        
         public NbVector3(NbVector3 vec)
         {
             _Value = vec._Value;
@@ -134,6 +137,11 @@ namespace NbCore
             return v * a;
         }
 
+        public static NbVector3 operator *(NbVector3 a, NbVector3 b)
+        {
+            return new NbVector3(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
+        }
+
         public static NbVector3 Transform(NbVector3 vec, NbQuaternion q)
         {
             return new NbVector3()
@@ -190,6 +198,8 @@ namespace NbCore
             writer.WriteValue(_Value.Z);
             writer.WriteEndObject();
         }
+
+            
 
         public static NbVector3 Deserialize(Newtonsoft.Json.Linq.JToken token)
         {

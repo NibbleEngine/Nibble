@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using ImGuizmoNET;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -41,6 +42,9 @@ namespace NbCore.UI.ImGui
             IntPtr context = ImGuiNET.ImGui.CreateContext();
             ImGuiNET.ImGui.SetCurrentContext(context);
             var io = ImGuiNET.ImGui.GetIO();
+            ImGuizmo.Enable(true);
+            ImGuizmo.SetImGuiContext(context);
+            
             //io.Fonts.AddFontDefault();
             //Load Logo Texture to the GPU
             byte[] fontdata = Callbacks.getResourceFromAssembly(Assembly.GetEntryAssembly(),
@@ -67,6 +71,7 @@ namespace NbCore.UI.ImGui
             pinnedArray.Free();
             
             ImGuiNET.ImGui.NewFrame();
+            ImGuizmoNET.ImGuizmo.BeginFrame();
             _frameBegun = true;
         }
 
@@ -179,6 +184,7 @@ void main()
             
             _frameBegun = true;
             ImGuiNET.ImGui.NewFrame();
+            ImGuizmo.BeginFrame();
         }
 
         /// <summary>
@@ -316,7 +322,7 @@ void main()
             for (int n = 0; n < draw_data.CmdListsCount; n++)
             {
                 ImDrawListPtr cmd_list = draw_data.CmdListsRange[n];
-
+                
                 GL.NamedBufferSubData(_vertexBuffer, IntPtr.Zero, cmd_list.VtxBuffer.Size * Unsafe.SizeOf<ImDrawVert>(), cmd_list.VtxBuffer.Data);
                 ImGuiUtil.CheckGLError($"Data Vert {n}");
 

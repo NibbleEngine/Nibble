@@ -95,6 +95,7 @@ namespace NbCore.Platform.Windowing
                 APIVersion = new System.Version(opengl_major, opengl_minor),
                 API = ContextAPI.OpenGL,
                 Profile = ContextProfile.Core,
+                NumberOfSamples = 4,
 #if OPENGL_DEBUG
                 Flags = ContextFlags.Debug
 #else

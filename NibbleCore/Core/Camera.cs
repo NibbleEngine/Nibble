@@ -77,6 +77,7 @@ namespace NbCore
 
             NbVector2i viewport_size = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().GetViewportSize();
             float aspect = (float)viewport_size.X / viewport_size.Y;
+            //float aspect = 1.6f;
 
             CameraSettings settings = RenderState.settings.CamSettings;
 

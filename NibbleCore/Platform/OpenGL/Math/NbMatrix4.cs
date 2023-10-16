@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using OpenTK.Mathematics;
 
 namespace NbCore
@@ -171,6 +172,7 @@ namespace NbCore
         public NbVector4 Row1=> new NbVector4(_Value.Row1.X, _Value.Row1.Y, _Value.Row1.Z, _Value.Row1.W);
         public NbVector4 Row2=> new NbVector4(_Value.Row2.X, _Value.Row2.Y, _Value.Row2.Z, _Value.Row2.W);
         public NbVector4 Row3=> new NbVector4(_Value.Row3.X, _Value.Row3.Y, _Value.Row3.Z, _Value.Row3.W);
+
 
         public float M11
         {

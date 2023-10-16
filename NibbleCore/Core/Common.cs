@@ -6,7 +6,12 @@ using System.Linq;
 
 namespace NbCore.Common
 {
-    
+    public enum ApplicationMode
+    {
+        EDIT,
+        GAME
+    }
+
     public static class RenderState
     {
         //Keep the view rotation Matrix
@@ -29,6 +34,8 @@ namespace NbCore.Common
         public static string StatusString = "";
 
         public static bool enableShaderCompilationLog = true;
+        
+        public static ApplicationMode AppMode = ApplicationMode.EDIT;
     }
 
     public enum ViewSettingsEnum

@@ -28,6 +28,7 @@ namespace NbCore {
 		//public byte[] bdata2;//pointer to an array of bytes that contains the remaining surfaces such as; mipmap levels, faces in a cube map, depths in a volume texture.
 	    public List<byte[]> mipMaps = new List<byte[]>(); //TODO load and upload them separately.
 		public int blockSize = 16;
+		public bool Compressed = false;
 
 		public DDSImage()
 		{
@@ -35,7 +36,12 @@ namespace NbCore {
 		}
 
 	    public DDSImage(byte[] rawdata) {
-            using MemoryStream ms = new MemoryStream(rawdata); using (BinaryReader r = new BinaryReader(ms))
+
+            //Default Values
+            blockSize = 16;
+			ArraySize = 1;
+			
+			using MemoryStream ms = new MemoryStream(rawdata); using (BinaryReader r = new BinaryReader(ms))
 			{
 				dwMagic = r.ReadInt32();
 				if (dwMagic != 0x20534444)
@@ -44,8 +50,12 @@ namespace NbCore {
 				}
 
 				header = ReadHeader(r);
+                Width = header.dwWidth;
+                Height = header.dwHeight;
+                Depth = header.dwDepth;
+                MipMapCount = header.dwMipMapCount;
 
-				if (header.ddspf.dwFourCC == FOURCC_DX10) /*DX10*/
+                if (header.ddspf.dwFourCC == FOURCC_DX10) /*DX10*/
 				{
 					header10 = Read_DDS_HEADER10(r);
 					//Override PitchOrLinearSize in case of BC7 textures
@@ -63,88 +73,92 @@ namespace NbCore {
 
 			}
 
-			//Save Attributes
-			Width = header.dwWidth;
-			Height = header.dwHeight;
-			Depth = header.dwDepth;
-			MipMapCount = header.dwMipMapCount;
-			blockSize = 16;
-			Faces = 1;
+            Compressed = false;
+            switch (header.ddspf.dwFourCC)
+            {
+                //Uncompressed
+                //TODO: Read masks and figure out the correct format
+                case (0x0):
+                    pif = NbTextureInternalFormat.RGBA8;
+                    Compressed = false;
+                    break;
+                //DXT1
+                case (0x31545844):
+                    pif = NbTextureInternalFormat.DXT1;
+                    Compressed = true;
+                    blockSize = 8;
+                    break;
+                //DXT5
+                case (0x35545844):
+                    pif = NbTextureInternalFormat.DXT5;
+                    Compressed = true;
+                    break;
+                //ATI2A2XY
+                case (0x32495441):
+                    pif = NbTextureInternalFormat.RGTC2; //Normal maps are probably never srgb
+                    Compressed = true;
+                    break;
+                //DXT10 HEADER
+                case (0x30315844):
+                    {
+                        switch (header10.dxgiFormat)
+                        {
+                            case (DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM):
+                                pif = NbTextureInternalFormat.BC7;
+                                Compressed = true;
+                                break;
+                            case (DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM):
+                                pif = NbTextureInternalFormat.DXT5;
+                                Compressed = true;
+                                break;
+                            case (DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM):
+                                pif = NbTextureInternalFormat.DXT1;
+                                Compressed = true;
+                                break;
+                            case (DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM):
+                                pif = NbTextureInternalFormat.RGTC2;
+                                Compressed = true;
+                                break;
+                            case (DXGI_FORMAT.DXGI_FORMAT_R8G8_UNORM):
+                                pif = NbTextureInternalFormat.R8G8;
+                                Compressed = false;
+                                break;
+
+                            default:
+                                throw new ApplicationException("Unimplemented DX10 Texture Pixel format");
+                        }
+                        //Load arrays from the header10
+                        ArraySize = System.Math.Max(ArraySize, (int)header10.arraySize);
+                        break;
+                    }
+                default:
+                    throw new ApplicationException($"Unimplemented Pixel format {header.ddspf.dwFourCC}");
+            }
+
+
+			//Identify texture target
 
 			if (header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_VOLUME))
-            {	
-				target = NbTextureTarget.Texture2DArray;
-			} else if (header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_POSITIVEX) ||
+			{
+				target = NbTextureTarget.Texture3D;
+			}
+			else if (header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_POSITIVEX) ||
 					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_NEGATIVEX) ||
 					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_POSITIVEY) ||
 					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_NEGATIVEY) ||
 					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_POSITIVEZ) ||
 					   header.dwCaps2.HasFlag(DDSCAPS2.DDSCAPS2_CUBEMAP_NEGATIVEZ))
-            {
-				Common.Callbacks.Assert(false, "Inconsistent flag");
-			} else
-            {
-				if (Depth > 1)
-					target = NbTextureTarget.Texture2DArray;
-				else
-					target = NbTextureTarget.Texture2D;
-			}
-
-			bool compressed = false;
-			switch (header.ddspf.dwFourCC)
 			{
-				//Uncompressed
-				//TODO: Read masks and figure out the correct format
-				case (0x0):
-					pif = NbTextureInternalFormat.RGBA8;
-					compressed = false;
-					break;
-				//DXT1
-				case (0x31545844):
-					pif = NbTextureInternalFormat.DXT1;
-					compressed = true;
-					blockSize = 8;
-					break;
-				//DXT5
-				case (0x35545844):
-					pif = NbTextureInternalFormat.DXT5;
-					compressed = true;
-					break;
-				//ATI2A2XY
-				case (0x32495441):
-					pif = NbTextureInternalFormat.RGTC2; //Normal maps are probably never srgb
-					compressed = true;
-					break;
-				//DXT10 HEADER
-				case (0x30315844):
-					{
-						switch (header10.dxgiFormat)
-						{
-							case (DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM):
-								pif = NbTextureInternalFormat.BC7;
-								compressed = true;
-								break;
-							case (DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM):
-								pif = NbTextureInternalFormat.DXT5;
-								compressed = true;
-								break;
-							case (DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM):
-								pif = NbTextureInternalFormat.DXT1;
-								compressed = true;
-								break;
-							case (DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM):
-								pif = NbTextureInternalFormat.RGTC2;
-								compressed = true;
-								break;
-							default:
-								throw new ApplicationException("Unimplemented DX10 Texture Pixel format");
-						}
-						break;
-					}
-				default:
-					throw new ApplicationException($"Unimplemented Pixel format {header.ddspf.dwFourCC}");
+				Common.Callbacks.Assert(false, "Cube Maps not yet supported");
 			}
-
+			else if (header.dwFlags.HasFlag(DWFLAGS.DDSD_DEPTH) || ArraySize > 1)
+			{
+				target = NbTextureTarget.Texture2DArray;
+			}
+			else
+			{
+				target = NbTextureTarget.Texture2D;
+            }
 		}
 
 		public override MemoryStream Export()
@@ -406,13 +420,6 @@ namespace NbCore {
 		public static bool ReplaceTextureLayer(DDSImage new_image, DDSImage target, int depth_id)
 		{
 			//At first do a sanity check between the two images
-
-			if (new_image.header.dwMipMapCount != target.header.dwMipMapCount)
-			{
-				//Callbacks.Logger.Log($"Incorrect MipmapCount for the new image. Correct Value : { target.header.dwMipMapCount}", LogVerbosityLevel.WARNING);
-				return false;
-			}
-
 			if (new_image.header.dwWidth != target.header.dwWidth)
 			{
 				//Callbacks.Logger.Log($"Incorrect Width for the new image. Correct Value : { target.header.dwWidth}", LogVerbosityLevel.WARNING);
@@ -444,7 +451,7 @@ namespace NbCore {
 			int depth_count = target.header.dwDepth;
 			int w = new_image.header.dwWidth;
 			int h = new_image.header.dwHeight;
-			for (int i = 0; i < target.header.dwMipMapCount; i++)
+			for (int i = 0; i < System.Math.Max(System.Math.Min(target.header.dwMipMapCount, new_image.header.dwMipMapCount), 1); i++)
 			{
 				target_image_offset += temp_size * depth_id;
 				byte[] temp_data = new byte[temp_size];
@@ -845,3 +852,4 @@ namespace NbCore {
 		D3D10_RESOURCE_DIMENSION_TEXTURE3D = 4
 	}
 }
+

@@ -1,5 +1,7 @@
 ﻿
 
+using Microsoft.CodeAnalysis.Operations;
+
 namespace NbCore
 {
     public class NbMeshMetaData
@@ -80,6 +82,12 @@ namespace NbCore
             hash = NbHasher.CombineHash(hash, (uint) BoundHullStart);
             hash = NbHasher.CombineHash(hash, (uint) BoundHullEnd);
             return hash;
+        }
+
+        public override int GetHashCode()
+        {
+            throw new System.Exception("Use GetHash() INSTEAD");
+
         }
     }
 }

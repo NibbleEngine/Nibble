@@ -138,8 +138,8 @@ namespace NbCore.Platform.Graphics
             { NbTextureInternalFormat.RGBA16F, InternalFormat.Rgba16f},
             { NbTextureInternalFormat.RGBA32F, InternalFormat.Rgba32f},
             { NbTextureInternalFormat.DEPTH, InternalFormat.DepthComponent},
-            { NbTextureInternalFormat.DEPTH24_STENCIL8, InternalFormat.Depth24Stencil8}
-
+            { NbTextureInternalFormat.DEPTH24_STENCIL8, InternalFormat.Depth24Stencil8},
+            { NbTextureInternalFormat.R8G8, InternalFormat.Rg8},
         };
 
         public static readonly Dictionary<NbTextureInternalFormat, PixelType> PixelTypeMap = new()
@@ -231,9 +231,20 @@ namespace NbCore.Platform.Graphics
 #endif
 
             //Default Enables
-            GL.Enable(EnableCap.LineSmooth);
+            GL.Disable(EnableCap.LineSmooth);
+            GL.Disable(EnableCap.Dither);
+            GL.Disable(EnableCap.PolygonSmooth);
+            GL.Enable(EnableCap.PolygonSmooth);
+            GL.Hint(HintTarget.LineSmoothHint, HintMode.DontCare);
+            GL.Hint(HintTarget.PointSmoothHint, HintMode.DontCare);
+            GL.Hint(HintTarget.PolygonSmoothHint, HintMode.DontCare);
+            //GL.LineWidth(1);
+
+            //Enable blend by default
+            GL.BlendEquation(BlendEquationMode.FuncAdd);
             SetBlend(true);
-            
+            Console.WriteLine($"Init {GL.GetInteger(GetPName.Blend)}");
+
             //Setup per Frame UBOs
             setupFrameUBO();
 
@@ -1121,7 +1132,7 @@ namespace NbCore.Platform.Graphics
             int h = tex_data.Height;
             int d = System.Math.Max(1, tex_data.Depth);
             int mm_count = System.Math.Max(1, tex_data.MipMapCount); //Fix the counter to 1 to handle textures with single mipmaps
-            int face_count = tex_data.Faces;
+            int face_count = tex_data.ArraySize;
 
             TextureTarget gl_target = TextureTargetMap[tex_data.target];
             InternalFormat gl_pif = InternalFormatMap[tex_data.pif];
@@ -1132,31 +1143,40 @@ namespace NbCore.Platform.Graphics
             {
                 int temp_size = 0;
 
-
-                if (tex_data.header.ddspf.dwFlags.HasFlag(DDS_PIXELFORMAT_DWFLAGS.DDPF_RGB))
+                if (!tex_data.Compressed)
                 {
+                    int bbp = 0x0; //bytes per pixel
+                    PixelFormat pf = PixelFormat.Rgba;
+                    PixelInternalFormat pif = PixelInternalFormat.Rgba8;
+                    if (tex_data.header10 != null && tex_data.header10.dxgiFormat == DXGI_FORMAT.DXGI_FORMAT_R8G8_UNORM)
+                    {
+                        bbp = 2;
+                        pf = PixelFormat.Rg;
+                    } else if (tex_data.header.ddspf.dwFlags.HasFlag(DDS_PIXELFORMAT_DWFLAGS.DDPF_RGB)){
+                        bbp = 4;
+                        
+                        //Figure out channel ordering
+                        if (tex_data.header.ddspf.dwRBitMask == 0x000000FF &&
+                            tex_data.header.ddspf.dwGBitMask == 0x0000FF00 &&
+                            tex_data.header.ddspf.dwBBitMask == 0x00FF0000 &&
+                            tex_data.header.ddspf.dwABitMask == 0xFF000000)
+                        {
+                            pf = PixelFormat.Rgba;
+                        }
+                        else if (tex_data.header.ddspf.dwRBitMask == 0x00FF0000 &&
+                            tex_data.header.ddspf.dwGBitMask == 0x0000FF00 &&
+                            tex_data.header.ddspf.dwBBitMask == 0x000000FF &&
+                            tex_data.header.ddspf.dwABitMask == 0xFF000000)
+                        {
+                            pf = PixelFormat.Bgra;
+                        }
+                    }
+
                     //Calculate size of the top layer
-                    temp_size = w * h * d * 4;
+                    temp_size = w * h * d * face_count * bbp;
                     byte[] temp_data = new byte[temp_size];
                     System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size);
                         
-                    //Figure out channel ordering
-                    PixelFormat pf = PixelFormat.Rgba;
-                    PixelInternalFormat pif = PixelInternalFormat.Rgba8;
-                    if (tex_data.header.ddspf.dwRBitMask == 0x000000FF &&
-                        tex_data.header.ddspf.dwGBitMask == 0x0000FF00 &&
-                        tex_data.header.ddspf.dwBBitMask == 0x00FF0000 &&
-                        tex_data.header.ddspf.dwABitMask == 0xFF000000)
-                    {
-                        pf = PixelFormat.Rgba;
-                    }
-                    else if (tex_data.header.ddspf.dwRBitMask == 0x00FF0000 &&
-                        tex_data.header.ddspf.dwGBitMask == 0x0000FF00 &&
-                        tex_data.header.ddspf.dwBBitMask == 0x000000FF &&
-                        tex_data.header.ddspf.dwABitMask == 0xFF000000)
-                    {
-                        pf = PixelFormat.Bgra;
-                    }
                     
                     switch (gl_target)
                     {
@@ -1164,6 +1184,9 @@ namespace NbCore.Platform.Graphics
                             GL.TexImage2D(gl_target, i, pif, w, h, 0, pf, PixelType.UnsignedByte, temp_data);
                             break;
                         case TextureTarget.Texture2DArray:
+                            GL.TexImage3D(gl_target, i, pif, w, h, tex_data.ArraySize, 0, pf, PixelType.UnsignedByte, temp_data);
+                            break;
+                        case TextureTarget.Texture3D:
                             GL.TexImage3D(gl_target, i, pif, w, h, d, 0, pf, PixelType.UnsignedByte, temp_data);
                             break;
                     }
@@ -1178,10 +1201,10 @@ namespace NbCore.Platform.Graphics
                     switch (gl_target)
                     {
                         case TextureTarget.Texture3D:
-                            //GL.CompressedTexImage3D(gl_target, i, InternalFormat.CompressedSrgbAlphaS3tcDxt5Ext, w, h, d, 0, temp_size, temp_data);
+                            GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, d, 0, temp_size, temp_data);
                             break;
                         case TextureTarget.Texture2DArray:
-                            GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, d * face_count, 0, temp_size, temp_data);
+                            GL.CompressedTexImage3D(gl_target, i, gl_pif, w, h, System.Math.Max(face_count, d), 0, temp_size, temp_data);
                             break;
                         default:
                             GL.CompressedTexImage2D(gl_target, i, gl_pif, w, h, 0, temp_size, temp_data);
@@ -1503,6 +1526,13 @@ namespace NbCore.Platform.Graphics
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, fbo.fbo);
             GL.Viewport(0, 0, fbo.Size.X, fbo.Size.Y);
             GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+        }
+
+        public void BindDrawFrameBuffer(FBO fbo, NbFBOAttachment channel)
+        {
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, fbo.fbo);
+            GL.Viewport(0, 0, fbo.Size.X, fbo.Size.Y);
+            GL.DrawBuffer((DrawBufferMode) FramebufferAttachmentMap[channel]);
         }
 
         public void BindDrawFrameBuffer(FBO fbo, int[] drawBuffers)

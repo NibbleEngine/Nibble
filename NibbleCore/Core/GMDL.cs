@@ -30,6 +30,7 @@ namespace NbCore
     {
         Points,
         Lines,
+        LineStrip,
         Triangles,
         TriangleFan,
         TriangleStrip,
@@ -189,7 +190,7 @@ namespace NbCore
             return NbMeshData.Create();
         }
 
-        public NbMeshData GetMeshData()
+        public NbMeshData GetMeshData(NbRenderPrimitive renderPrim = NbRenderPrimitive.Triangles)
         {
             NbMeshData data = new();
             data.Hash = NbHasher.CombineHash(NbHasher.Hash(vbuffer), NbHasher.Hash(ibuffer));
@@ -198,7 +199,7 @@ namespace NbCore
             data.VertexBufferStride = vx_size;
             data.buffers = bufInfo.ToArray();
             data.IndexFormat = indicesType;
-            data.IndicesType = NbRenderPrimitive.Triangles;
+            data.IndicesType = renderPrim;
 
             //Calculate vertex count on stream
             uint vx_count = (uint) vbuffer.Length / vx_size;
@@ -212,33 +213,6 @@ namespace NbCore
             Buffer.BlockCopy(ibuffer, 0, data.IndexBuffer, 0, ibuffer.Length);
 
             return data;
-        }
-
-        public static NbVector3 get_vec3_half(BinaryReader br)
-        {
-            NbVector3 temp = new();
-            //Get Values
-            uint val1 = br.ReadUInt16();
-            uint val2 = br.ReadUInt16();
-            uint val3 = br.ReadUInt16();
-            //Convert Values
-            temp.X = Half.decompress(val1);
-            temp.Y = Half.decompress(val2);
-            temp.Z = Half.decompress(val3);
-            //Console.WriteLine("half {0} {1} {2}", temp[0],temp[1],temp[2]);
-            return temp;
-        }
-
-        public static NbVector2 get_vec2_half(BinaryReader br)
-        {
-            NbVector2 temp = new();
-            //Get values
-            uint val1 = br.ReadUInt16();
-            uint val2 = br.ReadUInt16();
-            //Convert Values
-            temp.X = Half.decompress(val1);
-            temp.Y = Half.decompress(val2);
-            return temp;
         }
 
         public override GeomObject Clone()
