@@ -1135,13 +1135,6 @@ namespace NbCore
         
         #region GLRelatedRequests
 
-        public void CreateTexture(NbTexture tex)
-        {
-            GraphicsAPI.GenerateTexture(tex);
-            GraphicsAPI.UploadTexture(tex);
-            GraphicsAPI.setupTextureParameters(tex, tex.Data.WrapMode, tex.Data.MagFilter, tex.Data.MinFilter, 8.0f);
-        }
-
         public NbTexture CreateTexture(string filepath,
             NbTextureWrapMode wrapmode, NbTextureFilter minFilter, NbTextureFilter magFilter, bool gamma_correct, bool keepData = false)
         {
@@ -1170,13 +1163,7 @@ namespace NbCore
                         break;
                 }
             }
-            GraphicsAPI.GenerateTexture(tex);
-            GraphicsAPI.UploadTexture(tex);
-            GraphicsAPI.setupTextureParameters(tex, wrapmode, magFilter, minFilter, 8.0f);
             
-
-            if (!keepData)
-                tex.Data.Data = null;
             //renderSys.TextureMgr.AddTexture(tex);
             return tex;
         }

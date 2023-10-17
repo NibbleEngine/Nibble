@@ -55,7 +55,7 @@ namespace NbCore.UI.ImGui
             GL.TextureStorage2D(GLTexture, MipmapLevels, InternalFormat, Width, Height);
             ImGuiUtil.CheckGLError("Storage2d");
 
-            GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, texture.Data);
+            GL.TextureSubImage2D(GLTexture, 0, 0, 0, Width, Height, PixelFormat.Bgra, PixelType.UnsignedByte, texture.DataBuffer);
             
             ImGuiUtil.CheckGLError("SubImage");
             if (generateMipmaps) GL.GenerateTextureMipmap(GLTexture);

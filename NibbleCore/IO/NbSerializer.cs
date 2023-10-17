@@ -85,7 +85,7 @@ namespace NbCore.IO
             if (type.IsDefined(typeof(NbSerializable), false))
             {
                 //Call custom Serializer
-                MethodInfo c_serializer = type.GetMethod("Serialize");
+                MethodInfo c_serializer = type.GetMethod("Serialize", BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.Public);
 
                 if (c_serializer != null)
                 {

@@ -31,11 +31,11 @@ namespace NbCore
             switch (tex.pif)
             {
                 case NbTextureInternalFormat.RGBA8:
-                    return Image.LoadPixelData<Rgba32>(tex.Data, tex.Width, tex.Height);
+                    return Image.LoadPixelData<Rgba32>(tex.DataBuffer, tex.Width, tex.Height);
                 case NbTextureInternalFormat.RGBA16F:
-                    return Image.LoadPixelData<RgbaVector>(tex.Data, tex.Width, tex.Height);
+                    return Image.LoadPixelData<RgbaVector>(tex.DataBuffer, tex.Width, tex.Height);
                 case NbTextureInternalFormat.BGRA8:
-                    return Image.LoadPixelData<Bgra32>(tex.Data, tex.Width, tex.Height);
+                    return Image.LoadPixelData<Bgra32>(tex.DataBuffer, tex.Width, tex.Height);
             }
             return null;
         }
@@ -62,7 +62,7 @@ namespace NbCore
             {
                 Width = image.Width,
                 Height = image.Height,
-                Data = pixel_data,
+                DataBuffer = pixel_data,
                 MipMapCount = 1,
                 Depth = 1,
                 target = NbTextureTarget.Texture2D,

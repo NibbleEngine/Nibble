@@ -5,7 +5,8 @@ using NbCore;
 using System.IO;
 using NbCore.Common;
 using Newtonsoft.Json;
-
+using NbCore.IO;
+using Newtonsoft.Json.Linq;
 
 namespace NbCore
 {
@@ -60,11 +61,12 @@ namespace NbCore
     [NbSerializable]
     public class NbTexture : Entity
     {
-        public int texID = -1;
+        public int GpuID = -1;
         private bool disposed = false;
         public new string Path = "";
         public NbTextureData Data;
         public int Refs = 0;
+        public bool KeepDataBufferAfterUpload = true;
         
         //Empty Initializer
         public NbTexture() :base(EntityType.Texture) { }
@@ -134,10 +136,10 @@ namespace NbCore
             if (disposing)
             {
                 //Free other resources here
-                if (texID != -1)
+                if (GpuID != -1)
                 {
-                    GL.DeleteTexture(texID);
-                    texID = -2;
+                    GL.DeleteTexture(GpuID);
+                    GpuID = -2;
                 }
                     
                 base.Dispose(disposing);
@@ -193,23 +195,29 @@ namespace NbCore
             return (ulong)((r << 24) | (g << 16) | (b << 8) | a);
         }
 
-
-        public void Serialize(JsonWriter writer)
+        public void Serialize(JsonTextWriter writer)
         {
             writer.WriteStartObject();
             writer.WritePropertyName("ObjectType");
             writer.WriteValue(GetType().ToString());
             writer.WritePropertyName("Path");
             writer.WriteValue(Path);
+            writer.WritePropertyName("Data");
+            NbSerializer.Serialize(Data, writer);
             writer.WriteEndObject();
         }
 
         public static NbTexture Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
             string path = token.Value<string>("Path");
-            //TODO : Serialize texture parameters as well
-            return RenderState.engineRef.CreateTexture(path,
-                        NbTextureWrapMode.Repeat, NbTextureFilter.Linear, NbTextureFilter.Linear, false);
+            NbTextureData data = (NbTextureData) NbDeserializer.Deserialize(token.Value<JToken>("Data"));
+
+
+            return new NbTexture()
+            {
+                Path = path,
+                Data = data
+            };
         }
 
     }

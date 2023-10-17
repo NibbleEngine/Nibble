@@ -603,7 +603,7 @@ namespace NbCore.Platform.Graphics
                             NbSampler nbSampler = (NbSampler) sstate.Value;
                             GL.Uniform1(shader.uniformLocations[key].loc, sampler_id);
                             GL.ActiveTexture(TextureUnit.Texture0 + sampler_id);
-                            GL.BindTexture(TextureTargetMap[nbSampler.Texture.Data.target], nbSampler.Texture.texID);
+                            GL.BindTexture(TextureTargetMap[nbSampler.Texture.Data.target], nbSampler.Texture.GpuID);
                             sampler_id++;
                             break;
                         }
@@ -970,7 +970,7 @@ namespace NbCore.Platform.Graphics
         public static void queryTextureParameters(NbTexture tex)
         {
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
-            GL.BindTexture(gl_target, tex.texID);
+            GL.BindTexture(gl_target, tex.GpuID);
             GL.GetTexParameter(gl_target, GetTextureParameter.TextureMagFilter, out int mag_filter);
             GL.GetTexParameter(gl_target, GetTextureParameter.TextureMinFilter, out int min_filter);
             GL.GetTexParameter(gl_target, GetTextureParameter.TextureWrapS, out int wrapmode);
@@ -983,7 +983,7 @@ namespace NbCore.Platform.Graphics
         public static void setupTextureMagFilter(NbTexture tex, NbTextureFilter magFilter)
         {
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
-            GL.BindTexture(gl_target, tex.texID);
+            GL.BindTexture(gl_target, tex.GpuID);
             if (magFilter == NbTextureFilter.NearestMipmapLinear || magFilter == NbTextureFilter.LinearMipmapNearest)
                 Log($"Non compatible mag filter {magFilter}. No Mag filter used", LogVerbosityLevel.WARNING);
             else
@@ -997,7 +997,7 @@ namespace NbCore.Platform.Graphics
         public static void setupTextureMinFilter(NbTexture tex, NbTextureFilter minFilter)
         {
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
-            GL.BindTexture(gl_target, tex.texID);
+            GL.BindTexture(gl_target, tex.GpuID);
             GL.TexParameter(gl_target, TextureParameterName.TextureMinFilter, TextureFilterMap[minFilter]);
             GL.BindTexture(gl_target, 0); //Unbind
         }
@@ -1005,7 +1005,7 @@ namespace NbCore.Platform.Graphics
         public static void setupTextureParameters(NbTexture tex, NbTextureWrapMode wrapMode, NbTextureFilter magFilter, NbTextureFilter minFilter, float af_amount)
         {
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
-            GL.BindTexture(gl_target, tex.texID);
+            GL.BindTexture(gl_target, tex.GpuID);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapS, TextureWrapMap[wrapMode]);
             GL.TexParameter(gl_target, TextureParameterName.TextureWrapT, TextureWrapMap[wrapMode]);
             
@@ -1043,7 +1043,7 @@ namespace NbCore.Platform.Graphics
             }
                 
             var pixels = new byte[pix_size * tex.Data.Width * tex.Data.Height];
-            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
+            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.GpuID);
             GL.GetTexImage(TextureTargetMap[tex.Data.target], 0, 
                 PixelFormat.Rgba, pxtype, pixels);
             
@@ -1053,21 +1053,21 @@ namespace NbCore.Platform.Graphics
 
         public void DeleteTexture(NbTexture tex)
         {
-            if (tex.texID > 0)
-                GL.DeleteTexture(tex.texID);
+            if (tex.GpuID > 0)
+                GL.DeleteTexture(tex.GpuID);
         }
 
         public static void GenerateTexture(NbTexture tex)
         {
             //Upload to GPU
-            tex.texID = GL.GenTexture();
+            tex.GpuID = GL.GenTexture();
 
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
             //InternalFormat gl_pif = InternalFormatMap[tex.Data.pif];
 
             int mm_count = System.Math.Max(tex.Data.MipMapCount, 1);
 
-            GL.BindTexture(gl_target, tex.texID);
+            GL.BindTexture(gl_target, tex.GpuID);
             //TODO: Remove all parameter settings from here, and make it possible to set them using other API calls
             //When manually loading mipmaps, levels should be loaded first
             GL.TexParameter(gl_target, TextureParameterName.TextureBaseLevel, 0);
@@ -1115,15 +1115,15 @@ namespace NbCore.Platform.Graphics
             
             if (upload_data)
                 GL.TexImage2D(gl_target, 0, (PixelInternalFormat)gl_pif, tex_data.Width, tex_data.Height, 0,
-                    PixelFormatMap[tex_data.pif], gl_pxtype, tex_data.Data);
+                    PixelFormatMap[tex_data.pif], gl_pxtype, tex_data.DataBuffer);
             else
                 GL.TexImage2D(gl_target, 0, (PixelInternalFormat)gl_pif, tex_data.Width, tex_data.Height, 0,
                     PixelFormatMap[tex_data.pif], gl_pxtype, IntPtr.Zero);
             
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
             GL.BindTexture(gl_target, 0);
-        }
 
+        }
 
         private static void UploadTextureData(int tex_id, DDSImage tex_data)
         {
@@ -1175,7 +1175,7 @@ namespace NbCore.Platform.Graphics
                     //Calculate size of the top layer
                     temp_size = w * h * d * face_count * bbp;
                     byte[] temp_data = new byte[temp_size];
-                    System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size);
+                    System.Buffer.BlockCopy(tex_data.DataBuffer, offset, temp_data, 0, temp_size);
                         
                     
                     switch (gl_target)
@@ -1197,7 +1197,7 @@ namespace NbCore.Platform.Graphics
                     //Calculate size of the top layer
                     temp_size = w * h * d * face_count * tex_data.blockSize / 16;
                     byte[] temp_data = new byte[temp_size];
-                    System.Buffer.BlockCopy(tex_data.Data, offset, temp_data, 0, temp_size);
+                    System.Buffer.BlockCopy(tex_data.DataBuffer, offset, temp_data, 0, temp_size);
                     switch (gl_target)
                     {
                         case TextureTarget.Texture3D:
@@ -1240,13 +1240,13 @@ namespace NbCore.Platform.Graphics
 
         public static void UploadTexture(NbTexture tex)
         {
-            Callbacks.Assert(tex.texID >= 0, "Invalid texture ID");
+            Callbacks.Assert(tex.GpuID >= 0, "Invalid texture ID");
             if (tex.Data is DDSImage) 
-                UploadTextureData(tex.texID, tex.Data as DDSImage);
+                UploadTextureData(tex.GpuID, tex.Data as DDSImage);
             else if (tex.Data != null)
-                UploadTextureData(tex.texID, tex.Data);
+                UploadTextureData(tex.GpuID, tex.Data);
             else
-                UploadTextureData(tex.texID, tex.Data, false);
+                UploadTextureData(tex.GpuID, tex.Data, false);
         }
 
         #endregion
@@ -1367,7 +1367,7 @@ namespace NbCore.Platform.Graphics
             {
                 GL.Uniform1(Material.Shader.uniformLocations[s.ShaderBinding].loc, s.SamplerID);
                 GL.ActiveTexture(TextureUnit.Texture0 + s.SamplerID);
-                GL.BindTexture(TextureTargetMap[s.Texture.Data.target], s.Texture.texID);
+                GL.BindTexture(TextureTargetMap[s.Texture.Data.target], s.Texture.GpuID);
             }
         }
         
@@ -1463,7 +1463,7 @@ namespace NbCore.Platform.Graphics
             //Copies the attachment of the currently bound framebuffer to the texture
             
             //Copy the read buffers to the  
-            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.texID);
+            GL.BindTexture(TextureTargetMap[tex.Data.target], tex.GpuID);
             GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
             Callbacks.Assert(tex.Data.target == NbTextureTarget.Texture2D,
                             "fbo texture target is not correct");
@@ -1475,7 +1475,7 @@ namespace NbCore.Platform.Graphics
         public void AddFrameBufferAttachment(FBO fbo, NbTexture tex, NbFBOAttachment attachment_id)
         {
             int handle = GL.GenTexture();
-            tex.texID = handle;
+            tex.GpuID = handle;
             PixelInternalFormat pif = (PixelInternalFormat)InternalFormatMap[tex.Data.pif];
             PixelType pixel_type = PixelTypeMap[tex.Data.pif];
             TextureTarget textarget = TextureTargetMap[tex.Data.target];

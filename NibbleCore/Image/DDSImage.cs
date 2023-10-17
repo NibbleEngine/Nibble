@@ -1,7 +1,11 @@
-﻿using System;
+﻿using NbCore.Common;
+using NbCore.Platform.Windowing;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace NbCore {
@@ -9,6 +13,8 @@ namespace NbCore {
 	//This class should be abstracted and based on the game we should provide
 	//different loaders since everyone is using completely custom assets.
 	//This is created based on NMS DDS format
+	
+	[NbSerializable]
 	public class DDSImage : NbTextureData
 	{
 		private const int DDPF_ALPHAPIXELS = 0x00000001;
@@ -27,8 +33,8 @@ namespace NbCore {
 		public DDS_HEADER_DXT10 header10 = null;//If the DDS_PIXELFORMAT dwFlags is set to DDPF_FOURCC and dwFourCC is set to "DX10"
 		//public byte[] bdata2;//pointer to an array of bytes that contains the remaining surfaces such as; mipmap levels, faces in a cube map, depths in a volume texture.
 	    public List<byte[]> mipMaps = new List<byte[]>(); //TODO load and upload them separately.
-		public int blockSize = 16;
-		public bool Compressed = false;
+		public int blockSize = 8; //Assume DXT1 by default
+		public bool Compressed = true; //Assume compressed by default 
 
 		public DDSImage()
 		{
@@ -69,7 +75,7 @@ namespace NbCore {
 					}
 				}
 
-				Data = r.ReadBytes((int)(r.BaseStream.Length - r.BaseStream.Position)); //Read everything
+				DataBuffer = r.ReadBytes((int)(r.BaseStream.Length - r.BaseStream.Position)); //Read everything
 
 			}
 
@@ -175,7 +181,7 @@ namespace NbCore {
 					WriteHeader10(r);
 				}
 				
-				r.Write(Data);
+				r.Write(DataBuffer);
 			}
 
 			return ms;
@@ -455,8 +461,8 @@ namespace NbCore {
 			{
 				target_image_offset += temp_size * depth_id;
 				byte[] temp_data = new byte[temp_size];
-				Buffer.BlockCopy(new_image.Data, new_image_offset, temp_data, 0, temp_size);
-				Buffer.BlockCopy(temp_data, 0, target.Data, target_image_offset, temp_size);
+				Buffer.BlockCopy(new_image.DataBuffer, new_image_offset, temp_data, 0, temp_size);
+				Buffer.BlockCopy(temp_data, 0, target.DataBuffer, target_image_offset, temp_size);
 
 				target_image_offset += temp_size * (depth_count - depth_id);
 				new_image_offset += temp_size;
@@ -603,7 +609,7 @@ namespace NbCore {
 			}
 
 			byte[] temp_data = new byte[temp_size];
-			Buffer.BlockCopy(Data, offset, temp_data, 0, temp_size);
+			Buffer.BlockCopy(DataBuffer, offset, temp_data, 0, temp_size);
 
 			return temp_data;
         }
@@ -632,13 +638,109 @@ namespace NbCore {
 			if (data.Length != temp_size)
 				return false;
 
-			Buffer.BlockCopy(data, 0, Data, offset, temp_size);
+			Buffer.BlockCopy(data, 0, DataBuffer, offset, temp_size);
 			return true;
 
 
 		}
 
-	}
+		public void Serialize(JsonTextWriter writer)
+		{
+			writer.WriteStartObject();
+            writer.WritePropertyName("ObjectType");
+            writer.WriteValue(GetType().ToString());
+            //Main Texture Data Props
+            writer.WritePropertyName("Width");
+            writer.WriteValue(Width);
+            writer.WritePropertyName("Height");
+            writer.WriteValue(Height);
+            writer.WritePropertyName("Depth");
+            writer.WriteValue(Depth);
+            writer.WritePropertyName("ArraySize");
+            writer.WriteValue(ArraySize);
+            writer.WritePropertyName("MipMapCount");
+            writer.WriteValue(MipMapCount);
+            writer.WritePropertyName("Compressed");
+            writer.WriteValue(Compressed);
+            writer.WritePropertyName("BlockSize");
+            writer.WriteValue(blockSize);
+            writer.WritePropertyName("Target");
+			writer.WriteValue(target);
+			writer.WritePropertyName("InternalFormat");
+			writer.WriteValue(pif);
+            writer.WritePropertyName("MinFilter");
+            writer.WriteValue(MinFilter);
+            writer.WritePropertyName("MagFilter");
+            writer.WriteValue(MagFilter);
+            writer.WritePropertyName("WrapMode");
+            writer.WriteValue(WrapMode);
+			
+			//Data (if any)
+			writer.WritePropertyName("Data");
+			
+			if (DataBuffer != null)
+			{
+                //Serialize Vertex Buffer
+                MemoryStream ms = new MemoryStream(DataBuffer);
+                ms.Seek(0, SeekOrigin.Begin);
+                MemoryStream vx_out = new MemoryStream();
+
+                using (var compressor = new DeflateStream(vx_out, CompressionLevel.Optimal))
+                {
+                    ms.CopyTo(compressor);
+                }
+
+                byte[] compressed_stream = vx_out.ToArray();
+				writer.WriteValue(Convert.ToBase64String(compressed_stream));
+            } else
+                writer.WriteValue("");
+
+
+			writer.WriteEndObject();
+		}
+
+        public static DDSImage Deserialize(Newtonsoft.Json.Linq.JToken token)
+        {
+			DDSImage _data = new DDSImage();
+			//Get main Data Props
+			_data.Width = token.Value<int>("Width");
+            _data.Height = token.Value<int>("Height");
+            _data.Depth = token.Value<int>("Depth");
+            _data.ArraySize = token.Value<int>("ArraySize");
+            _data.MipMapCount = token.Value<int>("MipMapCount");
+			_data.Compressed = token.Value<bool>("Compressed");
+            _data.blockSize = token.Value<int>("BlockSize");
+            _data.target = (NbTextureTarget) token.Value<int>("Target");
+            _data.pif = (NbTextureInternalFormat)token.Value<int>("IndexFormat");
+            _data.MinFilter = (NbTextureFilter) token.Value<int>("MinFilter");
+            _data.MagFilter = (NbTextureFilter) token.Value<int>("MagFilter");
+			_data.WrapMode = (NbTextureWrapMode) token.Value<int>("WrapMode");
+
+			//Try to parse data
+			string datastring = token.Value<string>("Data");
+
+			if (datastring != "")
+			{
+                //Deserialize data buffer
+                byte[] buffer_bytes = Convert.FromBase64String(datastring);
+                MemoryStream vx_in = new MemoryStream(buffer_bytes);
+                vx_in.Seek(0, SeekOrigin.Begin);
+                MemoryStream vx_out = new MemoryStream();
+
+                using (var decompressor = new DeflateStream(vx_in, CompressionMode.Decompress))
+                {
+                    decompressor.CopyTo(vx_out);
+                }
+
+                _data.DataBuffer = vx_out.ToArray();
+            }
+			else
+				_data.DataBuffer = null;
+
+			return _data;
+        }
+
+    }
 
 	[Flags]
 	public enum DWFLAGS

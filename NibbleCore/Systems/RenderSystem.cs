@@ -763,8 +763,8 @@ namespace NbCore.Systems
             Renderer.CopyDepthChannel(gBuffer, renderBuffer);
             
             //Render the first pass in the first channel of the pbuf
-            GL.ClearTexImage(renderBuffer.GetTexture(NbFBOAttachment.Attachment1).texID, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
-            GL.ClearTexImage(renderBuffer.GetTexture(NbFBOAttachment.Attachment2).texID, 0, PixelFormat.Rgba, PixelType.Float, new float[] { 1.0f, 1.0f ,1.0f, 1.0f});
+            GL.ClearTexImage(renderBuffer.GetTexture(NbFBOAttachment.Attachment1).GpuID, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
+            GL.ClearTexImage(renderBuffer.GetTexture(NbFBOAttachment.Attachment2).GpuID, 0, PixelFormat.Rgba, PixelType.Float, new float[] { 1.0f, 1.0f ,1.0f, 1.0f});
 
             //Enable writing to both channels after clearing
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
@@ -1156,11 +1156,11 @@ namespace NbCore.Systems
             
             //Upload samplers
             string[] sampler_names = new string[] { "albedoTex", "normalTex", "parameterTex01", "parameterTex02", "depthTex" };
-            int[] texture_ids = new int[] { gBuffer.GetTexture(NbFBOAttachment.Attachment0).texID,
-                                            gBuffer.GetTexture(NbFBOAttachment.Attachment1).texID,
-                                            gBuffer.GetTexture(NbFBOAttachment.Attachment2).texID,
-                                            gBuffer.GetTexture(NbFBOAttachment.Attachment3).texID,
-                                            gBuffer.GetTexture(NbFBOAttachment.Depth).texID};
+            int[] texture_ids = new int[] { gBuffer.GetTexture(NbFBOAttachment.Attachment0).GpuID,
+                                            gBuffer.GetTexture(NbFBOAttachment.Attachment1).GpuID,
+                                            gBuffer.GetTexture(NbFBOAttachment.Attachment2).GpuID,
+                                            gBuffer.GetTexture(NbFBOAttachment.Attachment3).GpuID,
+                                            gBuffer.GetTexture(NbFBOAttachment.Depth).GpuID};
             TextureTarget[] sampler_targets = new TextureTarget[] { TextureTarget.Texture2D, TextureTarget.Texture2D,
                                                             TextureTarget.Texture2D, TextureTarget.Texture2D, TextureTarget.Texture2D };
             for (int i = 0; i < sampler_names.Length; i++)

@@ -68,7 +68,9 @@ namespace NbCore
             if (n.Parent != null)
             {
                 //Connect node's parent to node's children
-                foreach (SceneGraphNode child in n.Children)
+                //Temporarily cache the node's children because it could be modified
+                List<SceneGraphNode> _children = new List<SceneGraphNode>(n.Children);
+                foreach (SceneGraphNode child in _children)
                     child.SetParent(n.Parent);
 
                 //Disconnect node from parent
