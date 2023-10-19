@@ -135,7 +135,11 @@ namespace NbCore.Common
         
         //Properties
         public bool UseFXAA = true;
+        public bool UseToneMapping = true;
+        //Bloom Settings
         public bool UseBLOOM = true;
+        public float BloomIntensity = 0.05f;
+        public float BloomFilterRadius = 0.005f;
 
         [JsonIgnore]
         public bool UseFrustumCulling = true;
@@ -307,3 +311,4 @@ namespace NbCore.Common
         }
     }
 }
+

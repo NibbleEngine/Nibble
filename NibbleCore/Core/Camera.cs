@@ -56,7 +56,7 @@ namespace NbCore
         public Camera(int mode, bool cull) : base(EntityType.Camera)
         {
             //Set fov on init
-            Primitives.Box _box = new Primitives.Box(1.0f, 1.0f, 1.0f, new NbVector3(1.0f), true);
+            Box _box = new Box(1.0f, 1.0f, 1.0f, new NbVector3(1.0f), true);
             _box.Dispose();
             type = mode;
             culling = cull;
