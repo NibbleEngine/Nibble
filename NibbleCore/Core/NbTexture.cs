@@ -45,6 +45,8 @@ namespace NbCore
         RGTC2,
         BC7,
         DX10,
+        R11FG11FB10F,
+        RGB8,
         R8G8,
         RGBA8,
         SRGBA8,

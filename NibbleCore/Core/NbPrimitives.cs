@@ -7,9 +7,9 @@ using OpenTK.Graphics.OpenGL4;
 using NbCore.Utils;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace NbCore.Primitives
+namespace NbCore
 {
-    public class Primitive : IDisposable
+    public class NbPrimitive : IDisposable
     {
         internal float[] verts;
         internal float[] normals;
@@ -202,9 +202,9 @@ namespace NbCore.Primitives
             return geom;
         }
 
-        public static Primitive mergePrimitives(Primitive p1, Primitive p2)
+        public static NbPrimitive mergePrimitives(NbPrimitive p1, NbPrimitive p2)
         {
-            Primitive p = new();
+            NbPrimitive p = new();
 
             //Merge vertices
             p.verts = new float[p1.verts.Length + p2.verts.Length];
@@ -259,7 +259,8 @@ namespace NbCore.Primitives
         }
     }
 
-    public class Sphere : Primitive {
+    public class Sphere : NbPrimitive
+    {
         
         //Constructor
         public Sphere(NbVector3 center, float radius, int bands=10)
@@ -328,7 +329,7 @@ namespace NbCore.Primitives
 
     }
 
-    public class Capsule : Primitive
+    public class Capsule : NbPrimitive
     {
         //Constructor
         public Capsule(NbVector3 center, float height, float radius)
@@ -400,7 +401,7 @@ namespace NbCore.Primitives
 
     }
 
-    public class Cylinder : Primitive
+    public class Cylinder : NbPrimitive
     {
         //Constructor
         public Cylinder(float radius, float height, NbVector3 color, bool generateGeom = false, int latBands = 10)
@@ -510,7 +511,7 @@ namespace NbCore.Primitives
         }
     }
 
-    public class Arrow : Primitive
+    public class Arrow : NbPrimitive
     {
         public Arrow(float radius, float length, NbVector3 color, bool generateGeom=false, int latBands = 10)
         {
@@ -526,7 +527,7 @@ namespace NbCore.Primitives
             cyl.applyTransform(t);
 
             //Merge Primitives
-            Primitive p = mergePrimitives(head, cyl);
+            NbPrimitive p = mergePrimitives(head, cyl);
             verts = p.verts;
             indices = p.indices;
             normals = p.normals;
@@ -604,8 +605,7 @@ namespace NbCore.Primitives
         }
     }
 
-
-    public class SquareCross2D : Primitive
+    public class SquareCross2D : NbPrimitive
     {
         public SquareCross2D(float size, NbVector3 col, bool generateGeom = false)
         {
@@ -627,8 +627,8 @@ namespace NbCore.Primitives
 
             //Merge
 
-            Primitive p = mergePrimitives(b2, b3);
-            Primitive p2 = mergePrimitives(b4, b5);
+            NbPrimitive p = mergePrimitives(b2, b3);
+            NbPrimitive p2 = mergePrimitives(b4, b5);
             p = mergePrimitives(p, p2);
             p = mergePrimitives(p, b1);
 
@@ -642,11 +642,11 @@ namespace NbCore.Primitives
         }
     }
 
-    public class Cross : Primitive
+    public class Cross : NbPrimitive
     {
         public Cross(float scale, bool generateGeom = false)
         {
-            Primitive p = generatePrimitive(new NbVector3(scale));
+            NbPrimitive p = generatePrimitive(new NbVector3(scale));
 
             verts = p.verts;
             indices = p.indices;
@@ -660,7 +660,7 @@ namespace NbCore.Primitives
 
         public Cross(NbVector3 scale, bool generateGeom = false)
         {
-            Primitive p = generatePrimitive(scale);
+            NbPrimitive p = generatePrimitive(scale);
             
             verts = p.verts;
             indices = p.indices;
@@ -672,7 +672,7 @@ namespace NbCore.Primitives
         }
 
         
-        private static Primitive generatePrimitive(NbVector3 scale)
+        private static NbPrimitive generatePrimitive(NbVector3 scale)
         {
             Arrow XPosAxis = new(0.02f, scale.X, new NbVector3(10.5f, 0.0f, 0.0f), false, 5);
             Arrow XNegAxis = new(0.01f, scale.X, new NbVector3(10.5f, 0.1f, 0.1f), false, 5);
@@ -705,11 +705,11 @@ namespace NbCore.Primitives
             YPosAxis.applyTransform(s);
 
             //Merge Primitives
-            Primitive py = mergePrimitives(YPosAxis, YNegAxis);
-            Primitive px = mergePrimitives(XNegAxis, XPosAxis);
-            Primitive pz = mergePrimitives(ZNegAxis, ZPosAxis);
+            NbPrimitive py = mergePrimitives(YPosAxis, YNegAxis);
+            NbPrimitive px = mergePrimitives(XNegAxis, XPosAxis);
+            NbPrimitive pz = mergePrimitives(ZNegAxis, ZPosAxis);
 
-            Primitive p = mergePrimitives(py, px);
+            NbPrimitive p = mergePrimitives(py, px);
             p = mergePrimitives(p, pz);
             
 
@@ -815,7 +815,7 @@ namespace NbCore.Primitives
         }
     }
 
-    public class ArrowHead : Primitive
+    public class ArrowHead : NbPrimitive
     {
         //Constructor
         public ArrowHead(float radius, float height, NbVector3 col, bool generateGeom=false, int latBands=10)
@@ -954,7 +954,7 @@ namespace NbCore.Primitives
 
     }
 
-    public class Box : Primitive
+    public class Box : NbPrimitive
     {
         //Constructor
         public Box(float width, float height, float depth, NbVector3 col, bool generateGeom = false)
@@ -1070,7 +1070,7 @@ namespace NbCore.Primitives
 
     }
 
-    public class Quad :Primitive
+    public class Quad : NbPrimitive
     {
         
         //Constructor
@@ -1102,16 +1102,6 @@ namespace NbCore.Primitives
                 1.0f, 0.0f,
                 0.0f, 1.0f,
                 1.0f, 1.0f};
-
-            float[] quadcolors = new float[6 * 3]
-            {
-                1.0f, 0.0f, 0.0f,
-                0.0f, 1.0f, 0.0f,
-                1.0f,  1.0f, 0.0f,
-                1.0f,  1.0f, 0.0f,
-                0.0f, 1.0f, 0.0f,
-                0.0f,  0.0f, 1.0f
-            };
 
             //Indices
             indices = new Int32[2 * 3] { 0, 2, 1, 3, 5, 4 };
@@ -1263,41 +1253,83 @@ namespace NbCore.Primitives
 
     }
 
-    public class LineCross : Primitive
+    public class LineCross : NbPrimitive
     {
         //Constructor
-        public LineCross(float scale)
+        public LineCross(float line_width, float scale)
         {
-            verts = new float[6 * 3] { 1.0f,  0.0f,   0.0f,
-                                      -1.0f,  0.0f,   0.0f,
-                                       0.0f,  1.0f,   0.0f,
-                                       0.0f, -1.0f,   0.0f,
-                                       0.0f,  0.0f,   1.0f,
-                                       0.0f,  0.0f,  -1.0f};
+            verts = new float[12 * 3] { 
+                                       //Y,X axis 
+                                       -line_width,    scale,   0.0f,
+                                        line_width,    scale,   0.0f,
+                                        line_width,   -scale,   0.0f,
+                                        -line_width,  -scale,   0.0f,
+                                        //X,Z axis 
+                                        0.0f,  -line_width,   scale,
+                                        0.0f,  line_width,    scale,
+                                        0.0f,  line_width,   -scale,
+                                        0.0f,  -line_width,  -scale,
+                                        //X,Z axis 
+                                        scale,  -line_width,   0.0f,
+                                        scale,   line_width,   0.0f,
+                                       -scale,   line_width,   0.0f,
+                                       -scale,  -line_width,   0.0f
+            };
 
-            //Apply Scale to verts
-            for (int i = 0; i < 3 * 6; i++)
-                verts[i] *= scale;
+            //Normals
+            normals = new float[12 * 3] { 
+                                       //Y,X axis 
+                                        0.0f,    0.0f,   1.0f,
+                                        0.0f,    0.0f,   1.0f,
+                                        0.0f,    0.0f,   1.0f,
+                                        0.0f,    0.0f,   1.0f,
+                                        //X,Z axis 
+                                        0.0f,  1.0f,    0.0f,
+                                        0.0f,  1.0f,    0.0f,
+                                        0.0f,  1.0f,    0.0f,
+                                        0.0f,  1.0f,    0.0f,
+                                        //X,Z axis 
+                                       1.0f,   0.0f,    0.0f,
+                                       1.0f,   0.0f,    0.0f,
+                                       1.0f,   0.0f,    0.0f,
+                                       1.0f,   0.0f,    0.0f
+            };
 
-            int arraysize = 6 * 3;
-            
+
             //Colors
-            colors = new float[6 * 3] { 1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f};
+            colors = new float[12 * 3] { 1.0f, 0.0f, 0.0f,
+                                         1.0f, 0.0f, 0.0f,
+                                         1.0f, 0.0f, 0.0f,
+                                         1.0f, 0.0f, 0.0f,
+                                         0.0f, 1.0f, 0.0f,
+                                         0.0f, 1.0f, 0.0f,
+                                         0.0f, 1.0f, 0.0f,
+                                         0.0f, 1.0f, 0.0f,
+                                         0.0f, 0.0f, 1.0f,
+                                         0.0f, 0.0f, 1.0f,
+                                         0.0f, 0.0f, 1.0f,
+                                         0.0f, 0.0f, 1.0f };
 
-            
             //Indices
-            indices = new Int32[2 * 3] { 0, 1, 2, 3, 4, 5 };
+            indices = new Int32[12 * 3] { 0, 1, 2,
+                                          0, 2, 1,
+                                          2, 3, 0,
+                                          3, 2, 0,
+                                          4, 5, 6,
+                                          5, 4, 6,
+                                          6, 7, 4,
+                                          7, 6, 4,
+                                          8, 9, 10,
+                                          9, 8, 10,
+                                          10, 11, 8,
+                                          11, 10, 8
+            };
 
             geom = getGeom();
         }
     }
 
-    public class LineSegment : Primitive
+    public class LineSegment : NbPrimitive
     {
         //Constructor
         public LineSegment(int instance_num, NbVector3 color)

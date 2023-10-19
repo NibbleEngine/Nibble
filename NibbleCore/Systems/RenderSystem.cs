@@ -5,6 +5,8 @@ using NbCore.Common;
 using NbCore.Platform.Graphics;
 using NbCore.Managers;
 using OpenTK.Graphics.OpenGL4;
+using NbCore.Platform.Windowing;
+using System.Reflection.Metadata;
 
 namespace NbCore.Systems
 {
@@ -41,7 +43,7 @@ namespace NbCore.Systems
         public GraphicsAPI Renderer;
 
         //Entity Managers used by the rendering system
-        public readonly ObjectManager<ulong, NbMeshData> MeshDataMgr = new();
+        public readonly NbObjectManager<ulong, NbMeshData> MeshDataMgr = new();
         public readonly NbMaterialManager MaterialMgr = new();
         public readonly GeometryManager GeometryMgr = new();
         public readonly TextureManager TextureMgr = new();
@@ -53,12 +55,12 @@ namespace NbCore.Systems
         public int last_text_height;
         
         private NbVector2i ViewportSize = new NbVector2i(1024, 768);
-        private const int blur_fbo_scale = 2;
         private double gfTime = 0.0f;
 
         //Render Buffers
         private FBO gBuffer;
         private FBO renderBuffer;
+        private FBO bloomBuffer;
         
         //Octree Structure
         private Octree octree;
@@ -108,37 +110,50 @@ namespace NbCore.Systems
             octree = new Octree(MAX_OCTREE_WIDTH);
 
             //Initialize Gbuffer
-            setupGBuffer();
+            setupFBOs();
 
             Log("Resource Manager Initialized", LogVerbosityLevel.INFO);
         }
 
-        public void setupGBuffer()
+        public void setupFBOs()
         {
             //Create gbuffer
             gBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y, FBOOptions.None);
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment0); //albedo
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment1); //normals
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment2); //info1
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment3); //info2
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Depth); //depth
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment0, ViewportSize); //albedo
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment1, ViewportSize); //normals
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment2, ViewportSize); //info1
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment3, ViewportSize); //info2
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Depth, ViewportSize); //depth
             
+            //Create renderbuffer
             renderBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y, FBOOptions.None);
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment0); //HDR Channel 0
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment1); //HDR Channel 1
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment2);   //RGB Channel 0
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment3);   //composite
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH24_STENCIL8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.DepthStencil);  //depth
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment0, ViewportSize); //HDR Channel 0
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment1, ViewportSize); //HDR Channel 1
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment2, ViewportSize);   //RGB Channel
+            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH24_STENCIL8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.DepthStencil, ViewportSize);  //depth
 
+            //Create bloombuffer
+            bloomBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y, FBOOptions.None);
+
+            NbVector2i bloomMipSize = new(ViewportSize.X, ViewportSize.Y);
+            for (int i = 0; i < 6; i++)
+            {
+                bloomBuffer.AddAttachment(NbTextureTarget.Texture2D,
+                NbTextureInternalFormat.R11FG11FB10F, NbTextureFilter.Linear, NbTextureFilter.Linear, (NbFBOAttachment) i, bloomMipSize, false);
+                bloomMipSize.X /= 2;
+                bloomMipSize.Y /= 2;
+            }
+            
             //Rebind the default framebuffer
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             Log("FBOs Initialized", LogVerbosityLevel.INFO);
         }
 
-        public void deleteGBuffer()
+        public void deleteFBOs()
         {
             gBuffer.Dispose();
             renderBuffer.Dispose();
+            bloomBuffer.Dispose();
         }
 
         public FBO getRenderFBO()
@@ -288,9 +303,8 @@ namespace NbCore.Systems
         {
             ViewportSize.X = x;
             ViewportSize.Y = y;
-            //Renderer.ResizeViewport(x, y);
-            deleteGBuffer();
-            setupGBuffer();
+            deleteFBOs();
+            setupFBOs();
         }
 
         #region MeshGroupActions
@@ -662,7 +676,9 @@ namespace NbCore.Systems
             Renderer.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             Renderer.BindDrawFrameBuffer(gBuffer, new int[] { 0, 1, 2, 3 });
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
-            
+            //Renderer.SetDepthTest(true);
+            //GL.DepthMask(true);
+
             renderGeometry(); //Renders main geometry
 
             //Copy depth buffer to the render Buffer
@@ -882,13 +898,13 @@ namespace NbCore.Systems
             frameStats.Frametime = (float) dt; 
             gfTime += dt; //Update render time
 
-            Renderer.SetBlend(true);
-
             //Log("Rendering Frame");
             
 
             //Deferred Shading
             defferedShading();
+
+            
 
             //Forward Shading
             //forwardShading();
@@ -970,83 +986,146 @@ namespace NbCore.Systems
         }
 
 
-        //private void bloom()
-        //{
-        //    //Load Programs
-        //    GLSLShaderConfig gs_horizontal_blur_program = EngineRef.GetShaderByType(NbShaderType.GAUSSIAN_HORIZONTAL_BLUR_SHADER);
-        //    GLSLShaderConfig gs_vertical_blur_program = EngineRef.GetShaderByType(NbShaderType.GAUSSIAN_VERTICAL_BLUR_SHADER);
-        //    GLSLShaderConfig br_extract_program = EngineRef.GetShaderByType(NbShaderType.BRIGHTNESS_EXTRACT_SHADER) ;
-        //    GLSLShaderConfig add_program = EngineRef.GetShaderByType(NbShaderType.ADDITIVE_BLEND_SHADER);
+        private void bloom()
+        {
+            //Load Programs
+            NbShader downsampling_program = ShaderMgr.GetShaderByType(NbShaderType.DOWNSAMPLING_SHADER);
+            NbShader upsampling_program = ShaderMgr.GetShaderByType(NbShaderType.UPSAMPLING_SHADER);
+            NbShader mix_proram = ShaderMgr.GetShaderByType(NbShaderType.MIX_SHADER);
+            NbMesh render_quad = EngineRef.GetMesh(NbHasher.Hash("default_renderquad"));
+            GL.Disable(EnableCap.Blend);
+            GL.Disable(EnableCap.DepthTest);
 
-        //    GL.Disable(EnableCap.DepthTest);
-
-        //    //Copy Color to blur fbo channel 1
-        //    FBO.copyChannel(pbuf.fbo, blur_fbo.fbo, gbuf.size[0], gbuf.size[1], blur_fbo.size_x, blur_fbo.size_y,
-        //        ReadBufferMode.ColorAttachment0, DrawBufferMode.ColorAttachment1);
-        //    //pass_tex(blur_fbo.fbo, DrawBufferMode.ColorAttachment1, pbuf.color, new int[] { blur_fbo.size_x, blur_fbo.size_y });
-
-        //    //Extract Brightness on the blur buffer and write it to channel 0
-        //    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, blur_fbo.fbo);
-        //    GL.DrawBuffer(DrawBufferMode.ColorAttachment0); //Write to blur1
-
-        //    render_quad(Array.Empty<string>(), Array.Empty<float>(), new string[] { "inTex" }, new TextureTarget[] { TextureTarget.Texture2D }, new int[] { blur_fbo.channels[1] }, br_extract_program);
-
+            //Step A: Downsampling the current renderbuffer results
+            downsampling_program.ClearCurrentState();
+            downsampling_program.CurrentState.AddSampler("srcTexture", new NbSampler()
+            {
+                SamplerID = 0,
+                Texture = renderBuffer.GetTexture(0),
+            });
+            downsampling_program.CurrentState.AddUniform("srcResolution",
+                    new NbVector2(renderBuffer.Size.X, renderBuffer.Size.Y));
 
 
-        //    //Copy Color to blur fbo channel 1
-        //    //FBO.copyChannel(blur_fbo.fbo, pbuf.fbo, blur_fbo.size_x, blur_fbo.size_y, gbuf.size[0], gbuf.size[1],
-        //    //    ReadBufferMode.ColorAttachment0, DrawBufferMode.ColorAttachment0);
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, bloomBuffer.fbo);
+            GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+            NbTexture mip_lvl;
+            for (int i = 0; i < 6; i++)
+            {
+                //Update shader state
+                
+                if (i == 0)
+                {
+                    downsampling_program.CurrentState.AddUniform("mipLevel", 0);
+                }
+                else
+                {
+                    downsampling_program.CurrentState.AddUniform("mipLevel", 1);
+                }
 
-        //    //return;
+                //Get bloom level texture (to be written)
+                mip_lvl = bloomBuffer.GetTexture(NbFBOAttachment.Attachment0 + i);
+                
+                GL.Viewport(0, 0, mip_lvl.Data.Width, mip_lvl.Data.Height);
 
-        //    //Log(GL.GetError()); 
+                //Attach texture to framebuffer
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, 
+                    FramebufferAttachment.ColorAttachment0, 
+                    GraphicsAPI.TextureTargetMap[mip_lvl.Data.target], 
+                    mip_lvl.GpuID, 0);
+                
+                GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
+                Renderer.RenderQuad(render_quad, downsampling_program, downsampling_program.CurrentState);
+                downsampling_program.CurrentState.RemoveUniform("srcResolution");
+                downsampling_program.CurrentState.RemoveUniform("mipLevel");
+                downsampling_program.CurrentState.RemoveUniform("srcTexture");
 
-        //    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, blur_fbo.fbo);
-        //    GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, blur_fbo.fbo);
-        //    GL.Viewport(0, 0, blur_fbo.size_x, blur_fbo.size_y); //Change the viewport
-        //    int blur_amount = 2;
-        //    for (int i=0; i < blur_amount; i++)
-        //    {
-        //        //Step 1- Apply horizontal blur
-        //        GL.DrawBuffer(DrawBufferMode.ColorAttachment1); //blur2
-        //        GL.Clear(ClearBufferMask.ColorBufferBit);
+                downsampling_program.CurrentState.AddSampler("srcTexture", new NbSampler()
+                {
+                    SamplerID = 0,
+                    Texture = mip_lvl
+                });
 
-        //        render_quad(Array.Empty<string>(), Array.Empty<float>(), new string[] { "diffuseTex" }, new TextureTarget[] { TextureTarget.Texture2D }, new int[] { blur_fbo.channels[0]}, gs_horizontal_blur_program);
+                downsampling_program.CurrentState.AddUniform("srcResolution",
+                    new NbVector2(mip_lvl.Data.Width, mip_lvl.Data.Height));
 
-        //        //Step 2- Apply horizontal blur
-        //        GL.DrawBuffer(DrawBufferMode.ColorAttachment0); //blur2
-        //        GL.Clear(ClearBufferMask.ColorBufferBit);
+            }
 
-        //        render_quad(Array.Empty<string>(), Array.Empty<float>(), new string[] { "diffuseTex" }, new TextureTarget[] { TextureTarget.Texture2D }, new int[] { blur_fbo.channels[1] }, gs_vertical_blur_program);
-        //    }
 
-        //    //Blit to screen
-        //    GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, blur_fbo.fbo);
-        //    GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
+            //mip_lvl = bloomBuffer.GetTexture(NbFBOAttachment.Attachment0);
+            //Attach texture to framebuffer
+            //GL.FramebufferTexture2D(FramebufferTarget.Framebuffer,
+            //    FramebufferAttachment.ColorAttachment0,
+            //    GraphicsAPI.TextureTargetMap[mip_lvl.Data.target],
+            //    mip_lvl.GpuID, 0);
 
-        //    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, pbuf.fbo);
-        //    GL.DrawBuffer(DrawBufferMode.ColorAttachment1);
-        //    GL.Clear(ClearBufferMask.ColorBufferBit); //Clear Screen
+            
+            //Step B: Upsampling
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
+            GL.BlendEquation(BlendEquationMode.FuncAdd);
 
-        //    GL.BlitFramebuffer(0, 0, blur_fbo.size_x, blur_fbo.size_y, 0, 0, pbuf.size[0], pbuf.size[1],
-        //    ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Linear);
+            upsampling_program.ClearCurrentState();
+            upsampling_program.CurrentState.AddUniform("filterRadius", RenderState.settings.RenderSettings.BloomFilterRadius);
+            
+            for (int i = 5; i > 0; i--)
+            {
+                upsampling_program.CurrentState.AddSampler("srcTexture", new NbSampler()
+                {
+                    SamplerID = 0,
+                    Texture = bloomBuffer.GetTexture(NbFBOAttachment.Attachment0 + i)
+                });
 
-        //    GL.Viewport(0, 0, gbuf.size[0], gbuf.size[1]); //Restore viewport
+                NbTexture prev_lvl = bloomBuffer.GetTexture(NbFBOAttachment.Attachment0 + i - 1);
 
-        //    //Save Color to blur2 so that we can composite on the main channel
-        //    GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, pbuf.fbo);
-        //    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, pbuf.fbo);
-        //    GL.ReadBuffer(ReadBufferMode.ColorAttachment0); //color
-        //    GL.DrawBuffer(DrawBufferMode.ColorAttachment2); //blur2
-        //    GL.BlitFramebuffer(0, 0, gbuf.size[0], gbuf.size[1], 0, 0, gbuf.size[0], gbuf.size[1],
-        //    ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Nearest);
+                //Attach texture to framebuffer
 
-        //    GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, pbuf.fbo);
-        //    GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
-        //    render_quad(Array.Empty<string>(), Array.Empty<float>(), new string[] { "in1Tex", "in2Tex" }, new TextureTarget[] { TextureTarget.Texture2D, TextureTarget.Texture2D }, new int[] { pbuf.blur2, pbuf.blur1 }, add_program);
-        //    //render_quad(new string[] { }, new float[] { }, new string[] { "blurTex" }, new int[] { pbuf.blur1 }, gs_bloom_program);
+                GL.Viewport(0, 0, prev_lvl.Data.Width, prev_lvl.Data.Height);
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer,
+                    FramebufferAttachment.ColorAttachment0,
+                    GraphicsAPI.TextureTargetMap[prev_lvl.Data.target],
+                    prev_lvl.GpuID, 0);
+                
+                //GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
+                Renderer.RenderQuad(render_quad, upsampling_program, upsampling_program.CurrentState);
+                upsampling_program.CurrentState.RemoveUniform("srcTexture");
+            }
 
-        //}
+            //mip_lvl = bloomBuffer.GetTexture(NbFBOAttachment.Attachment0);
+            //Attach texture to framebuffer
+            //GL.FramebufferTexture2D(FramebufferTarget.Framebuffer,
+            //    FramebufferAttachment.ColorAttachment0,
+            //    GraphicsAPI.TextureTargetMap[mip_lvl.Data.target],
+            //    mip_lvl.GpuID, 0);
+
+
+            //Step C: Blend results
+
+            mix_proram.ClearCurrentState();
+            mix_proram.CurrentState.AddUniform("mix_factor", 
+                RenderState.settings.RenderSettings.BloomIntensity);
+            mix_proram.CurrentState.AddSampler("inTex1", new NbSampler()
+            {
+                SamplerID = 0,
+                Texture = renderBuffer.GetTexture(NbFBOAttachment.Attachment0)
+            });
+
+            mix_proram.CurrentState.AddSampler("inTex2", new NbSampler()
+            {
+                SamplerID = 1,
+                Texture = bloomBuffer.GetTexture(NbFBOAttachment.Attachment0)
+            });
+
+            GL.Disable(EnableCap.Blend);
+            Renderer.BindDrawFrameBuffer(renderBuffer, NbFBOAttachment.Attachment1);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            Renderer.RenderQuad(render_quad, mix_proram, mix_proram.CurrentState);
+
+            GL.Enable(EnableCap.Blend);
+            GL.Enable(EnableCap.DepthTest);
+        }
+
+
 
         private void fxaa()
         {
@@ -1055,15 +1134,10 @@ namespace NbCore.Systems
             //Load Programs
             NbShader shader = ShaderMgr.GetShaderByType(NbShaderType.FXAA_SHADER);
 
-            //Copy Color to first channel
-            pass_tex(renderBuffer.fbo,
-                DrawBufferMode.ColorAttachment1,
-                renderBuffer.GetTexture(0)); //LOOKS OK!
-
             //Apply FXAA
-            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
-            GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
-
+            Renderer.BindDrawFrameBuffer(renderBuffer, NbFBOAttachment.Attachment0);
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
+            
             //render_quad(new string[] {"sizeX", "sizeY" }, new float[] { to_buf_size[0], to_buf_size[1]}, new string[] { "InTex" }, new int[] { InTex }, shader);
             shader.ClearCurrentState();
             shader.CurrentState.AddSampler("diffuseTex", new NbSampler()
@@ -1084,7 +1158,7 @@ namespace NbCore.Systems
 
             //Apply Tone Mapping
             //Draw to the RGB channel
-            Renderer.BindDrawFrameBuffer(renderBuffer, new int[] {2});
+            Renderer.BindDrawFrameBuffer(renderBuffer, NbFBOAttachment.Attachment1);
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
 
             //render_quad(new string[] {"sizeX", "sizeY" }, new float[] { to_buf_size[0], to_buf_size[1]}, new string[] { "InTex" }, new int[] { InTex }, shader);
@@ -1102,7 +1176,7 @@ namespace NbCore.Systems
         private void composite()
         {
             //Draw to the composite RGB channel
-            Renderer.BindDrawFrameBuffer(renderBuffer, new int[] { 3 });
+            Renderer.BindDrawFrameBuffer(renderBuffer, new int[] { 2 });
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             Renderer.ClearColor(RenderState.settings.RenderSettings.BackgroundColor);
 
@@ -1111,10 +1185,22 @@ namespace NbCore.Systems
             //GL.BlendEquation(BlendEquationMode.FuncAdd);
             //GL.BlendFunc(0, BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 
+            pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment2, renderBuffer.GetTexture(NbFBOAttachment.Attachment1));
 
-            pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment3, renderBuffer.GetTexture(NbFBOAttachment.Attachment2));
 
+            /*
+             * Keep that for testing
+            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, bloomBuffer.fbo);
+            GL.ReadBuffer(ReadBufferMode.ColorAttachment0);
+
+            GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, renderBuffer.fbo);
+            GL.DrawBuffer(DrawBufferMode.ColorAttachment2);
+            GL.BlitFramebuffer(0, 0, bloomBuffer.Size.X, bloomBuffer.Size.Y, 0, 0,
+                                     400, 250,
+                ClearBufferMask.ColorBufferBit, BlitFramebufferFilter.Linear);
+            */
             //GL.Disable(EnableCap.Blend);
+
         }
 
         private void post_process()
@@ -1122,17 +1208,34 @@ namespace NbCore.Systems
             //Actuall Post Process effects in AA space without tone mapping
             //TODO: Bring that back
 
-            //if (RenderState.settings.RenderSettings.UseBLOOM)
-            //    bloom(); //BLOOM
+            if (RenderState.settings.RenderSettings.UseBLOOM)
+                bloom(); //BLOOM
+            else
+            {
+                //Pass channel 0 to 1 since tone mapping is expecting the results there
+                pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment1, renderBuffer.GetTexture(NbFBOAttachment.Attachment0), ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            }
 
-
+            //FXAA
             if (RenderState.settings.RenderSettings.UseFXAA)
-                fxaa(); //FXAA (INCLUDING TONE/UNTONE)
+                fxaa();
+            else
+            {
+                //Pass channel 0 to 1 since tone mapping is expecting the results there
+                pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment0, renderBuffer.GetTexture(NbFBOAttachment.Attachment1), ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            }
 
-            tone_mapping(); //FINAL TONE MAPPING, INCLUDES GAMMA CORRECTION
+            //TONE MAPPING
+            if (RenderState.settings.RenderSettings.UseToneMapping)
+                tone_mapping(); 
+            else
+            {
+                //Pass channel 1 to 0 since tone mapping is expecting the results there
+                pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment1, renderBuffer.GetTexture(NbFBOAttachment.Attachment0), ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            }
 
             //Composite 
-
+            
             composite();
 
 
@@ -1173,7 +1276,7 @@ namespace NbCore.Systems
                 }
             }
 
-            //Drawing on the render buffer second channel
+            //Drawing on the render buffer's first channel
             Renderer.BindDrawFrameBuffer(renderBuffer, NbFBOAttachment.Attachment0);
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color);
 
@@ -1222,12 +1325,13 @@ namespace NbCore.Systems
             GL.Disable(EnableCap.StencilTest);
             Renderer.SetCullFace(true);
             GL.CullFace(CullFaceMode.Back);
-            
+
 
             //Copy Channels
             //Blend lighting and albedo info on the main channel of the renderbuffer
-            
+
             //GL.BlendEquation(BlendEquationMode.FuncAdd);
+            Renderer.SetBlend(true);
             GL.BlendFunc(0, BlendingFactorSrc.OneMinusDstAlpha, BlendingFactorDest.DstAlpha);
 
             //Copy the albedo info to the accumulated lighting info on channel 0

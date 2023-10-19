@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using NbCore.Primitives;
-using NbCore;
 using NbCore;
 using NbCore.Platform.Graphics;
 using OpenTK.Graphics.OpenGL4; //TODO Get rid of that
@@ -9,7 +6,7 @@ using OpenTK.Graphics.OpenGL4; //TODO Get rid of that
 
 namespace NbCore.Text
 {
-    public class GLText : Primitive
+    public class GLText : NbPrimitive
     {
         public NbVector2 pos;
         public NbVector2 size;

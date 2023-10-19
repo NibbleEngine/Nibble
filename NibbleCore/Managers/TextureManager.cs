@@ -6,7 +6,7 @@ using NbCore.Platform.Graphics;
 
 namespace NbCore
 {
-    public class TextureManager : ObjectManager<string, NbTexture>
+    public class TextureManager : NbObjectManager<string, NbTexture>
     {
         public TextureManager()
         {

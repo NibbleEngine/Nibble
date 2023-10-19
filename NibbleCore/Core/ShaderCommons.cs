@@ -39,15 +39,18 @@ namespace NbCore
         GBUFFER_SHADER,
         LIGHT_PASS_LIT_SHADER, //18
         LIGHT_PASS_STENCIL_SHADER,
-        LIGHT_PASS_UNLIT_SHADER, //Stupid but keeping that for testing...
-        BRIGHTNESS_EXTRACT_SHADER,
-        GAUSSIAN_HORIZONTAL_BLUR_SHADER,
+        LIGHT_PASS_UNLIT_SHADER, //20: Stupid but keeping that for testing...
+        BRIGHTNESS_EXTRACT_SHADER, 
+        DOWNSAMPLING_SHADER, //22 //Used for bloom effect
+        UPSAMPLING_SHADER, //Used for bloom effect
+        GAUSSIAN_HORIZONTAL_BLUR_SHADER, //24
         GAUSSIAN_VERTICAL_BLUR_SHADER,
-        ADDITIVE_BLEND_SHADER,
-        FXAA_SHADER,
-        TONE_MAPPING,  //25
+        ADDITIVE_BLEND_SHADER, //26
+        FXAA_SHADER, 
+        TONE_MAPPING,//28 
         INV_TONE_MAPPING,
-        BWOIT_COMPOSITE_SHADER
+        BWOIT_COMPOSITE_SHADER,//30
+        MIX_SHADER
     }
 
 
@@ -110,9 +113,26 @@ namespace NbCore
             Data["Float:" + name] = val;
         }
 
+        public void AddUniform(string name, int val)
+        {
+            Data["Int:" + name] = val;
+        }
+
         public void AddSampler(string name, NbSampler val)
         {
             Data["Sampler:" + name] = val;
+        }
+
+        public void RemoveUniform(string name)
+        {
+            foreach (string key in Data.Keys)
+            {
+                if (key.Contains(name))
+                {
+                    Data.Remove(name);
+                    break;
+                }
+            }
         }
 
         public void Clear()

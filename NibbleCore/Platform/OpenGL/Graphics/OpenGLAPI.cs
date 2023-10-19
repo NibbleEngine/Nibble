@@ -140,6 +140,7 @@ namespace NbCore.Platform.Graphics
             { NbTextureInternalFormat.DEPTH, InternalFormat.DepthComponent},
             { NbTextureInternalFormat.DEPTH24_STENCIL8, InternalFormat.Depth24Stencil8},
             { NbTextureInternalFormat.R8G8, InternalFormat.Rg8},
+            { NbTextureInternalFormat.R11FG11FB10F, InternalFormat.R11fG11fB10f},
         };
 
         public static readonly Dictionary<NbTextureInternalFormat, PixelType> PixelTypeMap = new()
@@ -148,6 +149,7 @@ namespace NbCore.Platform.Graphics
             { NbTextureInternalFormat.SRGBA8, PixelType.UnsignedByte},
             { NbTextureInternalFormat.BGRA8, PixelType.UnsignedByte},
             { NbTextureInternalFormat.RGBA16F, PixelType.Float},
+            { NbTextureInternalFormat.R11FG11FB10F, PixelType.Float},
             { NbTextureInternalFormat.RGBA32F, PixelType.Float},
             { NbTextureInternalFormat.DEPTH, PixelType.UnsignedByte },
             { NbTextureInternalFormat.DEPTH24_STENCIL8, PixelType.UnsignedInt248 }
@@ -159,6 +161,7 @@ namespace NbCore.Platform.Graphics
             {NbTextureInternalFormat.SRGBA8, PixelFormat.Rgba },
             {NbTextureInternalFormat.BGRA8, PixelFormat.Bgra },
             {NbTextureInternalFormat.RGBA16F, PixelFormat.Rgba },
+            {NbTextureInternalFormat.R11FG11FB10F, PixelFormat.Rgb },
             {NbTextureInternalFormat.DEPTH, PixelFormat.DepthComponent },
             {NbTextureInternalFormat.DEPTH24_STENCIL8, PixelFormat.DepthStencil }
         };
@@ -629,6 +632,12 @@ namespace NbCore.Platform.Graphics
                         {
                             NbVector4 vec = (NbVector4) sstate.Value;
                             GL.Uniform4(shader.uniformLocations[key].loc, vec.X, vec.Y, vec.Z, vec.W);
+                            break;
+                        }
+                    case "Int":
+                        {
+                            int num = (int) sstate.Value;
+                            GL.Uniform1(shader.uniformLocations[key].loc, num);
                             break;
                         }
 
@@ -1472,7 +1481,7 @@ namespace NbCore.Platform.Graphics
         }
 
 
-        public void AddFrameBufferAttachment(FBO fbo, NbTexture tex, NbFBOAttachment attachment_id)
+        public void AddFrameBufferAttachment(FBO fbo, NbTexture tex, NbFBOAttachment attachment_id, bool attach)
         {
             int handle = GL.GenTexture();
             tex.GpuID = handle;
@@ -1488,27 +1497,33 @@ namespace NbCore.Platform.Graphics
                 GL.BindTexture(TextureTarget.Texture2DMultisample, handle);
 
                 //GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, size[0], size[1], 0, PixelFormat.DepthComponent, PixelType.Float, IntPtr.Zero);
-                GL.TexImage2DMultisample(TextureTargetMultisample.Texture2DMultisample, fbo.msaa_samples, pif, fbo.Size.X, fbo.Size.Y, true);
+                GL.TexImage2DMultisample(TextureTargetMultisample.Texture2DMultisample, fbo.msaa_samples, pif, tex.Data.Width, tex.Data.Height, true);
                 //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
                 //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
                 //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
                 //GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo.fbo);
-                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachmentMap[attachment_id], TextureTarget.Texture2DMultisample, handle, 0);
+                if (attach)
+                {
+                    GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo.fbo);
+                    GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachmentMap[attachment_id], TextureTarget.Texture2DMultisample, handle, 0);
+                }
+                
             }
             else if (textarget == TextureTarget.Texture2D)
             {
                 GL.BindTexture(TextureTarget.Texture2D, handle);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, pif, fbo.Size.X, fbo.Size.Y, 0, fmt, pixel_type, IntPtr.Zero);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, pif, tex.Data.Width, tex.Data.Height, 0, fmt, pixel_type, IntPtr.Zero);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, TextureFilterMap[tex.Data.MagFilter]);
                 GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, TextureFilterMap[tex.Data.MinFilter]);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
 
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo.fbo);
-                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachmentMap[attachment_id], TextureTarget.Texture2D, handle, 0);
-
+                if (attach)
+                {
+                    GL.BindFramebuffer(FramebufferTarget.Framebuffer, fbo.fbo);
+                    GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachmentMap[attachment_id], TextureTarget.Texture2D, handle, 0);
+                }
             }
             else
             {

@@ -22,6 +22,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimNodeFrameData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbAnimPoseData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)core\NbConfig.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\NbFBO.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)core\NbFont.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbMeshBufferInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbScriptAsset.cs" />
@@ -44,7 +45,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)IO\NbDeserializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)IO\NbSerializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Managers\AnimationManager.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Managers\NonEntityManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Managers\NbObjectManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Input\KeyboardInput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Input\MouseInput.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Platform\OpenGL\Graphics\NbShaderConfig.cs" />
@@ -128,8 +129,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Managers\TextManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utils\FileUtils.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Input\GamepadHandler.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Rendering\Gbuffer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Core\Primitives.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Core\NbPrimitives.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\GMDL.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\Octree.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Systems\RenderSystem.cs" />

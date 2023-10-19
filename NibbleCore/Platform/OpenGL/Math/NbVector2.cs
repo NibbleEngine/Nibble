@@ -41,6 +41,11 @@ namespace NbCore
             };
         }
 
+        public static implicit operator NbVector2(NbVector2i v)
+        {
+            return new NbVector2(v.X, v.Y);
+        }
+
         public static NbVector2 operator *(NbVector2 a, float b)
         {
             return new NbVector2()

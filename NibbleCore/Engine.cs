@@ -5,7 +5,6 @@ using NbCore.Systems;
 using NbCore.Common;
 using NbCore.Text;
 using NbCore;
-using NbCore.Primitives;
 using NbCore.Utils;
 using NbCore.Plugins;
 using System.IO;
@@ -1036,7 +1035,7 @@ namespace NbCore
             n.AddComponent<TransformComponent>(tc);
 
             //Add Mesh Component 
-            Primitive seg = new LineSegment(n.Children.Count, new NbVector3(1.0f, 0.0f, 0.0f));
+            NbPrimitive seg = new LineSegment(n.Children.Count, new NbVector3(1.0f, 0.0f, 0.0f));
             MeshComponent mc = new()
             {
                 Mesh = new()

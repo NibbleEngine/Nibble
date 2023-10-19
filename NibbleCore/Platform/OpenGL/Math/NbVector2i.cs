@@ -2,7 +2,7 @@ using OpenTK.Mathematics;
 
 namespace NbCore
 {
-    public class NbVector2i
+    public struct NbVector2i
     {
         internal Vector2i _Value;
         
@@ -31,6 +31,12 @@ namespace NbCore
         public NbVector2i(int i, int j)
         {
             _Value = new Vector2i(i, j);
+        }
+
+
+        public static implicit operator NbVector2i(NbVector2 v)
+        {
+            return new NbVector2i((int)v.X, (int)v.Y);
         }
 
         public static bool operator ==(NbVector2i a, NbVector2i b)

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 
-namespace NbCore.Managers
+namespace NbCore
 {
-    public class ObjectManager<TKey, TValue>
+    public class NbObjectManager<TKey, TValue>
     {
         public int ObjectCount = 0;
         public List<TValue> Objects = new();
