@@ -155,7 +155,7 @@ namespace NbCore
 
         public void resetTransform()
         {
-            TransformData td = TransformationSystem.GetEntityTransformData(this);
+            NbTransformData td = TransformationSystem.GetEntityTransformData(this);
             td.ResetTransform();
         }
 
@@ -211,7 +211,7 @@ namespace NbCore
             {
                 foreach (ScriptComponent sc in node.GetComponents<ScriptComponent>())
                 {
-                    sc.Script = RenderState.engineRef.CreateScript(sc);
+                    sc.Script = NbRenderState.engineRef.CreateScript(sc);
                 }
             }
 

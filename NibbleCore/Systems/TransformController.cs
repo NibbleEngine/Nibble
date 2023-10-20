@@ -29,19 +29,19 @@ namespace NbCore
 
         private double Time = 0.0;
         private double InterpolationCoeff = 1.0f;
-        private TransformData actorData = null;
+        private NbTransformData actorData = null;
         
-        public TransformController(TransformData data)
+        public TransformController(NbTransformData data)
         {
             SetActor(data);
         }
         
-        public TransformData GetActor()
+        public NbTransformData GetActor()
         {
             return actorData;
         }
 
-        public void SetActor(TransformData data)
+        public void SetActor(NbTransformData data)
         {
             actorData = data;
             //Init States

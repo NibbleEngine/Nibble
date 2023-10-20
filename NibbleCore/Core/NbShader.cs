@@ -84,7 +84,7 @@ namespace NbCore
         public void OnShaderUpdate()
         {
             //Issue shader for re-compilation
-            Common.RenderState.engineRef.GetSystem<Systems.RenderingSystem>().ShaderMgr.AddShaderForCompilation(this);
+            NbRenderState.engineRef.GetSystem<Systems.RenderingSystem>().ShaderMgr.AddShaderForCompilation(this);
         }
 
         public void FilterState(ref NbShaderState state)
@@ -148,8 +148,8 @@ namespace NbCore
             foreach (string directive in token["directives"])
                 shader.directives.Add(directive);
             
-            shader.SetShaderConfig(RenderState.engineRef.GetShaderConfigByName(confname));
-            Callbacks.Assert(RenderState.engineRef.CompileShader(shader), "Error on shader compilation");
+            shader.SetShaderConfig(NbRenderState.engineRef.GetShaderConfigByName(confname));
+            Callbacks.Assert(NbRenderState.engineRef.CompileShader(shader), "Error on shader compilation");
             return shader;
         }
 

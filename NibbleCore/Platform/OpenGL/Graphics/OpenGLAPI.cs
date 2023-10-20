@@ -440,8 +440,8 @@ namespace NbCore.Platform.Graphics
             cpfu.cameraRotMat = cam.cameraRotMat._Value;
             cpfu.cameraPositionExposure.Xyz = cam.Position._Value;
             cpfu.cameraDirection = cam.Front._Value;
-            cpfu.cameraNearPlane = RenderState.settings.CamSettings.zNear;
-            cpfu.cameraFarPlane = RenderState.settings.CamSettings.zFar;
+            cpfu.cameraNearPlane = NbRenderState.settings.CamSettings.zNear;
+            cpfu.cameraFarPlane = NbRenderState.settings.CamSettings.zFar;
         }
 
         public void SetCommonDataPerFrame(FBO gBuffer, NbMatrix4 rotMat, double time)
@@ -1693,7 +1693,7 @@ namespace NbCore.Platform.Graphics
                      conf.Sources.ContainsKey(NbShaderSourceType.TessControlShader);
 
             List<string> finaldirectives = new();
-            finaldirectives.AddRange(RenderState.engineRef.CreateShaderDirectivesFromMode(conf.ShaderMode));
+            finaldirectives.AddRange(NbRenderState.engineRef.CreateShaderDirectivesFromMode(conf.ShaderMode));
             finaldirectives.AddRange(shader.directives);
             
             //Generate DirectiveString
@@ -1848,7 +1848,7 @@ namespace NbCore.Platform.Graphics
                     fmt.count = 1;
                     shader.uniformLocations[name] = fmt; //Store location
 
-                    if (RenderState.enableShaderCompilationLog)
+                    if (NbRenderState.enableShaderCompilationLog)
                     {
                         string info_string = $"Uniform # {i} Location: {fmt.loc} Type: {type.ToString()} Name: {name}";
                         shader.CompilationLog += info_string + "\n";
@@ -1913,13 +1913,13 @@ namespace NbCore.Platform.Graphics
 
         }
 
-        public static void AddRenderInstance(ref MeshComponent mc, TransformData td)
+        public static void AddRenderInstance(ref MeshComponent mc, NbTransformData td)
         {
             NbMeshBufferManager.AddRenderInstance(ref mc, td);
             NbMeshInstanceManager.AddMeshInstance(ref mc.Mesh);
         }
 
-        public static void AddRenderInstance(ref ImposterComponent ic, TransformData td)
+        public static void AddRenderInstance(ref ImposterComponent ic, NbTransformData td)
         {
             NbImposterBufferManager.AddRenderInstance(ref ic, td);
             NbMeshInstanceManager.AddMeshInstance(ref ic.Mesh);
@@ -1937,7 +1937,7 @@ namespace NbCore.Platform.Graphics
             NbMeshInstanceManager.UpdateMeshInstance(ref mesh, index);
         }
 
-        public static void AddLightRenderInstance(ref LightComponent lc, TransformData td)
+        public static void AddLightRenderInstance(ref LightComponent lc, NbTransformData td)
         {
             NbLightBufferManager.AddRenderInstance(ref lc, td);
             NbMeshInstanceManager.AddMeshInstance(ref lc.Mesh);

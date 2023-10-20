@@ -37,7 +37,7 @@ namespace NbCore
             ulong script_hash = token.Value<ulong>("ScriptHash");
 
             //Load Script Asset from the engine
-            sc.Asset = RenderState.engineRef.GetScriptAssetByHash(script_hash);
+            sc.Asset = NbRenderState.engineRef.GetScriptAssetByHash(script_hash);
 
             //NOTE: Script Compilation should happen at the end of the serialization
             

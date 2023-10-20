@@ -9,7 +9,7 @@ namespace NbCore
     public class LightComponent : MeshComponent
     {
         //Exposed Light Properties
-        public LightData Data;
+        public NbLightData Data;
         
         public NbVector3 Direction;
         //Light Projection + View Matrices
@@ -75,9 +75,9 @@ namespace NbCore
 
             LightComponent lc = new()
             {
-                Mesh = Common.RenderState.engineRef.GetMesh(hash),
+                Mesh = NbRenderState.engineRef.GetMesh(hash),
                 Direction = (NbVector3) IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("Direction")),
-                Data = (LightData) IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("LightData"))
+                Data = (NbLightData) IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("LightData"))
             };
 
             return lc;

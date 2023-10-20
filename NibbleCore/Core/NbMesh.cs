@@ -114,9 +114,9 @@ namespace NbCore
             mesh.MetaData = (NbMeshMetaData)IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("MetaData"));
 
             //Material and MeshData references should be loaded from the engine
-            mesh.Material = Common.RenderState.engineRef.GetMaterialByName(token.Value<string>("Material"));
+            mesh.Material = NbRenderState.engineRef.GetMaterialByName(token.Value<string>("Material"));
             string mesh_data_hash = token.Value<string>("MeshDataHash");
-            mesh.Data = Common.RenderState.engineRef.GetSystem<Systems.RenderingSystem>().MeshDataMgr.Get(ulong.Parse(mesh_data_hash));
+            mesh.Data = NbRenderState.engineRef.GetSystem<Systems.RenderingSystem>().MeshDataMgr.Get(ulong.Parse(mesh_data_hash));
             
             return mesh;
         }

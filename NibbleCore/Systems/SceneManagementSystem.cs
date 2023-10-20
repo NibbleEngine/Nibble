@@ -56,7 +56,7 @@ namespace NbCore.Systems
             //Add instances to all non occluded Nodes
             foreach (SceneGraphNode n in graph.MeshNodes)
             {
-                TransformData td = TransformationSystem.GetEntityTransformData(n);
+                NbTransformData td = TransformationSystem.GetEntityTransformData(n);
                 List<Component> meshComponents = n.GetComponents<MeshComponent>();
 
                 foreach (Component c in meshComponents)
@@ -121,7 +121,7 @@ namespace NbCore.Systems
             //Add instances to all non occluded Nodes
             foreach (SceneGraphNode n in graph.ImposterNodes)
             {
-                TransformData td = TransformationSystem.GetEntityTransformData(n);
+                NbTransformData td = TransformationSystem.GetEntityTransformData(n);
                 ImposterComponent ic = n.GetComponent<ImposterComponent>();
                 bool instance_updated = false;
 
@@ -164,7 +164,7 @@ namespace NbCore.Systems
             //Process Lights
             foreach (SceneGraphNode n in graph.LightNodes)
             {
-                TransformData td = TransformationSystem.GetEntityTransformData(n);
+                NbTransformData td = TransformationSystem.GetEntityTransformData(n);
                 LightComponent lc = n.GetComponent<LightComponent>();
                 MeshComponent mc = n.GetComponent<MeshComponent>();
                 bool light_instance_updated = false;
@@ -241,18 +241,18 @@ namespace NbCore.Systems
 
         private bool isPointCulled(NbVector4 vec)
         {
-            vec = vec * RenderState.activeCam.viewMat; //Bring point into clip space
+            vec = vec * NbRenderState.activeCam.viewMat; //Bring point into clip space
             return (-vec.W > vec.X || vec.X > vec.W) && (-vec.W > vec.Y || vec.Y > vec.W) && (-vec.W > vec.Z || vec.Z > vec.W);
         }
 
-        private bool FrustumCullingMod(NbMesh mesh, TransformData td)
+        private bool FrustumCullingMod(NbMesh mesh, NbTransformData td)
         {
             if (mesh.Hash.ToString() == "3881229220707198789")
             {
-                Console.WriteLine($"{RenderState.activeCam.Position.X}, {RenderState.activeCam.Position.Y}, {RenderState.activeCam.Position.Z}");
-                Console.WriteLine($"{RenderState.activeCam.Front.X}, {RenderState.activeCam.Front.Y}, {RenderState.activeCam.Front.Z}");
+                Console.WriteLine($"{NbRenderState.activeCam.Position.X}, {NbRenderState.activeCam.Position.Y}, {NbRenderState.activeCam.Position.Z}");
+                Console.WriteLine($"{NbRenderState.activeCam.Front.X}, {NbRenderState.activeCam.Front.Y}, {NbRenderState.activeCam.Front.Z}");
                 for (int i = 0; i < 6; i++)
-                    Console.WriteLine($"[{RenderState.activeCam.frPlanes[i].X},{RenderState.activeCam.frPlanes[i].Y},{RenderState.activeCam.frPlanes[i].Z},{RenderState.activeCam.frPlanes[i].W}]");
+                    Console.WriteLine($"[{NbRenderState.activeCam.frPlanes[i].X},{NbRenderState.activeCam.frPlanes[i].Y},{NbRenderState.activeCam.frPlanes[i].Z},{NbRenderState.activeCam.frPlanes[i].W}]");
 
                 Console.WriteLine($"{mesh.MetaData.AABBMIN.X}, {mesh.MetaData.AABBMIN.Y}, {mesh.MetaData.AABBMIN.Z}");
                 Console.WriteLine($"{mesh.MetaData.AABBMAX.X}, {mesh.MetaData.AABBMAX.Y}, {mesh.MetaData.AABBMAX.Z}");
@@ -263,8 +263,8 @@ namespace NbCore.Systems
             // Loop through each frustum plane
             for (int planeID = 0; planeID < 6; ++planeID)
             {
-                NbVector3 planeNormal = RenderState.activeCam.frPlanes[planeID].Xyz;
-                float planeConstant = RenderState.activeCam.frPlanes[planeID].W;
+                NbVector3 planeNormal = NbRenderState.activeCam.frPlanes[planeID].Xyz;
+                float planeConstant = NbRenderState.activeCam.frPlanes[planeID].W;
 
                 // Check each axis (x,y,z) to get the AABB vertex furthest away from the direction the plane is facing (plane normal)
                 NbVector3 vec;
@@ -313,7 +313,7 @@ namespace NbCore.Systems
             return true;
         }
 
-        private bool FrustumCullingSmart(NbMesh mesh, TransformData td)
+        private bool FrustumCullingSmart(NbMesh mesh, NbTransformData td)
         {
             if (mesh.Hash.ToString() == "3881229220707198789")
                 Console.WriteLine('.');
@@ -323,8 +323,8 @@ namespace NbCore.Systems
             // Loop through each frustum plane
             for (int planeID = 0; planeID < 6; ++planeID)
             {
-                NbVector3 planeNormal = RenderState.activeCam.frPlanes[planeID].Xyz;
-                float planeConstant = RenderState.activeCam.frPlanes[planeID].W;
+                NbVector3 planeNormal = NbRenderState.activeCam.frPlanes[planeID].Xyz;
+                float planeConstant = NbRenderState.activeCam.frPlanes[planeID].W;
 
                 // Check each axis (x,y,z) to get the AABB vertex furthest away from the direction the plane is facing (plane normal)
                 NbVector3 axisVert = new NbVector3();
@@ -360,7 +360,7 @@ namespace NbCore.Systems
             return cull;
         }
 
-        private bool FrustumCulling(NbMesh mesh, TransformData td)
+        private bool FrustumCulling(NbMesh mesh, NbTransformData td)
         {
             //Check corners
             NbVector4 vec = new NbVector4();

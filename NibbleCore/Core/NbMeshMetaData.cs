@@ -1,8 +1,4 @@
-﻿
-
-using Microsoft.CodeAnalysis.Operations;
-
-namespace NbCore
+﻿namespace NbCore
 {
     public class NbMeshMetaData
     {

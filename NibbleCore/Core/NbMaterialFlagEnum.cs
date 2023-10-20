@@ -1,0 +1,85 @@
+namespace NbCore
+{
+    public enum NbMaterialFlagEnum
+    {
+        _NB_DIFFUSE_MAP,
+        _NB_NORMAL_MAP,
+        _NB_TWO_CHANNEL_NORMAL_MAP,
+        _NB_METALLIC_ROUGHNESS_MAP,
+        _NB_AO_MAP,
+        _NB_AO_METALLIC_ROUGHNESS_MAP,
+        _NB_EMISSIVE,
+        _NB_EMISSIVE_MAP,
+        _NB_UNLIT,
+        _NB_VERTEX_COLOUR,
+        _NB_SMOOTH_LINES,
+
+        //Stolen from NMS sorry HG ^.^
+        
+        //OLD FLAGS TO BE TRANSFORMED
+        //_F01_DIFFUSEMAP, //CHECK
+        //_F02_SKINNED, //CHECK
+        //_F03_NORMALMAP, //CHECK
+        _F04_,
+        _F05_INVERT_ALPHA,
+        _F06_BRIGHT_EDGE,
+        //_F07_UNLIT, //CHECK
+        _F08_REFLECTIVE,
+        _F09_TRANSPARENT,
+        _F10_NORECEIVESHADOW,
+        _F11_ALPHACUTOUT,
+        _F12_BATCHED_BILLBOARD,
+        _F13_UVANIMATION,
+        _F14_UVSCROLL,
+        _F15_WIND,
+        _F16_DIFFUSE2MAP,
+        _F17_MULTIPLYDIFFUSE2MAP,
+        _F18_UVTILES,
+        _F19_BILLBOARD,
+        _F20_PARALLAXMAP,
+        //_F21_VERTEXCOLOUR, //CHECK
+        _F22_TRANSPARENT_SCALAR,
+        _F23_TRANSLUCENT,
+        //_F24_AOMAP, //CHECK
+        //_F25_ROUGHNESS_MASK, //CHECK
+        _F26_STRETCHY_PARTICLE,
+        _F27_VBTANGENT,
+        _F28_VBSKINNED,
+        _F29_VBCOLOUR,
+        _F30_REFRACTION,
+        _F31_DISPLACEMENT,
+        _F32_REFRACTION_MASK,
+        _F33_SHELLS,
+        _F34_GLOW,
+        _F35_GLOW_MASK,
+        _F36_DOUBLESIDED,
+        _F37_,
+        _F38_NO_DEFORM,
+        //_F39_METALLIC_MASK, //CHECK
+        _F40_SUBSURFACE_MASK,
+        _F41_DETAIL_DIFFUSE,
+        _F42_DETAIL_NORMAL,
+        _F43_NORMAL_TILING,
+        _F44_IMPOSTER,
+        _F45_VERTEX_BLEND,
+        _F46_BILLBOARD_AT,
+        _F47_REFLECTION_PROBE,
+        _F48_WARPED_DIFFUSE_LIGHTING,
+        _F49_DISABLE_AMBIENT,
+        _F50_DISABLE_POSTPROCESS,
+        _F51_DECAL_DIFFUSE,
+        _F52_DECAL_NORMAL,
+        _F53_COLOURISABLE,
+        _F54_COLOURMASK,
+        _F55_MULTITEXTURE,
+        _F56_MATCH_GROUND,
+        _F57_DETAIL_OVERLAY,
+        _F58_USE_CENTRAL_NORMAL,
+        _F59_SCREENSPACE_FADE,
+        _F60_ACUTE_ANGLE_FADE,
+        _F61_CLAMP_AMBIENT,
+        _F62_DETAIL_ALPHACUTOUT,
+        _F63_DISSOLVE,
+        _F64_,
+    }
+}

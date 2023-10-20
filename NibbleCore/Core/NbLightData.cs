@@ -23,7 +23,7 @@ namespace NbCore
     }
 
     [NbSerializable]
-    public struct LightData
+    public struct NbLightData
     {
         public NbVector3 Color;
         public NbVector3 Direction;
@@ -62,7 +62,7 @@ namespace NbCore
             writer.WriteEndObject();
         }
 
-        public static LightData Deserialize(Newtonsoft.Json.Linq.JToken token)
+        public static NbLightData Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
             return new()
             {

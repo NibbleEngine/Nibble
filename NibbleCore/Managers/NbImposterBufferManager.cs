@@ -11,7 +11,7 @@ namespace NbCore
 
     public class NbImposterBufferManager : NbMeshBufferManager
     {
-        public static void AddRenderInstance(ref ImposterComponent lc, TransformData td)
+        public static void AddRenderInstance(ref ImposterComponent lc, NbTransformData td)
         {
             NbMesh mesh = lc.Mesh;
 

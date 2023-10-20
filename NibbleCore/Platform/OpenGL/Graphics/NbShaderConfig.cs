@@ -140,7 +140,7 @@ namespace NbCore
                 if (ct["VertexShader"] != null)
                 {
                     string path = ct.Value<string>("VertexShader");
-                    vs = RenderState.engineRef.GetShaderSourceByFilePath(path);
+                    vs = NbRenderState.engineRef.GetShaderSourceByFilePath(path);
                     if (vs == null)
                     {
                         vs = new NbShaderSource(path, true);
@@ -148,7 +148,7 @@ namespace NbCore
                 } else if (ct["FragmentShader"] != null)
                 {
                     string path = ct.Value<string>("FragmentShader");
-                    fs = RenderState.engineRef.GetShaderSourceByFilePath(path);
+                    fs = NbRenderState.engineRef.GetShaderSourceByFilePath(path);
                     if (fs == null)
                     {
                         fs = new NbShaderSource(path, true);

@@ -92,7 +92,7 @@ namespace NbCore
 
             ImposterComponent lc = new()
             {
-                Mesh = Common.RenderState.engineRef.GetMesh(hash),
+                Mesh = NbRenderState.engineRef.GetMesh(hash),
                 Data = (ImposterData) IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("Data"))
             };
 

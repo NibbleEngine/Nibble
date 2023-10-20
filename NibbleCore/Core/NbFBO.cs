@@ -77,7 +77,7 @@ namespace NbCore
                 minFilter = min_filter
             };
 
-            GraphicsAPI renderer = RenderState.engineRef.GetRenderer();
+            GraphicsAPI renderer = NbRenderState.engineRef.GetRenderer();
 
             //Create Texture
             NbTexture tex = new NbTexture()
@@ -115,7 +115,7 @@ namespace NbCore
         public static void copyDepthChannel(FBO from, FBO to)
         {
 
-            GraphicsAPI renderer = RenderState.engineRef.GetRenderer();
+            GraphicsAPI renderer = NbRenderState.engineRef.GetRenderer();
             renderer.CopyDepthChannel(from, to);
         }
 
@@ -132,7 +132,7 @@ namespace NbCore
                 ColorAttachments.Clear();
             }
 
-            GraphicsAPI renderer = RenderState.engineRef.GetRenderer();
+            GraphicsAPI renderer = NbRenderState.engineRef.GetRenderer();
             renderer.DeleteFrameBuffer(this);
 
             foreach (NbTexture tex in textures.Values)

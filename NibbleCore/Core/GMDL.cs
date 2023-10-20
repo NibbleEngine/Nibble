@@ -7,47 +7,6 @@ using NbCore;
 
 namespace NbCore
 {
-    public enum NbPrimitiveDataType
-    {
-        UnsignedByte,
-        UnsignedShort,
-        UnsignedInt,
-        HalfFloat,
-        Float,
-        Double,
-        Int2101010Rev,
-        Int,
-        Byte,
-    }
-
-    public enum NbPolygonRenderMode
-    {
-        Fill,
-        Line
-    }
-
-    public enum NbRenderPrimitive
-    {
-        Points,
-        Lines,
-        LineStrip,
-        Triangles,
-        TriangleFan,
-        TriangleStrip,
-    }
-
-    public enum NbBufferSemantic
-    {
-        VERTEX,
-        UV,
-        NORMAL,
-        TANGENT,
-        BITANGENT,
-        BLENDINDICES,
-        BLENDWEIGHTS
-    }
-
-
     public struct geomMeshMetaData
     {
         public string name;

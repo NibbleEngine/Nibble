@@ -8,10 +8,10 @@ namespace NbCore
     [NbSerializable]
     public unsafe class TransformComponent : Component {
         
-        public TransformData Data;
+        public NbTransformData Data;
         public bool IsControllable = false;
 
-        public TransformComponent(TransformData data): base()
+        public TransformComponent(NbTransformData data): base()
         {
             Data = data;
         }
@@ -41,7 +41,7 @@ namespace NbCore
 
         public static TransformComponent Deserialize(Newtonsoft.Json.Linq.JToken token)
         {
-            TransformData data = IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("Data")) as TransformData;
+            NbTransformData data = IO.NbDeserializer.Deserialize(token.Value<Newtonsoft.Json.Linq.JToken>("Data")) as NbTransformData;
             return new TransformComponent(data);
         }
 

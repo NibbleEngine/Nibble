@@ -77,7 +77,7 @@ namespace NbCore
                 IsSRGB = token.Value<bool>("IsSRGB"),
                 ShaderBinding = token.Value<string>("ShaderBinding"),
                 ShaderLocation = token.Value<int>("ShaderLocation"),    
-                Texture = Common.RenderState.engineRef.GetTexture(token.Value<string>("Texture")),
+                Texture = NbRenderState.engineRef.GetTexture(token.Value<string>("Texture")),
                 UseCompression = token.Value<bool>("UseCompression"),
                 UseMipMaps = token.Value<bool>("UseMipMaps")
             };

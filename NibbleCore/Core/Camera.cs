@@ -75,11 +75,11 @@ namespace NbCore
             lookMat = NbMatrix4.LookAt(Position, Position + Front, BaseUp);
             
 
-            NbVector2i viewport_size = RenderState.engineRef.GetSystem<Systems.RenderingSystem>().GetViewportSize();
+            NbVector2i viewport_size = NbRenderState.engineRef.GetSystem<Systems.RenderingSystem>().GetViewportSize();
             float aspect = (float)viewport_size.X / viewport_size.Y;
             //float aspect = 1.6f;
 
-            CameraSettings settings = RenderState.settings.CamSettings;
+            CameraSettings settings = NbRenderState.settings.CamSettings;
 
             if (type == 0)
             {
@@ -107,7 +107,7 @@ namespace NbCore
 
         public static void UpdateCameraDirectionalVectors(Camera cam)
         {
-            TransformController t_controller = RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
+            TransformController t_controller = NbRenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
             cam.Position = t_controller.Position;
 
             cam.Front.X = (float)System.Math.Cos(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Cos(Math.Radians(cam.yaw));
@@ -142,21 +142,21 @@ namespace NbCore
             NbQuaternion currentRotation = new_rot;
             NbVector3 currentScale = new(1.0f);
 
-            TransformController t_controller = RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(this);
+            TransformController t_controller = NbRenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(this);
             t_controller.AddFutureState(newPosition, currentRotation, currentScale);
         }
 
         public static void CalculateNextCameraState(Camera cam, CameraPos target)
         {
-            TransformController t_controller = RenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
+            TransformController t_controller = NbRenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
 
             //Calculate actual camera speed
 
             if (cam.yaw > 360) cam.yaw = 0;
             if (cam.yaw < -360) cam.yaw = 0;
 
-            cam.pitch -= 0.1f * RenderState.settings.CamSettings.Sensitivity * target.Rotation.Y;
-            cam.yaw += 0.1f * RenderState.settings.CamSettings.Sensitivity * target.Rotation.X;
+            cam.pitch -= 0.1f * NbRenderState.settings.CamSettings.Sensitivity * target.Rotation.Y;
+            cam.yaw += 0.1f * NbRenderState.settings.CamSettings.Sensitivity * target.Rotation.X;
 
             NbQuaternion yaw_q = NbQuaternion.FromAxis(BaseUp, Math.Radians(cam.yaw));
             NbQuaternion pitch_q = NbQuaternion.FromAxis(BaseRight, Math.Radians(cam.pitch));
@@ -177,9 +177,9 @@ namespace NbCore
             NbVector3 currentScale = new(1.0f);
 
             NbVector3 offset = new();
-            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.X * cam.Right;
-            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.Z * cam.Front;
-            offset += SpeedScale * RenderState.settings.CamSettings.Speed * target.PosImpulse.Y * cam.Up;
+            offset += SpeedScale * NbRenderState.settings.CamSettings.Speed * target.PosImpulse.X * cam.Right;
+            offset += SpeedScale * NbRenderState.settings.CamSettings.Speed * target.PosImpulse.Z * cam.Front;
+            offset += SpeedScale * NbRenderState.settings.CamSettings.Speed * target.PosImpulse.Y * cam.Up;
 
             //Console.WriteLine(string.Format("Camera offset {0} {1} {2}",
             //                    offset.X, offset.Y, offset.Z));
@@ -327,7 +327,7 @@ namespace NbCore
 
         public bool frustum_occlude(NbVector3 AABBMIN, NbVector3 AABBMAX, NbMatrix4 transform)
         {
-            if (!Common.RenderState.settings.RenderSettings.UseFrustumCulling)
+            if (!NbRenderState.settings.RenderSettings.UseFrustumCulling)
                 return true;
 
             float radius = 0.5f * (AABBMIN - AABBMAX).Length;

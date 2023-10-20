@@ -50,10 +50,10 @@ namespace NbCore
         {
             SourceType = NbShaderTextType.Static;
             SourceText = text;
-            Name = "Shader_" + RenderState.engineRef.GetShaderSourceCount();
+            Name = "Shader_" + NbRenderState.engineRef.GetShaderSourceCount();
             Hash = (ulong) DateTime.Now.Ticks;
             //Automatically register to engine
-            RenderState.engineRef.RegisterEntity(this);
+            NbRenderState.engineRef.RegisterEntity(this);
         }
 
         public NbShaderSource(string filepath, bool watchFile) : base(EntityType.ShaderSource)
@@ -69,7 +69,7 @@ namespace NbCore
             }
             Hash = NbHasher.Hash(SourceFilePath);
             //Automatically register to engine
-            RenderState.engineRef.RegisterEntity(this);
+            NbRenderState.engineRef.RegisterEntity(this);
         }
 
         private void addFileWatcher(string filepath)
@@ -127,7 +127,7 @@ namespace NbCore
                         npath = System.IO.Path.Combine(dirpath, npath);
                         //Add dynamic source
                         //Check if Shader Source exists for this path
-                        NbShaderSource ss = RenderState.engineRef.GetShaderSourceByFilePath(npath);
+                        NbShaderSource ss = NbRenderState.engineRef.GetShaderSourceByFilePath(npath);
                         if (ss == null)
                         {
                             Console.WriteLine($"Loading new dynamic source {npath}");

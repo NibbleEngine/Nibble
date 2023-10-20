@@ -247,13 +247,13 @@ namespace NbCore.Platform.Windowing
         public override void SetRenderFrameFrequency(int freq)
         {
             _win.RenderFrequency = freq;
-            RenderState.settings.RenderSettings.FPS = freq;
+            NbRenderState.settings.RenderSettings.FPS = freq;
         }
 
         public override void SetUpdateFrameFrequency(int freq)
         {
             _win.UpdateFrequency = freq;
-            RenderState.settings.TickRate = freq;
+            NbRenderState.settings.TickRate = freq;
         }
 
         public override void SetVSync(bool status)
@@ -263,7 +263,7 @@ namespace NbCore.Platform.Windowing
             else
                 _win.VSync = VSyncMode.Off;
             
-            RenderState.settings.RenderSettings.UseVSync = status;
+            NbRenderState.settings.RenderSettings.UseVSync = status;
         }
 
         public void Run()

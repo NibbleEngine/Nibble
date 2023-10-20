@@ -765,8 +765,8 @@ namespace NbCore
             //ModelProcGen.procDecisions.Clear();
 
             //Stop animation if on
-            bool animToggleStatus = RenderState.settings.RenderSettings.ToggleAnimations;
-            RenderState.settings.RenderSettings.ToggleAnimations = false;
+            bool animToggleStatus = NbRenderState.settings.RenderSettings.ToggleAnimations;
+            NbRenderState.settings.RenderSettings.ToggleAnimations = false;
 
             //Setup new object
             SceneGraphNode scene = new(SceneNodeType.MODEL)
@@ -866,7 +866,7 @@ namespace NbCore
             //RenderState.activeModel = root; //Set the new scene as the new activeModel
 
             //Restart anim worker if it was active
-            RenderState.settings.RenderSettings.ToggleAnimations = animToggleStatus;
+            NbRenderState.settings.RenderSettings.ToggleAnimations = animToggleStatus;
 
         }
 
@@ -958,7 +958,7 @@ namespace NbCore
             };
 
             //Add Transform Component
-            TransformData td = new();
+            NbTransformData td = new();
             TransformComponent tc = new(td);
             tc.IsControllable = false;
             n.AddComponent<TransformComponent>(tc);
@@ -982,7 +982,7 @@ namespace NbCore
             };
 
             //Add Transform Component
-            TransformData td = new();
+            NbTransformData td = new();
             TransformComponent tc = new(td);
             n.AddComponent<TransformComponent>(tc);
 
@@ -1005,7 +1005,7 @@ namespace NbCore
             };
 
             //Add Transform Component
-            TransformData td = new();
+            NbTransformData td = new();
             TransformComponent tc = new(td);
             tc.IsControllable = false;
             n.AddComponent<TransformComponent>(tc);
@@ -1028,9 +1028,9 @@ namespace NbCore
         public static SceneGraphNode CreateJointNode()
         {
             SceneGraphNode n = new(SceneNodeType.JOINT);
-            
+
             //Add Transform Component
-            TransformData td = new();
+            NbTransformData td = new();
             TransformComponent tc = new(td);
             n.AddComponent<TransformComponent>(tc);
 
@@ -1042,7 +1042,7 @@ namespace NbCore
                 {
                     Data = seg.geom.GetMeshData(),
                     MetaData = seg.geom.GetMetaData(),
-                    Material = RenderState.engineRef.GetMaterialByName("jointMat")
+                    Material = NbRenderState.engineRef.GetMaterialByName("jointMat")
                 }
             };
             n.AddComponent<MeshComponent>(mc);
@@ -1063,9 +1063,9 @@ namespace NbCore
             {
                 Name = name
             };
-            
+
             //Add Transform Component
-            TransformData td = new();
+            NbTransformData td = new();
             TransformComponent tc = new(td);
             n.AddComponent<TransformComponent>(tc);
 
@@ -1256,7 +1256,7 @@ namespace NbCore
             if (new_shader == null)
             {
                 //Create new Shader
-                new_shader = RenderState.engineRef.CreateShader(conf, 
+                new_shader = NbRenderState.engineRef.CreateShader(conf, 
                     GetMaterialShaderDirectives(mat));
                 
                 CompileShader(new_shader);

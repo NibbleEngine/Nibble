@@ -8,7 +8,7 @@ namespace NbCore.Systems
 {
     public unsafe class TransformationSystem : EngineSystem
     {
-        private readonly List<TransformData> _Data;
+        private readonly List<NbTransformData> _Data;
         private readonly Dictionary<ulong, TransformController> EntityControllerMap;
         private readonly Dictionary<ulong, TransformComponent> EntityDataMap;
         private readonly Queue<Entity> UpdatedEntities; //Entities to update on demand
@@ -114,7 +114,7 @@ namespace NbCore.Systems
                 Entity e = UpdatedEntities.Dequeue();
 
                 //Immediately calculate new transforms
-                TransformData td = GetEntityTransformData(e);
+                NbTransformData td = GetEntityTransformData(e);
                 td.RecalculateTransformMatrices();
             }
         }
@@ -146,54 +146,54 @@ namespace NbCore.Systems
 
         public static void AddTransformComponentToEntity(Entity e)
         {
-            TransformData td = new();
+            NbTransformData td = new();
             TransformComponent tc = new(td);
             e.AddComponent<TransformComponent>(tc);
         }
 
         public static void SetEntityLocation(Entity e, NbVector3 loc)
         {
-            TransformData td = e.GetComponent<TransformComponent>().Data;
+            NbTransformData td = e.GetComponent<TransformComponent>().Data;
             td.localTranslation = loc;
         }
 
         public static void SetEntityRotation(Entity e, NbQuaternion rot)
         {
-            TransformData td = (e.GetComponent<TransformComponent>()).Data;
+            NbTransformData td = (e.GetComponent<TransformComponent>()).Data;
             td.localRotation = rot;
         }
 
         public static void SetEntityScale(Entity e, NbVector3 scale)
         {
-            TransformData td = e.GetComponent<TransformComponent>().Data;
+            NbTransformData td = e.GetComponent<TransformComponent>().Data;
             td.localScale = scale;
         }
 
         public static NbMatrix4 GetEntityLocalMat(Entity e)
         {
-            TransformData td = e.GetComponent<TransformComponent>().Data;
+            NbTransformData td = e.GetComponent<TransformComponent>().Data;
             return td.LocalTransformMat;
         }
 
         public static NbQuaternion GetEntityLocalRotation(Entity e)
         {
-            TransformData td = e.GetComponent<TransformComponent>().Data;
+            NbTransformData td = e.GetComponent<TransformComponent>().Data;
             return td.localRotation;
         }
 
         public static NbMatrix4 GetEntityWorldMat(Entity e)
         {
-            TransformData td = e.GetComponent<TransformComponent>().Data;
+            NbTransformData td = e.GetComponent<TransformComponent>().Data;
             return td.WorldTransformMat;
         }
 
         public static NbVector4 GetEntityWorldPosition(Entity e)
         {
-            TransformData td = e.GetComponent<TransformComponent>().Data;
+            NbTransformData td = e.GetComponent<TransformComponent>().Data;
             return td.WorldPosition;
         }
 
-        public static TransformData GetEntityTransformData(Entity e)
+        public static NbTransformData GetEntityTransformData(Entity e)
         {
             return e.GetComponent<TransformComponent>().Data;
         }

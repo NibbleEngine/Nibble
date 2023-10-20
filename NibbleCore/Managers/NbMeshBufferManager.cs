@@ -62,7 +62,7 @@ namespace NbCore
             return render_instance_id;
         }
 
-        public static void AddRenderInstance(ref MeshComponent mc, TransformData td)
+        public static void AddRenderInstance(ref MeshComponent mc, NbTransformData td)
         {
             NbMesh mesh = mc.Mesh;
 

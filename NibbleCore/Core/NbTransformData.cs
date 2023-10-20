@@ -2,7 +2,6 @@
 namespace NbCore
 {
     public class NbTransformData
-
     {
         [NbSerializable] public float TransX = 0.0f;
         [NbSerializable] public float TransY = 0.0f;
@@ -102,11 +101,11 @@ namespace NbCore
 
         public NbMatrix4 InverseTransformMat;
 
-        private TransformData parent;
+        private NbTransformData parent;
         public bool IsUpdated;
         public bool IsActive; //TODO: Not sure if this is neede anywhere
 
-        public TransformData()
+        public NbTransformData()
         {
             //Rest Properties
             LocalTransformMat = NbMatrix4.Identity();
@@ -116,7 +115,7 @@ namespace NbCore
             IsActive = true; //by default
         }
         
-        public void SetParentData(TransformData data)
+        public void SetParentData(NbTransformData data)
         {
             parent = data;
         }

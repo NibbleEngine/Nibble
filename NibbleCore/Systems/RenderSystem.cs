@@ -293,9 +293,9 @@ namespace NbCore.Systems
         private void prepareCommonPerFrameUBO()
         {
             //FrameData
-            Renderer.SetCameraData(RenderState.activeCam);
-            Renderer.SetCommonDataPerFrame(gBuffer, RenderState.rotMat, gfTime);
-            Renderer.SetRenderSettings(RenderState.settings.RenderSettings);
+            Renderer.SetCameraData(NbRenderState.activeCam);
+            Renderer.SetCommonDataPerFrame(gBuffer, NbRenderState.rotMat, gfTime);
+            Renderer.SetRenderSettings(NbRenderState.settings.RenderSettings);
             Renderer.UploadFrameData();
         }
 
@@ -433,8 +433,8 @@ namespace NbCore.Systems
                     SceneGraphNode l1 = (SceneGraphNode) e1;
                     SceneGraphNode l2 = (SceneGraphNode) e2;
                     
-                    float d1 = (TransformationSystem.GetEntityWorldPosition(l1).Xyz - RenderState.activeCam.Position).Length;
-                    float d2 = (TransformationSystem.GetEntityWorldPosition(l2).Xyz - RenderState.activeCam.Position).Length;
+                    float d1 = (TransformationSystem.GetEntityWorldPosition(l1).Xyz - NbRenderState.activeCam.Position).Length;
+                    float d2 = (TransformationSystem.GetEntityWorldPosition(l2).Xyz - NbRenderState.activeCam.Position).Length;
 
                     return d1.CompareTo(d2);
                 }
@@ -531,7 +531,7 @@ namespace NbCore.Systems
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
             //Collisions
-            if (RenderState.settings.ViewSettings.ViewCollisions)
+            if (NbRenderState.settings.ViewSettings.ViewCollisions)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("collisionMat");
 
@@ -546,7 +546,7 @@ namespace NbCore.Systems
             }
 
             //Lights
-            if (RenderState.settings.ViewSettings.ViewLights)
+            if (NbRenderState.settings.ViewSettings.ViewLights)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("lightMat");
 
@@ -559,7 +559,7 @@ namespace NbCore.Systems
             }
 
             //Light Volumes
-            if (RenderState.settings.ViewSettings.ViewLightVolumes)
+            if (NbRenderState.settings.ViewSettings.ViewLightVolumes)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("collisionMat");
 
@@ -571,7 +571,7 @@ namespace NbCore.Systems
             }
 
             //Mesh Bounding Volumes
-            if (RenderState.settings.ViewSettings.ViewBoundHulls)
+            if (NbRenderState.settings.ViewSettings.ViewBoundHulls)
             {
                 //Bind BBox Shader
                 NbShader bbox_shader = ShaderMgr.GetShaderByType(NbShaderType.BBOX_SHADER);
@@ -594,7 +594,7 @@ namespace NbCore.Systems
             }
 
             //Joints
-            if (RenderState.settings.ViewSettings.ViewJoints)
+            if (NbRenderState.settings.ViewSettings.ViewJoints)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("jointMat");
 
@@ -611,7 +611,7 @@ namespace NbCore.Systems
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
 
             //Locators
-            if (RenderState.settings.ViewSettings.ViewLocators)
+            if (NbRenderState.settings.ViewSettings.ViewLocators)
             {
                 NbMaterial mat = EngineRef.GetMaterialByName("crossMat");
                 
@@ -649,7 +649,7 @@ namespace NbCore.Systems
         private void renderStaticMeshes()
         {
             //Set polygon mode
-            Renderer.SetPolygonMode(RenderState.settings.RenderSettings.RenderMode);
+            Renderer.SetPolygonMode(NbRenderState.settings.RenderSettings.RenderMode);
             
             foreach (NbMeshGroup mg in MeshGroups)
             {
@@ -684,7 +684,7 @@ namespace NbCore.Systems
             //Copy depth buffer to the render Buffer
             Renderer.CopyDepthChannel(gBuffer, renderBuffer);
 
-            if (RenderState.settings.RenderSettings.UseLighting)
+            if (NbRenderState.settings.RenderSettings.UseLighting)
                 renderDeferredLightPass(); //Deferred Lighting Pass to pbuf
             else
             {
@@ -796,7 +796,7 @@ namespace NbCore.Systems
             GL.BlendFunc(1, BlendingFactorSrc.Zero, BlendingFactorDest.OneMinusSrcAlpha);
 
             //Set polygon mode
-            Renderer.SetPolygonMode(RenderState.settings.RenderSettings.RenderMode);
+            Renderer.SetPolygonMode(NbRenderState.settings.RenderSettings.RenderMode);
 
             foreach (NbMeshGroup mg in MeshGroups)
             {
@@ -1066,7 +1066,7 @@ namespace NbCore.Systems
             GL.BlendEquation(BlendEquationMode.FuncAdd);
 
             upsampling_program.ClearCurrentState();
-            upsampling_program.CurrentState.AddUniform("filterRadius", RenderState.settings.RenderSettings.BloomFilterRadius);
+            upsampling_program.CurrentState.AddUniform("filterRadius", NbRenderState.settings.RenderSettings.BloomFilterRadius);
             
             for (int i = 5; i > 0; i--)
             {
@@ -1103,7 +1103,7 @@ namespace NbCore.Systems
 
             mix_proram.ClearCurrentState();
             mix_proram.CurrentState.AddUniform("mix_factor", 
-                RenderState.settings.RenderSettings.BloomIntensity);
+                NbRenderState.settings.RenderSettings.BloomIntensity);
             mix_proram.CurrentState.AddSampler("inTex1", new NbSampler()
             {
                 SamplerID = 0,
@@ -1178,7 +1178,7 @@ namespace NbCore.Systems
             //Draw to the composite RGB channel
             Renderer.BindDrawFrameBuffer(renderBuffer, new int[] { 2 });
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
-            Renderer.ClearColor(RenderState.settings.RenderSettings.BackgroundColor);
+            Renderer.ClearColor(NbRenderState.settings.RenderSettings.BackgroundColor);
 
             //The following settings are the defaults
             //GL.Enable(EnableCap.Blend);
@@ -1208,7 +1208,7 @@ namespace NbCore.Systems
             //Actuall Post Process effects in AA space without tone mapping
             //TODO: Bring that back
 
-            if (RenderState.settings.RenderSettings.UseBLOOM)
+            if (NbRenderState.settings.RenderSettings.UseBLOOM)
                 bloom(); //BLOOM
             else
             {
@@ -1217,7 +1217,7 @@ namespace NbCore.Systems
             }
 
             //FXAA
-            if (RenderState.settings.RenderSettings.UseFXAA)
+            if (NbRenderState.settings.RenderSettings.UseFXAA)
                 fxaa();
             else
             {
@@ -1226,7 +1226,7 @@ namespace NbCore.Systems
             }
 
             //TONE MAPPING
-            if (RenderState.settings.RenderSettings.UseToneMapping)
+            if (NbRenderState.settings.RenderSettings.UseToneMapping)
                 tone_mapping(); 
             else
             {
@@ -1373,7 +1373,7 @@ namespace NbCore.Systems
 
         public override void OnRenderUpdate(double dt)
         {
-            Camera.UpdateCameraDirectionalVectors(RenderState.activeCam);
+            Camera.UpdateCameraDirectionalVectors(NbRenderState.activeCam);
 
             //Re-upload meshgroup buffers
             foreach(NbMeshGroup mg in MeshGroups)

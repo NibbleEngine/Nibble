@@ -107,7 +107,7 @@ namespace NbCore.Systems
         private static bool TestPlayerNearbyEventTrigger(SceneGraphNode m, PlayerNearbyEventTrigger t)
         {
             //Check the distance of the activeCamera from the model
-            float distanceFromCam = (RenderState.activeCam.Position - 
+            float distanceFromCam = (NbRenderState.activeCam.Position - 
                                     TransformationSystem.GetEntityWorldPosition(m).Xyz).Length;
 
             //TODO: Check all the inverse shit and the rest trigger parameters

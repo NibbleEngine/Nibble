@@ -6,37 +6,6 @@ using Newtonsoft.Json;
 
 namespace NbCore
 {
-    public enum EntityType
-    {
-        SceneNode,
-        SceneNodeLight,
-        SceneNodeJoint,
-        SceneNodeMesh,
-        SceneNodeLocator,
-        SceneNodeModel,
-        SceneNodeReference,
-        SceneNodeCollision,
-        SceneNodeEmmiter,
-        MeshComponent,
-        AnimationComponent,
-        SceneComponent,
-        LightComponent,
-        Material,
-        Texture,
-        GeometryObject,
-        Camera,
-        Script,
-        Asset,
-        ShaderSource,
-        ShaderConfig,
-        Shader,
-        Mesh,
-        Animation,
-        InstancedMesh,
-        LightInstancedMesh,
-        Font
-    }
-
     [NbSerializable]
     public abstract class Entity : IDisposable
     {

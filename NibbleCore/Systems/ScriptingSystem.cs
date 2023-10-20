@@ -189,7 +189,7 @@ namespace NbCore.Systems
                     }
                 }
 
-                NbScript main_ob = (NbScript) asm.CreateInstance(script_type.FullName, false, BindingFlags.Default, null, new object[] { RenderState.engineRef },
+                NbScript main_ob = (NbScript) asm.CreateInstance(script_type.FullName, false, BindingFlags.Default, null, new object[] { NbRenderState.engineRef },
                     null, null);
                 main_ob.Hash = hash;
                 ms.Close();

@@ -11,7 +11,7 @@ namespace NbCore
 
     public class NbLightBufferManager : NbMeshBufferManager
     {
-        public static void AddRenderInstance(ref LightComponent lc, TransformData td)
+        public static void AddRenderInstance(ref LightComponent lc, NbTransformData td)
         {
             NbMesh mesh = lc.Mesh;
 

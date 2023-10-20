@@ -55,7 +55,7 @@ namespace NbCore
 
             MeshComponent mc = new()
             {
-                Mesh = Common.RenderState.engineRef.GetMesh(hash)
+                Mesh = NbRenderState.engineRef.GetMesh(hash)
             };
 
             return mc;
