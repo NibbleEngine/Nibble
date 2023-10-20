@@ -40,26 +40,22 @@ namespace NbCore.Platform.Graphics
         [FieldOffset(28)]
         public float cameraFarPlane;
         [FieldOffset(32)]
-        public Matrix4 rotMat;
-        [FieldOffset(96)]
-        public Matrix4 rotMatInv;
-        [FieldOffset(160)]
         public Matrix4 projMat;
-        [FieldOffset(224)]
+        [FieldOffset(96)]
         public Matrix4 projMatInv;
-        [FieldOffset(288)]
+        [FieldOffset(160)]
         public Matrix4 lookMat;
-        [FieldOffset(352)]
+        [FieldOffset(224)]
         public Matrix4 lookMatInv;
-        [FieldOffset(416)]
+        [FieldOffset(288)]
         public Matrix4 cameraRotMat;
-        [FieldOffset(480)]
+        [FieldOffset(352)]
         public Vector4 cameraPositionExposure; //Exposure is the W component
-        [FieldOffset(496)]
+        [FieldOffset(368)]
         public Vector3 cameraDirection;
-        [FieldOffset(508)]
+        [FieldOffset(380)]
         public int light_number;
-        public static readonly int SizeInBytes = 512;
+        public static readonly int SizeInBytes = 384;
     };
 
     public enum NbBufferMask
@@ -444,12 +440,10 @@ namespace NbCore.Platform.Graphics
             cpfu.cameraFarPlane = NbRenderState.settings.CamSettings.zFar;
         }
 
-        public void SetCommonDataPerFrame(FBO gBuffer, NbMatrix4 rotMat, double time)
+        public void SetCommonDataPerFrame(FBO gBuffer, double time)
         {
             cpfu.frameDim.X = gBuffer.Size.X;
             cpfu.frameDim.Y = gBuffer.Size.Y;
-            cpfu.rotMat = rotMat._Value;
-            cpfu.rotMatInv = Matrix4.Transpose(rotMat._Value.Inverted());
             cpfu.gfTime = (float)time;
             cpfu.MSAA_SAMPLES = gBuffer.msaa_samples;
         }

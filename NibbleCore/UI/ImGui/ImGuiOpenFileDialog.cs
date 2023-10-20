@@ -7,7 +7,9 @@ using Num = System.Numerics;
 
 namespace NbCore.UI.ImGui
 {
-	public class OpenFileDialog
+    public delegate void ImGuiSelectFileTriggerEventHandler(string filepath);
+
+    public class OpenFileDialog
 	{
 		
 		static readonly Num.Vector4 YELLOW_TEXT_COLOR = new Num.Vector4(1.0f, 1.0f, 0.0f, 1.0f);
@@ -16,6 +18,7 @@ namespace NbCore.UI.ImGui
 		private FilePicker filePicker = null;
 		public bool IsOpen = false;
 		private bool show_open_file_dialog = false;
+		public ImGuiSelectFileTriggerEventHandler OnFileSelect = null;
 
 		public OpenFileDialog(string uid, string searchFilter = null, bool onlyAllowFolders = false)
         {
@@ -53,7 +56,11 @@ namespace NbCore.UI.ImGui
 					var name = Path.GetFileName(fse);
 					bool isSelected = filePicker.SelectedFile == fse;
 					if (ImGuiCore.Selectable(name, isSelected, ImGuiNET.ImGuiSelectableFlags.DontClosePopups) || ImGuiCore.IsMouseDoubleClicked(0))
-						filePicker.SelectedFile = fse;
+					{
+                        filePicker.SelectedFile = fse;
+                        OnFileSelect?.Invoke(filePicker.SelectedFile);
+                    }
+						
 				}
 			}
 

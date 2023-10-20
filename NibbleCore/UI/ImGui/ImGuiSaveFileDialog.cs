@@ -20,6 +20,7 @@ namespace NbCore.UI.ImGui
         private string[] save_formats_ext;
         private string save_file_name = "";
         private int save_file_extention_id = 0;
+        public ImGuiSelectFileTriggerEventHandler OnFileSelect = null;
 
         public SaveFileDialog(string uid, string[] saveFormats, string[] saveFormatExtensions)
         {
@@ -167,7 +168,11 @@ namespace NbCore.UI.ImGui
                 ImGuiCore.SameLine();
                 if (ImGuiCore.Button("Save"))
                 {
-                    filePicker.SelectedFile = filePicker.CurrentFolder;
+                    //Construct file path
+                    string ext = save_formats_ext[save_file_extention_id];
+                    filePicker.SelectedFile = Path.Combine(filePicker.CurrentFolder, 
+                        save_file_name.Replace(ext, "") + ext);
+                    OnFileSelect?.Invoke(filePicker.SelectedFile);
                     Close();
                     return true;
                 }

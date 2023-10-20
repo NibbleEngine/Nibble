@@ -18,6 +18,12 @@ namespace NbCore
         }
     }
 
+    public enum CameraMovementTypeEnum
+    {
+        FREE_CAM,
+        ORBIT_CAM
+    }
+
     public class Camera : Entity
     {
         //Base Coordinate System
@@ -46,9 +52,12 @@ namespace NbCore
         public NbMatrix4 lookMatInv;
         public NbMatrix4 cameraRotMat;
         public NbMatrix4 viewMat = NbMatrix4.Identity();
+        //That's for object cam
+        public NbMatrix4 rotMat = NbMatrix4.Identity();
+        public NbVector3 rotAngles = new NbVector3(0.0f);
         public int type;
         public bool culling;
-
+        
         //Camera Frustum Planes
         private readonly Frustum extFrustum = new();
         public NbVector4[] frPlanes = new NbVector4[6];
@@ -70,15 +79,33 @@ namespace NbCore
 
         }
 
-        public void updateViewMatrix()
+        public void UpdateViewMatrixOrbit()
+        {
+            lookMat = NbMatrix4.LookAt(Position, NbVector3.Zero, BaseUp);
+
+            //TODO: Calculate cameraRotMat
+
+        }
+
+        public void UpdateViewMatrixFree()
         {
             lookMat = NbMatrix4.LookAt(Position, Position + Front, BaseUp);
             
+            cameraRotMat = NbMatrix4.CreateRotationX(Math.Radians(System.Math.Clamp(pitch, -89, 89)));
+            cameraRotMat *= NbMatrix4.CreateRotationY(Math.Radians(-yaw - 90));
+        }
 
+        public void updateViewMatrix()
+        {
+            if (NbRenderState.settings.CamSettings.CamType == CameraMovementTypeEnum.FREE_CAM)
+                UpdateViewMatrixFree();
+            else if (NbRenderState.settings.CamSettings.CamType == CameraMovementTypeEnum.ORBIT_CAM)
+                UpdateViewMatrixOrbit();
+
+            //Calculate Projection Matrix
             NbVector2i viewport_size = NbRenderState.engineRef.GetSystem<Systems.RenderingSystem>().GetViewportSize();
             float aspect = (float)viewport_size.X / viewport_size.Y;
             //float aspect = 1.6f;
-
             CameraSettings settings = NbRenderState.settings.CamSettings;
 
             if (type == 0)
@@ -93,12 +120,8 @@ namespace NbCore
                 NbMatrix4 scaleMat = NbMatrix4.CreateScale(0.8f * Math.Radians(settings.FOV));
             }
 
+            //Calculate final matrices
             viewMat = lookMat * projMat;
-            
-            cameraRotMat = NbMatrix4.CreateRotationX(Math.Radians(System.Math.Clamp(pitch, -89, 89)));
-            cameraRotMat *= NbMatrix4.CreateRotationY(Math.Radians(-yaw - 90));
-            
-            //Calculate invert Matrices
             lookMatInv = lookMat.Inverted();
             projMatInv = projMat.Inverted();
 
@@ -110,14 +133,21 @@ namespace NbCore
             TransformController t_controller = NbRenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
             cam.Position = t_controller.Position;
 
-            cam.Front.X = (float)System.Math.Cos(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Cos(Math.Radians(cam.yaw));
-            cam.Front.Y = (float)System.Math.Sin(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89)));
-            cam.Front.Z = (float)System.Math.Cos(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Sin(Math.Radians(cam.yaw));
-            cam.Front.Normalize();
+            if (NbRenderState.settings.CamSettings.CamType == CameraMovementTypeEnum.FREE_CAM)
+            {
+                cam.Front.X = (float)System.Math.Cos(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Cos(Math.Radians(cam.yaw));
+                cam.Front.Y = (float)System.Math.Sin(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89)));
+                cam.Front.Z = (float)System.Math.Cos(Math.Radians(System.Math.Clamp(cam.pitch, -89, 89))) * (float)System.Math.Sin(Math.Radians(cam.yaw));
+                cam.Front.Normalize();
 
-            //NbQuaternion q = t_controller.Rotation;
-            //cam.Front = NbVector3.Transform(new NbVector3(-1.0f, 0.0f, 0.0f), q);
-            //cam.Front.Normalize();
+                //NbQuaternion q = t_controller.Rotation;
+                //cam.Front = NbVector3.Transform(new NbVector3(-1.0f, 0.0f, 0.0f), q);
+                //cam.Front.Normalize();
+            } else if (NbRenderState.settings.CamSettings.CamType == CameraMovementTypeEnum.ORBIT_CAM)
+            {
+                cam.Front = NbVector3.Zero - cam.Position;
+                cam.Front.Normalize();
+            }
 
             cam.Right = cam.Front.Cross(BaseUp).Normalized();
             cam.Up = cam.Right.Cross(cam.Front).Normalized();
@@ -131,7 +161,9 @@ namespace NbCore
         public void Reset()
         {
             yaw = -90f; pitch = 0;
-            NbVector3 newPosition = new NbVector3(0.0f);
+            NbVector3 newPosition = NbVector3.Zero;
+            if (NbRenderState.settings.CamSettings.CamType == CameraMovementTypeEnum.ORBIT_CAM)
+                newPosition = new NbVector3(1.0f);
             NbQuaternion yaw_q = NbQuaternion.FromAxis(BaseUp, Math.Radians(yaw));
             NbQuaternion pitch_q = NbQuaternion.FromAxis(BaseRight, Math.Radians(pitch));
             NbQuaternion new_rot = pitch_q * yaw_q;
@@ -146,7 +178,7 @@ namespace NbCore
             t_controller.AddFutureState(newPosition, currentRotation, currentScale);
         }
 
-        public static void CalculateNextCameraState(Camera cam, CameraPos target)
+        public static void CalculateNextCameraStateFree(Camera cam, CameraPos target)
         {
             TransformController t_controller = NbRenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
 
@@ -190,6 +222,32 @@ namespace NbCore
             //currentRotation = rall;
 
             t_controller.AddFutureState(currentPosition, currentRotation, currentScale);
+        }
+
+        public static void CalculateNextCameraStateOrbit(Camera cam, CameraPos target)
+        {
+            TransformController t_controller = NbRenderState.engineRef.GetSystem<Systems.TransformationSystem>().GetEntityTransformController(cam);
+
+            //Update position 
+            NbVector3 currentPosition = t_controller.FuturePosition;
+            currentPosition += SpeedScale * NbRenderState.settings.CamSettings.Speed * target.PosImpulse.Z * cam.Front;
+
+            //Apply rotation on position
+            NbQuaternion rot_x = NbQuaternion.FromAxis(cam.Right, 
+                -0.002f * NbRenderState.settings.CamSettings.Sensitivity * target.Rotation.Y);
+            NbQuaternion rot_y = NbQuaternion.FromAxis(BaseUp,
+                -0.002f * NbRenderState.settings.CamSettings.Sensitivity * target.Rotation.X);
+            currentPosition = NbVector3.Transform(currentPosition, rot_x * rot_y);
+
+            t_controller.AddFutureState(currentPosition, t_controller.FutureRotation, t_controller.FutureScale);
+        }
+
+        public static void CalculateNextCameraState(Camera cam, CameraPos target)
+        {
+            if (NbRenderState.settings.CamSettings.CamType == CameraMovementTypeEnum.FREE_CAM)
+                CalculateNextCameraStateFree(cam, target);
+            else if (NbRenderState.settings.CamSettings.CamType == CameraMovementTypeEnum.ORBIT_CAM)
+                CalculateNextCameraStateOrbit(cam, target);
         }
 
         /*

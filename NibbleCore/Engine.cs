@@ -1428,6 +1428,12 @@ namespace NbCore
             writer.Close();
         }
 
+        public void SaveActiveScene(string filepath)
+        {
+            SceneGraph g = GetActiveSceneGraph();
+            SerializeScene(g, filepath);
+        }
+
         public void OpenScene(string filepath)
         {
             //Clear Scene

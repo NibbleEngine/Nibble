@@ -54,10 +54,10 @@ namespace NbCore.UI.ImGui
             LogViewer?.AddLog(msg);
         }
 
-        public virtual void ProcessModals(object ob, ref string current_file_path, ref bool closed)
+        public virtual void ProcessModals()
         {
             //Override to provide modal processing
-            throw new Exception("Not Implented!");
+            throw new Exception("Not Implemented!");
         }
 
 

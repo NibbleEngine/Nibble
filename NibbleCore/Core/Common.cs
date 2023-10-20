@@ -34,15 +34,17 @@ namespace NbCore.Common
         public float Speed;
         public float zNear;
         public float zFar;
+        public CameraMovementTypeEnum CamType;
 
         public CameraSettings(int fov, float sens,
-            float speed, float near, float far)
+            float speed, float near, float far, CameraMovementTypeEnum type)
         {
             FOV = fov;
             Sensitivity = sens;
             Speed = speed;
             zNear = near;
             zFar = far;
+            CamType = type;
         }
     }
 
@@ -136,7 +138,7 @@ namespace NbCore.Common
     {
         public RenderSettings RenderSettings = new();
         public ViewSettings ViewSettings = new();
-        public CameraSettings CamSettings = new CameraSettings(90, 1.0f, 1.0f, 0.05f, 30000f);
+        public CameraSettings CamSettings = new CameraSettings(90, 1.0f, 1.0f, 0.05f, 30000f, CameraMovementTypeEnum.FREE_CAM);
         public int TickRate = 60;
         public bool EnableShaderCompilationLog = true;
         public LogVerbosityLevel LogVerbosity = LogVerbosityLevel.INFO;

@@ -294,7 +294,7 @@ namespace NbCore.Systems
         {
             //FrameData
             Renderer.SetCameraData(NbRenderState.activeCam);
-            Renderer.SetCommonDataPerFrame(gBuffer, NbRenderState.rotMat, gfTime);
+            Renderer.SetCommonDataPerFrame(gBuffer, gfTime);
             Renderer.SetRenderSettings(NbRenderState.settings.RenderSettings);
             Renderer.UploadFrameData();
         }

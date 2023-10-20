@@ -4,12 +4,6 @@ namespace NbCore
 {   
     public static class NbRenderState
     {
-        //Keep the view rotation Matrix
-        public static NbMatrix4 rotMat = NbMatrix4.Identity();
-
-        //Keep the view rotation Angles (in degrees)
-        public static NbVector3 rotAngles = new NbVector3(0.0f);
-
         //App Settings
         public static EngineSettings settings;
 
