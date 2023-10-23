@@ -41,9 +41,6 @@ namespace NbCore
     public class FBO : IDisposable
     {
         public int fbo = -1;
-        private List<FBOAttachmentDescription> ColorAttachments;
-        private FBOAttachmentDescription DepthAttachment;
-        private FBOOptions options = FBOOptions.None;
         private Dictionary<NbFBOAttachment, NbTexture> textures;
         public int depth_channel = -1;
 
@@ -55,9 +52,19 @@ namespace NbCore
         {
             //Setup properties
             Size = new(x, y);
-            ColorAttachments = new();
             textures = new();
-            options = opts;
+        }
+
+        public void Resize(NbVector2 new_size)
+        {
+            Size.X = (int) new_size.X;
+            Size.Y = (int) new_size.Y;
+
+            foreach (KeyValuePair<NbFBOAttachment, NbTexture> pair in textures)
+            {
+                NbTexture tex = pair.Value;
+                GraphicsAPI.ResizeTexture(tex, Size);
+            }
         }
 
         public NbTexture GetTexture(NbFBOAttachment attachment)
@@ -98,26 +105,9 @@ namespace NbCore
             renderer.AddFrameBufferAttachment(this, tex, attachment_type, attach);
             textures[attachment_type] = tex;
 
-            switch (attachment_type)
-            {
-                case NbFBOAttachment.Depth:
-                case NbFBOAttachment.DepthStencil:
-                    DepthAttachment = attachment;
-                    break;
-                default:
-                    ColorAttachments.Add(attachment);
-                    break;
-            }
         }
 
         //STATIC HELPER METHODS
-
-        public static void copyDepthChannel(FBO from, FBO to)
-        {
-
-            GraphicsAPI renderer = NbRenderState.engineRef.GetRenderer();
-            renderer.CopyDepthChannel(from, to);
-        }
 
         //Disposable Stuff
         private bool disposedValue;
@@ -126,11 +116,6 @@ namespace NbCore
         {
             if (disposedValue)
                 return;
-
-            if (disposing)
-            {
-                ColorAttachments.Clear();
-            }
 
             GraphicsAPI renderer = NbRenderState.engineRef.GetRenderer();
             renderer.DeleteFrameBuffer(this);

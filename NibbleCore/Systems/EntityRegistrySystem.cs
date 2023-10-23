@@ -8,7 +8,7 @@ namespace NbCore.Systems
     public class EntityRegistrySystem : EngineSystem
     {
         private long itemCounter = 0;
-        private ulong NextID = 1;
+        private uint NextID = 1;
         private Dictionary<ulong, Entity> EntityMap = new();
         private Dictionary<EntityType, List<Entity>> EntityTypeList = new();
         public EntityRegistrySystem() : base(EngineSystemEnum.REGISTRY_SYSTEM)

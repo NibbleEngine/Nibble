@@ -84,6 +84,8 @@ namespace NbCore
             SetInstanceWorldMatInv(mesh, mc.InstanceID, actualWorldMatInv);
             SetInstanceNormalMat(mesh, mc.InstanceID, NbMatrix4.Transpose(actualWorldMatInv));
             SetInstanceUniform4(mesh, mc.InstanceID, 0, new NbVector4(mesh.MetaData.FirstSkinMat, 0.0f, 0.0f, 0.0f));
+            SetInstanceEntityID(mesh, mc.InstanceID, (uint) mc.RefEntity.ID);
+
             if (mesh.MetaData.BoneRemapIndices != null)
                 SetInstanceBoneRemap(mesh, mc.InstanceID, mesh.MetaData.BoneRemapIndices);
             mesh.InstanceCount++;
@@ -114,15 +116,15 @@ namespace NbCore
             mesh.InstanceCount = 0;
         }
 
-        public static void SetInstanceSelectedStatus(NbMesh mesh, int instance_id, bool status)
+        public static void SetInstanceEntityID(NbMesh mesh, int instanceID, uint entityID)
         {
-            mesh.InstanceDataBuffer[instance_id].isSelected = status ? 1.0f : 0.0f;
+            mesh.InstanceDataBuffer[instanceID].entityID = entityID;
         }
-
-        public static bool GetInstanceSelectedStatus(NbMesh mesh, int instance_id)
+        
+        public static uint GetInstanceEntityID(NbMesh mesh, int instance_id)
         {
             MeshInstance mi = mesh.InstanceDataBuffer[instance_id];
-            return mi.isSelected > 0.0f;
+            return mi.entityID;
         }
 
         public static NbMatrix4 GetInstanceWorldMat(NbMesh mesh, int instance_id)

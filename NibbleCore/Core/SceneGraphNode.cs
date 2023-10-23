@@ -31,7 +31,6 @@ namespace NbCore
     public class SceneGraphNode : Entity
     {
         public new SceneNodeType Type = SceneNodeType.UNKNOWN;
-        public bool IsSelected = false;
         public string Name = "";
         public bool IsRenderable = true;
         public bool WasRenderable = true;

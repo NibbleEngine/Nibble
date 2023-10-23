@@ -10,6 +10,7 @@ using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp.PixelFormats;
 using Microsoft.CodeAnalysis;
+using Newtonsoft.Json.Converters;
 
 namespace NbCore.Platform.Graphics
 {
@@ -576,16 +577,11 @@ namespace NbCore.Platform.Graphics
 
         #region RENDERING
 
-        public void RenderQuad(NbMesh quadMesh, NbShader shader, NbShaderState state)
+        public void UploadShaderState(NbShader shader, NbShaderState state)
         {
-            GLInstancedMesh glmesh = MeshMap[quadMesh.ID];
-
-            GL.UseProgram(shader.ProgramID);
-            GL.BindVertexArray(glmesh.vao.vao_id);
-
             //Filter State
             shader.FilterState(ref state);
-            
+
             int sampler_id = 0;
             foreach (KeyValuePair<string, object> sstate in state.Data)
             {
@@ -597,7 +593,7 @@ namespace NbCore.Platform.Graphics
                     case "Sampler":
                         {
                             //Upload sampler
-                            NbSampler nbSampler = (NbSampler) sstate.Value;
+                            NbSampler nbSampler = (NbSampler)sstate.Value;
                             GL.Uniform1(shader.uniformLocations[key].loc, sampler_id);
                             GL.ActiveTexture(TextureUnit.Texture0 + sampler_id);
                             GL.BindTexture(TextureTargetMap[nbSampler.Texture.Data.target], nbSampler.Texture.GpuID);
@@ -606,39 +602,49 @@ namespace NbCore.Platform.Graphics
                         }
                     case "Float":
                         {
-                            float val = (float) sstate.Value;
+                            float val = (float)sstate.Value;
                             GL.Uniform1(shader.uniformLocations[key].loc, val);
                             break;
                         }
                     case "Vec2":
                         {
-                            NbVector2 vec = (NbVector2) sstate.Value;
+                            NbVector2 vec = (NbVector2)sstate.Value;
                             GL.Uniform2(shader.uniformLocations[key].loc, vec.X, vec.Y);
                             break;
                         }
                     case "Vec3":
                         {
-                            NbVector3 vec = (NbVector3) sstate.Value;
+                            NbVector3 vec = (NbVector3)sstate.Value;
                             GL.Uniform3(shader.uniformLocations[key].loc, vec.X, vec.Y, vec.Z);
                             break;
                         }
                     case "Vec4":
                         {
-                            NbVector4 vec = (NbVector4) sstate.Value;
+                            NbVector4 vec = (NbVector4)sstate.Value;
                             GL.Uniform4(shader.uniformLocations[key].loc, vec.X, vec.Y, vec.Z, vec.W);
                             break;
                         }
                     case "Int":
                         {
-                            int num = (int) sstate.Value;
+                            int num = (int)sstate.Value;
                             GL.Uniform1(shader.uniformLocations[key].loc, num);
                             break;
                         }
 
                 }
-
             }
+        }
 
+
+        public void RenderQuad(NbMesh quadMesh, NbShader shader, NbShaderState state)
+        {
+            GLInstancedMesh glmesh = MeshMap[quadMesh.ID];
+
+            GL.UseProgram(shader.ProgramID);
+            GL.BindVertexArray(glmesh.vao.vao_id);
+
+            UploadShaderState(shader, state);
+            
             //Render quad
             GL.Disable(EnableCap.DepthTest);
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
@@ -716,6 +722,19 @@ namespace NbCore.Platform.Graphics
                 glmesh.Mesh.InstanceCount);
             GL.BindVertexArray(0);
         }
+
+        public void RenderMeshDirect(NbMesh mesh, NbMaterial mat)
+        {
+            GLInstancedMesh glmesh = MeshMap[mesh.ID]; //Fetch GL Mesh
+
+            SetShaderAndUniforms(mat); //Set Shader and material uniforms
+
+            GL.BindVertexArray(glmesh.vao.vao_id);
+            GL.DrawElements(glmesh.RenderPrimitive,
+                glmesh.Mesh.MetaData.BatchCount, glmesh.IndicesLength, IntPtr.Zero);
+            GL.BindVertexArray(0);
+        }
+
 
         /// <summary>
         /// Renders the indicated instance of a mesh
@@ -970,6 +989,30 @@ namespace NbCore.Platform.Graphics
 
         #region TextureMethods
 
+        public static NbVector4 GetPixelValue(FBO fbo, NbFBOAttachment attachment, NbVector2 uvs)
+        {
+            NbVector4 res = new();
+
+            GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, fbo.fbo);
+            GL.ReadBuffer(ReadBufferMode.ColorAttachment0 + (int) attachment);
+
+            NbTexture tex = fbo.GetTexture(attachment);
+
+            int img_pos_x = (int) (tex.Data.Width * uvs.X);
+            int img_pos_y = (int) (tex.Data.Height * uvs.Y);
+
+            float[] pixel_data = new float[32];
+            
+            GL.ReadPixels(img_pos_x, img_pos_y, 1, 1,
+                PixelFormatMap[tex.Data.pif], PixelTypeMap[tex.Data.pif], pixel_data);
+
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            
+            res = new(pixel_data[0], pixel_data[1], pixel_data[2], pixel_data[3]);
+            return res;
+        }
+
+
         public static void queryTextureParameters(NbTexture tex)
         {
             TextureTarget gl_target = TextureTargetMap[tex.Data.target];
@@ -1123,9 +1166,28 @@ namespace NbCore.Platform.Graphics
                 GL.TexImage2D(gl_target, 0, (PixelInternalFormat)gl_pif, tex_data.Width, tex_data.Height, 0,
                     PixelFormatMap[tex_data.pif], gl_pxtype, IntPtr.Zero);
             
-            GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            GL.GenerateMipmap((GenerateMipmapTarget) gl_target);
             GL.BindTexture(gl_target, 0);
 
+        }
+
+        public static void ResizeTexture(NbTexture tex, NbVector2i new_size)
+        {
+            TextureTarget target = TextureTargetMap[tex.Data.target];
+            GL.BindTexture(target, tex.GpuID);
+            tex.Data.Width = new_size.X;
+            tex.Data.Height = new_size.Y;
+            
+            if (target == TextureTarget.Texture2D)
+            {
+                GL.TexImage2D(target, 0, (PixelInternalFormat) InternalFormatMap[tex.Data.pif],
+                    new_size.X, new_size.Y, 0, PixelFormatMap[tex.Data.pif], PixelTypeMap[tex.Data.pif], IntPtr.Zero);
+            } else
+            {
+                Log("Not supported texture target", LogVerbosityLevel.WARNING);
+            }
+
+            GL.BindTexture(target, 0);
         }
 
         private static void UploadTextureData(int tex_id, DDSImage tex_data)
@@ -1986,3 +2048,5 @@ namespace NbCore.Platform.Graphics
 }
 
 #endif
+
+

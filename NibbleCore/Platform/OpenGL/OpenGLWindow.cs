@@ -2,17 +2,9 @@
 using OpenTK.Windowing.Desktop;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
-using OpenTK.Windowing.GraphicsLibraryFramework;
-using NbCore;
-using ImGuiNET;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using NbCore.Common;
-using System.Timers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using OpenTK.Graphics.OpenGL;
-using System;
+using OpenTK.Windowing.Common.Input;
 
 namespace NbCore.Platform.Windowing
 {
@@ -81,6 +73,7 @@ namespace NbCore.Platform.Windowing
         {
             Engine = e; //Set Engine Reference
             _resizeWatch = new Stopwatch();
+
             _win = new GameWindow(GameWindowSettings.Default,
             new()
             {
@@ -106,6 +99,12 @@ namespace NbCore.Platform.Windowing
         }
 
         //Methods
+        public void SetWindowIcon(byte[] data, int width, int height)
+        {
+            Image icon_img = new Image(width, height, data);
+            _win.Icon = new WindowIcon(icon_img);
+        }
+
         private void SetWindowCallbacks()
         {
             //OnLoad
@@ -143,7 +142,7 @@ namespace NbCore.Platform.Windowing
                 _resizeWatch.Reset();
             }
 
-            OnRenderUpdate(args.Time);
+            OnRenderUpdate?.Invoke(args.Time);
             //Explicitly Handle Mouse Scroll and Pose
             MouseScrollPrevious = MouseScroll;
             MouseScroll.X = _win.MouseState.Scroll.X;
@@ -203,8 +202,8 @@ namespace NbCore.Platform.Windowing
 
         private void FrameUpdateDelegate(FrameEventArgs args)
         {
-            OnFrameUpdate(args.Time);
-        }
+            OnFrameUpdate?.Invoke(args.Time);
+        } 
 
         private void MinimizedDelegate(MinimizedEventArgs args)
         {

@@ -18,6 +18,7 @@ using Microsoft.CodeAnalysis;
 using System.Reflection.Metadata.Ecma335;
 using System.Xml.Linq;
 using NbCore.Platform.Windowing;
+using System.Diagnostics.Contracts;
 
 namespace NbCore
 {
@@ -44,7 +45,10 @@ namespace NbCore
 
         //Events
         public delegate void NewSceneEventHandler(SceneGraph s);
+        public delegate void SceneNodeSelectedEventHandler(SceneGraphNode n);
+        
         public NewSceneEventHandler NewSceneEvent;
+        public SceneNodeSelectedEventHandler NodeSelectedEvent; 
 
         //Plugin List
         public Dictionary<string, PluginBase> Plugins = new();
@@ -862,7 +866,6 @@ namespace NbCore
             //Populate RenderManager
             //renderSys.populate(null); //OBSOLETE
 
-            scene.IsSelected = true;
             //RenderState.activeModel = root; //Set the new scene as the new activeModel
 
             //Restart anim worker if it was active
@@ -1134,6 +1137,26 @@ namespace NbCore
         
         #region GLRelatedRequests
 
+        public SceneGraphNode GetSelectedNode(NbVector2 screen_uvs)
+        {
+            uint entity_id = GetSystem<RenderingSystem>().GetEntityID(screen_uvs);
+            //Log($"Returned entity ID: {entity_id}", LogVerbosityLevel.INFO);
+            if (entity_id > 0)
+                return GetActiveSceneGraph().GetNodeByID(entity_id);
+            return null;
+        }
+
+        public void SelectNode(NbVector2 screen_uvs)
+        {
+            SceneGraphNode n = GetSelectedNode(screen_uvs);
+            if (n != null && n.HasComponent<MeshComponent>())
+            {
+                MeshComponent mc = n.GetComponent<MeshComponent>();
+                GetSystem<RenderingSystem>().SetSelectedMesh(mc.Mesh);
+                NodeSelectedEvent?.Invoke(n);
+            }
+        }
+
         public NbTexture CreateTexture(string filepath,
             NbTextureWrapMode wrapmode, NbTextureFilter minFilter, NbTextureFilter magFilter, bool gamma_correct, bool keepData = false)
         {
@@ -1189,11 +1212,13 @@ namespace NbCore
                 includes.Add("_D_DEFERRED_RENDERING");
             if (mode.HasFlag(NbShaderMode.SKINNED))
                 includes.Add("_D_SKINNED");
-            if (mode.HasFlag(NbShaderMode.LIT))
+            if (mode.HasFlag(NbShaderMode.LIGHTING))
                 includes.Add("_D_LIGHTING");
             if (mode.HasFlag(NbShaderMode.FORWARD))
                 includes.Add("_D_FORWARD_RENDERING");
-            
+            if (mode.HasFlag(NbShaderMode.NO_TRANSFORM))
+                includes.Add("_D_NO_TRANSFORM");
+
             return includes;
         }
 

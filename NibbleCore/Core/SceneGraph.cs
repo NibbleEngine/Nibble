@@ -44,6 +44,11 @@ namespace NbCore
             return Nodes.Find(x => x.Name == name);
         }
 
+        public SceneGraphNode GetNodeByID(uint id)
+        {
+            return Nodes.Find(x => x.ID == id);
+        }
+
         public SceneGraphNode GetJointNodeByJointID(int jointID)
         {
             foreach (SceneGraphNode node in JointNodes)

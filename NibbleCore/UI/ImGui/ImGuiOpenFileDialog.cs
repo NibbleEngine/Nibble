@@ -58,12 +58,9 @@ namespace NbCore.UI.ImGui
 					if (ImGuiCore.Selectable(name, isSelected, ImGuiNET.ImGuiSelectableFlags.DontClosePopups) || ImGuiCore.IsMouseDoubleClicked(0))
 					{
                         filePicker.SelectedFile = fse;
-                        OnFileSelect?.Invoke(filePicker.SelectedFile);
                     }
-						
 				}
 			}
-
 		}
 
 		public void Open()
@@ -170,7 +167,8 @@ namespace NbCore.UI.ImGui
                 {
 					if (filePicker.OnlyAllowFolders)
 						filePicker.SelectedFile = filePicker.CurrentFolder;
-					Close();
+                    OnFileSelect?.Invoke(filePicker.SelectedFile);
+                    Close();
                     return true;
                 }
 				

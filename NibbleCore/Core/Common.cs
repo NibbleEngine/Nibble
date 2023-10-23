@@ -16,15 +16,16 @@ namespace NbCore.Common
 
     public enum ViewSettingsEnum
     {
-        ViewInfo = 1,
-        ViewLights = 2,
-        ViewLightVolumes = 4,
-        ViewJoints = 8,
-        ViewLocators = 16,
-        ViewCollisions = 32,
-        ViewBoundHulls = 64,
-        ViewGizmos = 128,
-        EmulateActions = 256
+        ViewInfo = 1 << 0,
+        ViewLights = 1 << 1,
+        ViewLightVolumes = 1 << 2,
+        ViewJoints = 1 << 3,
+        ViewLocators = 1 << 4,
+        ViewCollisions = 1 << 5,
+        ViewBoundHulls = 1 << 6,
+        ViewGizmos = 1 << 7,
+        EmulateActions = 1 << 8,
+        ShowGrid = 1 << 9
     }
 
     public struct CameraSettings
@@ -59,6 +60,7 @@ namespace NbCore.Common
         public bool ViewBoundHulls;
         public bool ViewGizmos;
         public bool EmulateActions;
+        public bool ShowGrid;
         public int SettingsMask;
         
         
@@ -74,6 +76,7 @@ namespace NbCore.Common
             ViewCollisions = (settings_mask & (int)ViewSettingsEnum.ViewCollisions) != 0;
             ViewBoundHulls = (settings_mask & (int)ViewSettingsEnum.ViewBoundHulls) != 0;
             ViewGizmos = (settings_mask & (int)ViewSettingsEnum.ViewGizmos) != 0;
+            ShowGrid = (settings_mask & (int)ViewSettingsEnum.ShowGrid) != 0;
             EmulateActions = (settings_mask & (int)ViewSettingsEnum.EmulateActions) != 0;
         }
 

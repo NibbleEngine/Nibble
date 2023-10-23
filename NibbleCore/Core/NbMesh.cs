@@ -35,7 +35,7 @@ namespace NbCore
         [FieldOffset(512)]
         public NbVector3 color;
         [FieldOffset(524)]
-        public float isSelected;
+        public uint entityID;
     };
 
     [NbSerializable]

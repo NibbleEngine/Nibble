@@ -50,6 +50,9 @@ namespace NbCore.Platform.Windowing
         public virtual void SetUpdateFrameFrequency(int fps) { throw new System.NotImplementedException(); }
         public virtual void SetVSync(bool status) { throw new System.NotImplementedException(); }
 
+        public virtual void PauseRendering() { throw new System.NotImplementedException(); }
+        public virtual void ResumeRendering() { throw new System.NotImplementedException(); }
+
         public void InvokeMouseButtonDownEvent(NbMouseButtonArgs args)
         {
             OnMouseButtonDown?.Invoke(args);

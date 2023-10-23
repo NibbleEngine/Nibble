@@ -7,6 +7,7 @@ using NbCore.Managers;
 using OpenTK.Graphics.OpenGL4;
 using NbCore.Platform.Windowing;
 using System.Reflection.Metadata;
+using OpenTK.Windowing.Common.Input;
 
 namespace NbCore.Systems
 {
@@ -51,9 +52,11 @@ namespace NbCore.Systems
         public readonly FontManager FontMgr = new();
 
         public ShadowRenderer shdwRenderer; //Shadow Renderer instance
-        //Control Font and Text Objects
-        public int last_text_height;
+
+        //State
+        private NbMesh selectedMesh = null;
         
+
         private NbVector2i ViewportSize = new NbVector2i(1024, 768);
         private double gfTime = 0.0f;
 
@@ -115,6 +118,8 @@ namespace NbCore.Systems
             Log("Resource Manager Initialized", LogVerbosityLevel.INFO);
         }
 
+
+
         public void setupFBOs()
         {
             //Create gbuffer
@@ -123,14 +128,20 @@ namespace NbCore.Systems
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment1, ViewportSize); //normals
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment2, ViewportSize); //info1
             gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment3, ViewportSize); //info2
-            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Depth, ViewportSize); //depth
+            gBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH24_STENCIL8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.DepthStencil, ViewportSize); //depth
             
             //Create renderbuffer
             renderBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y, FBOOptions.None);
             renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment0, ViewportSize); //HDR Channel 0
             renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA16F, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment1, ViewportSize); //HDR Channel 1
             renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.RGBA8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.Attachment2, ViewportSize);   //RGB Channel
-            renderBuffer.AddAttachment(NbTextureTarget.Texture2D, NbTextureInternalFormat.DEPTH24_STENCIL8, NbTextureFilter.Nearest, NbTextureFilter.Nearest, NbFBOAttachment.DepthStencil, ViewportSize);  //depth
+
+            //Attach the depth buffer of the gbuffer to the renderbuffer.
+            NbTexture depth_tex = gBuffer.GetTexture(NbFBOAttachment.DepthStencil);
+            Renderer.BindFrameBuffer(renderBuffer.fbo);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer,
+                    FramebufferAttachment.DepthStencilAttachment,
+                    TextureTarget.Texture2D, depth_tex.GpuID, 0);
 
             //Create bloombuffer
             bloomBuffer = Renderer.CreateFrameBuffer(ViewportSize.X, ViewportSize.Y, FBOOptions.None);
@@ -147,6 +158,23 @@ namespace NbCore.Systems
             //Rebind the default framebuffer
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
             Log("FBOs Initialized", LogVerbosityLevel.INFO);
+        }
+
+        public void resizeFBOs()
+        {
+            //Resize Textures of the Gbuffer
+            gBuffer.Resize(ViewportSize);
+            renderBuffer.Resize(ViewportSize);
+
+            //Manually Resize the textures of the bloombuffer
+            NbVector2i bloomMipSize = new(ViewportSize.X, ViewportSize.Y);
+            for (int i = 0; i < 6; i++)
+            {
+                NbTexture tex = bloomBuffer.GetTexture(NbFBOAttachment.Attachment0);
+                GraphicsAPI.ResizeTexture(tex, bloomMipSize);
+                bloomMipSize.X /= 2;
+                bloomMipSize.Y /= 2;
+            }
         }
 
         public void deleteFBOs()
@@ -174,6 +202,11 @@ namespace NbCore.Systems
         //        PixelFormat.DepthComponent, PixelType.Float, arr);
         //    //Fetch color from UI Fbo
         //}
+
+        public void SetSelectedMesh(NbMesh mesh)
+        {
+            selectedMesh = mesh;
+        }
 
         public void progressTime(double dt)
         {
@@ -303,8 +336,8 @@ namespace NbCore.Systems
         {
             ViewportSize.X = x;
             ViewportSize.Y = y;
-            deleteFBOs();
-            setupFBOs();
+            resizeFBOs();
+            render(0.0001f); //Essential to refill the Texture Attachments
         }
 
         #region MeshGroupActions
@@ -527,6 +560,9 @@ namespace NbCore.Systems
 
         private void renderDefaultMeshes()
         {
+            
+            
+            
             Renderer.SetCullFace(false);
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
 
@@ -568,7 +604,7 @@ namespace NbCore.Systems
                 
                 if (light_sphere.InstanceCount > 0)
                     Renderer.RenderMesh(light_sphere, mat);
-            }
+            } 
 
             //Mesh Bounding Volumes
             if (NbRenderState.settings.ViewSettings.ViewBoundHulls)
@@ -650,6 +686,16 @@ namespace NbCore.Systems
         {
             //Set polygon mode
             Renderer.SetPolygonMode(NbRenderState.settings.RenderSettings.RenderMode);
+
+            if (NbRenderState.settings.ViewSettings.ShowGrid)
+            {
+                //Grid
+                Renderer.SetBlend(true);
+                NbMesh grid_mesh = EngineRef.GetMesh(14007540284696857038);
+                NbMaterial grid_mat = EngineRef.GetMaterialByName("gridMat");
+                Renderer.RenderMeshDirect(grid_mesh, grid_mat);
+                Renderer.SetBlend(false);
+            }
             
             foreach (NbMeshGroup mg in MeshGroups)
             {
@@ -659,8 +705,7 @@ namespace NbCore.Systems
                     if (mesh.InstanceCount == 0)
                         continue;
 
-                    NbMaterial mat = MaterialMgr.Get(mesh.Material.ID);
-                    Renderer.RenderMesh(mesh, mat);
+                    Renderer.RenderMesh(mesh, mesh.Material);
                     frameStats.RenderedVerts += mesh.InstanceCount * (mesh.MetaData.VertrEndGraphics - mesh.MetaData.VertrStartGraphics);
                     frameStats.RenderedIndices += mesh.InstanceCount * mesh.MetaData.BatchCount;
                 }
@@ -673,8 +718,8 @@ namespace NbCore.Systems
         private void defferedShading()
         {
             //DEFERRED STAGE
-            Renderer.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             Renderer.BindDrawFrameBuffer(gBuffer, new int[] { 0, 1, 2, 3 });
+            Renderer.ClearColor(0.0f, 0.0f, 0.0f, 0.0f);
             GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             //Renderer.SetDepthTest(true);
             //GL.DepthMask(true);
@@ -682,7 +727,7 @@ namespace NbCore.Systems
             renderGeometry(); //Renders main geometry
 
             //Copy depth buffer to the render Buffer
-            Renderer.CopyDepthChannel(gBuffer, renderBuffer);
+            //Renderer.CopyDepthChannel(gBuffer, renderBuffer);
 
             if (NbRenderState.settings.RenderSettings.UseLighting)
                 renderDeferredLightPass(); //Deferred Lighting Pass to pbuf
@@ -730,6 +775,8 @@ namespace NbCore.Systems
             GL.Enable(EnableCap.DepthTest);
             GL.Enable(EnableCap.CullFace);
             GL.CullFace(CullFaceMode.Back);
+
+
 
             //renderTestQuad();
             renderStaticMeshes(); //Deferred Rendered MESHES
@@ -1009,6 +1056,7 @@ namespace NbCore.Systems
 
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, bloomBuffer.fbo);
             GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
+            
             NbTexture mip_lvl;
             for (int i = 0; i < 6; i++)
             {
@@ -1016,18 +1064,17 @@ namespace NbCore.Systems
                 
                 if (i == 0)
                 {
-                    downsampling_program.CurrentState.AddUniform("mipLevel", 0);
+                    downsampling_program.CurrentState.SetUniform("mipLevel", 0);
                 }
                 else
                 {
-                    downsampling_program.CurrentState.AddUniform("mipLevel", 1);
+                    downsampling_program.CurrentState.SetUniform("mipLevel", 1);
                 }
 
                 //Get bloom level texture (to be written)
                 mip_lvl = bloomBuffer.GetTexture(NbFBOAttachment.Attachment0 + i);
                 
                 GL.Viewport(0, 0, mip_lvl.Data.Width, mip_lvl.Data.Height);
-
                 //Attach texture to framebuffer
                 GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, 
                     FramebufferAttachment.ColorAttachment0, 
@@ -1048,9 +1095,8 @@ namespace NbCore.Systems
 
                 downsampling_program.CurrentState.AddUniform("srcResolution",
                     new NbVector2(mip_lvl.Data.Width, mip_lvl.Data.Height));
-
+            
             }
-
 
             //mip_lvl = bloomBuffer.GetTexture(NbFBOAttachment.Attachment0);
             //Attach texture to framebuffer
@@ -1175,15 +1221,23 @@ namespace NbCore.Systems
 
         private void composite()
         {
+
+            
+
             //Draw to the composite RGB channel
             Renderer.BindDrawFrameBuffer(renderBuffer, new int[] { 2 });
-            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
             Renderer.ClearColor(NbRenderState.settings.RenderSettings.BackgroundColor);
+            //GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color | NbBufferMask.Depth);
+            
+            //Draw outline of selected object
+            if (selectedMesh != null)
+                DrawSelectedMeshOutline();
 
             //The following settings are the defaults
             //GL.Enable(EnableCap.Blend);
             //GL.BlendEquation(BlendEquationMode.FuncAdd);
             //GL.BlendFunc(0, BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+
 
             pass_tex(renderBuffer.fbo, DrawBufferMode.ColorAttachment2, renderBuffer.GetTexture(NbFBOAttachment.Attachment1));
 
@@ -1201,6 +1255,54 @@ namespace NbCore.Systems
             */
             //GL.Disable(EnableCap.Blend);
 
+        }
+
+        private void DrawSelectedMeshOutline()
+        {
+
+            //Step A:
+            //Draw the selected mesh on the stencil buffer only
+            //Stencil Pass
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, renderBuffer.fbo);
+            GL.DrawBuffer(DrawBufferMode.None);
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Stencil);
+
+            //Setup stencil ops
+            
+            GL.Enable(EnableCap.StencilTest);
+            GL.Disable(EnableCap.DepthTest);
+            GL.Disable(EnableCap.CullFace);
+            GL.ColorMask(false, false, false, false);
+            GL.StencilOp(StencilOp.Keep, StencilOp.Keep, StencilOp.Replace);
+            GL.StencilFunc(StencilFunction.Always, 1, 0xFF);
+            GL.StencilMask(0xFF);
+
+            //Draw Selected Mesh to fill in the stencil
+            Renderer.RenderMesh(selectedMesh, selectedMesh.Material);
+
+            //Draw the outline
+            GL.ColorMask(true, true, true, true);
+            GL.StencilFunc(StencilFunction.Notequal, 1, 0xFF);
+            GL.StencilMask(0x00);
+            GL.Disable(EnableCap.Blend);
+
+            Renderer.BindDrawFrameBuffer(renderBuffer, NbFBOAttachment.Attachment1);
+
+            NbShader outline_shader = ShaderMgr.GetShaderByType(NbShaderType.OUTLINE_SHADER);
+            outline_shader.CurrentState.Clear();
+            outline_shader.CurrentState.AddUniform("scale", 1.05f);
+            outline_shader.CurrentState.AddUniform("outline_color", new NbVector3(0.96f, 0.48f, 0.0f));
+
+            Renderer.EnableShaderProgram(outline_shader);
+            Renderer.UploadShaderState(outline_shader, outline_shader.CurrentState);
+            Renderer.RenderMesh(selectedMesh); //Do not use the mesh's material
+
+
+            GL.StencilMask(0xFF);
+            GL.StencilFunc(StencilFunction.Always, 1, 0xFF);
+            GL.Disable(EnableCap.StencilTest);
+            GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.Blend);
         }
 
         private void post_process()
@@ -1248,6 +1350,10 @@ namespace NbCore.Systems
             NbMaterial mat = EngineRef.GetMaterialByName("lightMat");
             NbMesh mesh = EngineRef.GetMesh(NbHasher.Hash("default_light_sphere"));
 
+            //Drawing on the render buffer's first channel
+            Renderer.BindDrawFrameBuffer(renderBuffer, NbFBOAttachment.Attachment0);
+            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color);
+
             if (mesh.InstanceCount == 0)
                 return;
 
@@ -1263,7 +1369,7 @@ namespace NbCore.Systems
                                             gBuffer.GetTexture(NbFBOAttachment.Attachment1).GpuID,
                                             gBuffer.GetTexture(NbFBOAttachment.Attachment2).GpuID,
                                             gBuffer.GetTexture(NbFBOAttachment.Attachment3).GpuID,
-                                            gBuffer.GetTexture(NbFBOAttachment.Depth).GpuID};
+                                            gBuffer.GetTexture(NbFBOAttachment.DepthStencil).GpuID};
             TextureTarget[] sampler_targets = new TextureTarget[] { TextureTarget.Texture2D, TextureTarget.Texture2D,
                                                             TextureTarget.Texture2D, TextureTarget.Texture2D, TextureTarget.Texture2D };
             for (int i = 0; i < sampler_names.Length; i++)
@@ -1276,9 +1382,7 @@ namespace NbCore.Systems
                 }
             }
 
-            //Drawing on the render buffer's first channel
-            Renderer.BindDrawFrameBuffer(renderBuffer, NbFBOAttachment.Attachment0);
-            GraphicsAPI.ClearDrawBuffer(NbBufferMask.Color);
+            
 
             for (int i = 0; i < mesh.InstanceCount; i++)
             {
@@ -1343,6 +1447,15 @@ namespace NbCore.Systems
         }
 
 #endregion Rendering Methods
+
+        public uint GetEntityID(NbVector2 uvs)
+        {
+            //Entity IDs are written into the 4th attachment of the gbuffer
+            NbVector4 pixel_val = GraphicsAPI.GetPixelValue(gBuffer, NbFBOAttachment.Attachment3, uvs);
+            return (uint) pixel_val.W;
+        }
+
+
 
 #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls

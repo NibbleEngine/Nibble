@@ -33,6 +33,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)core\NbRenderPrimitiveEnum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)core\NbRenderState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Core\NbScriptAsset.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)core\NbShaderTypeEnum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Image\NbImagingAPI.cs" />
     <Compile Include="..\NibbleCore\Core\NbTransformData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Image\DDSImage.cs" />

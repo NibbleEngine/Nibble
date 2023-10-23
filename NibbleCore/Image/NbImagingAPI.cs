@@ -26,7 +26,7 @@ namespace NbCore
             return Image.Load(data);
         }
 
-        private static Image GetImageFromTetureData(NbTextureData tex)
+        private static Image GetImageFromTextureData(NbTextureData tex)
         {
             switch (tex.pif)
             {
@@ -40,7 +40,7 @@ namespace NbCore
             return null;
         }
 
-        private static Image GetImageFromTetureData(NbTextureData tex, byte[] data)
+        private static Image GetImageFromTextureData(NbTextureData tex, byte[] data)
         {
             switch (tex.pif)
             {
@@ -65,6 +65,8 @@ namespace NbCore
                 DataBuffer = pixel_data,
                 MipMapCount = 1,
                 Depth = 1,
+                MinFilter = NbTextureFilter.LinearMipmapLinear,
+                MagFilter = NbTextureFilter.Linear,
                 target = NbTextureTarget.Texture2D,
                 pif = NbTextureInternalFormat.RGBA8
             };
@@ -104,14 +106,20 @@ namespace NbCore
 
         public static void ImageSave(NbTextureData tex, string filepath)
         {
-            Image image = GetImageFromTetureData(tex);
+            Image image = GetImageFromTextureData(tex);
             image.Save(filepath);
         }
 
         public static void ImageSave(NbTextureData tex, byte[] data, string filepath)
         {
-            Image image = GetImageFromTetureData(tex, data);
+            Image image = GetImageFromTextureData(tex, data);
             image.Save(filepath);
+        }
+
+        public static byte[] ImageDataToRGBA(NbTextureData tex) 
+        {
+
+            return null;
         }
 
     }
